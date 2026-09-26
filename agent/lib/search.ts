@@ -12,6 +12,7 @@ export interface ScoredSection {
   history?: string;
   repealed?: boolean;
   score: number;
+  structural?: string;
 }
 
 /** count word-boundary occurrences of t in hay (capped) */
@@ -192,6 +193,12 @@ export function scoreSections(
       history: o.r.history ? String(o.r.history).slice(0, 200) : undefined,
       repealed: Boolean(o.r.repealed),
       score: o.score,
+      structural: [
+        o.r.division, o.r.part, o.r.chapter, o.r.article,
+      ]
+        .map((x) => String(x || ""))
+        .filter(Boolean)
+        .join(" > "),
     });
   }
   return res;

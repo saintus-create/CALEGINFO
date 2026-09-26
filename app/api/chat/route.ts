@@ -103,7 +103,36 @@ async function preRetrieve(
           : ""),
     )
     .join("\n\n");
-  return { block, map };
+
+  // also pre-retrieve current-session bills touching the topic, labeled [p1], [p2], ...
+  let billBlock = "";
+  try {
+    // query bills with the statute-derived topic (structural headings name the act),
+    // not the raw question, which matches unrelated subject words
+    const structuralQueries = hits
+      .slice(0, 2)
+      .map((h) => (h.structural || "").split(">").map((x: string) => x.trim().replace(/^\d+\.\s*/, "")).join(" "))
+      .filter((x) => x.length > 3);
+    const billQueries = [...new Set([question, ...structuralQueries])].slice(0, 3);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out: any = await searchBills.execute({ queries: billQueries, limit: 3 }, undefined as never);
+    const sources = out?.sources || [];
+    if (sources.length) {
+      billBlock =
+        "\n\nBills from the 2025\u20132026 session matching this topic, labeled [p1], [p2], etc. If any is relevant, include it in the answer with its number, author, and status:\n\n" +
+        sources
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((b: any, i: number) => {
+            const cite = `${b.measure || "?"} \u2014 ${b.subject || ""} (${b.status || b.lastAction || "unknown status"})`;
+            map.set(`p${i + 1}`, cite);
+            return `[p${i + 1}] ${cite}\nAuthor: ${b.author || "unknown"}; chamber: ${b.chamber || "?"}`;
+          })
+          .join("\n\n");
+    }
+  } catch (e) {
+    console.error("[api/chat] bill pre-retrieval failed:", e);
+  }
+  return { block: block + billBlock, map };
 }
 
 type UITextPart = { type: "text"; text: string };
@@ -140,7 +169,7 @@ export async function POST(req: Request) {
         system +=
           "\n\nStatute sources were pre-retrieved from the California Codes for this question, labeled [1], [2], etc. " +
           "They are a starting point only: for any statutory question, also call search_statutes (and lookup_section for the governing sections) so you cite the most on-point provisions, then cite the sources you actually rely on with their exact bracketed markers. " +
-          "You may call tools to check bills, rules, or case law.\n\n" +
+          "You MUST also call search_cases before answering whenever a statute's meaning, application, or interpretation could matter, and weave the leading opinions into the answer.\n\n" +
           block;
         for (const [k, v] of map) sourceMap.set(k, v);
       }
