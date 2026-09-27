@@ -9,27 +9,24 @@ import {
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
 import { SYSTEM_PROMPT } from "@/constants/system-prompt";
-import { CODE_NAMES, loadCode } from "@/agent/lib/corpus";
-import { scoreSections } from "@/agent/lib/search";
 import searchStatutes from "@/agent/tools/search_statutes";
 import lookupSection from "@/agent/tools/lookup_section";
 import searchBills from "@/agent/tools/search_bills";
 import searchRules from "@/agent/tools/search_rules";
 import searchCases from "@/agent/tools/search_cases";
+import research from "@/agent/tools/research";
 
-const KEY = process.env.SARVAM_API_KEY || "sk_2tvionrw_hfDAK3RK1XhF66Ix9NfM4kSQ";
+const KEY = process.env.SARVAM_API_KEY;
+if (!KEY) console.warn("[api/chat] SARVAM_API_KEY is not configured");
 
 const sarvam = createOpenAICompatible({
   name: "sarvam",
   baseURL: "https://api.sarvam.ai/v1",
-  apiKey: KEY,
-  headers: { "api-subscription-key": KEY },
+  apiKey: KEY || "",
+  headers: KEY ? { "api-subscription-key": KEY } : {},
 });
 
-/** marker (no brackets, lowercase) -> human citation label */
 type SourceMap = Map<string, string>;
-
-/** minimal structural type for UI message stream parts */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StreamPart = { type: string; [k: string]: any };
 
@@ -37,161 +34,116 @@ function recordSources(out: unknown, map: SourceMap) {
   const sources = (out as { sources?: unknown })?.sources;
   if (!Array.isArray(sources)) return;
   for (const s of sources) {
-    if (!s || typeof s.marker !== "string") continue;
-    const key = s.marker.replace(/[[\]\s]/g, "").toLowerCase();
+    if (!s || typeof s !== "object") continue;
+    const item = s as Record<string, unknown>;
+    if (typeof item.marker !== "string") continue;
+    const key = item.marker.replace(/[\[\]\s]/g, "").toLowerCase();
     if (!key || map.has(key)) continue;
-    let label = "";
-    if (typeof s.citation === "string" && s.citation) {
-      label = s.citation + (s.repealed ? " (REPEALED)" : "");
-    } else if (typeof s.rule === "string" && s.rule) label = s.rule;
-    else if (typeof s.measure === "string" && s.measure)
-      label = s.measure + (s.status ? ` \u00b7 ${s.status}` : "");
-    else if (typeof s.caseName === "string" && s.caseName)
-      label = s.caseName + (s.cite ? ` (${s.cite})` : "");
-    if (label) map.set(key, label);
+    const citation = typeof item.citation === "string" ? item.citation : "";
+    const rule = typeof item.rule === "string" ? item.rule : "";
+    const measure = typeof item.measure === "string" ? item.measure : "";
+    const caseName = typeof item.caseName === "string" ? item.caseName : "";
+    const cite = typeof item.cite === "string" ? item.cite : "";
+    const status = typeof item.status === "string" ? item.status : "";
+    const label = citation || rule || measure || caseName;
+    if (label) map.set(key, label + (cite && caseName ? ` (${cite})` : "") + (status && measure ? ` · ${status}` : ""));
   }
 }
 
-/**
- * Wrap a corpus tool so its results also feed the server-side marker->citation
- * map used to build the deterministic Authorities block.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const wrap = (definition: any, map: SourceMap) =>
-  tool({
-    description: definition.description,
-    inputSchema: definition.inputSchema,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    execute: async (input: any, options: any) => {
-      const out = await definition.execute(input, options);
-      recordSources(out, map);
-      return out;
-    },
-  });
-
-export const maxDuration = 300;
-
-/**
- * Server-side pre-retrieval: guarantees every answer is grounded in the corpus
- * even when the model skips its tools.
- */
-async function preRetrieve(
-  question: string,
-): Promise<{ block: string; map: SourceMap }> {
-  const abbrs = Object.keys(CODE_NAMES);
-  const records: Array<{ abbr: string; r: Record<string, unknown> }> = [];
-  await Promise.all(
-    abbrs.map(async (a) => {
-      const loaded = await loadCode(a).catch(() => []);
-      for (const r of loaded) {
-        records.push({ abbr: a, r: r as unknown as Record<string, unknown> });
-      }
-    }),
-  );
-  if (!records.length) return { block: "", map: new Map() };
-  const hits = scoreSections([question], records, undefined, 6);
-  if (!hits.length) return { block: "", map: new Map() };
-  const map: SourceMap = new Map();
-  hits.forEach((h, i) => map.set(String(i + 1), h.citation + (h.repealed ? " (REPEALED)" : "")));
-  const block = hits
-    .map(
-      (h, i) =>
-        `[${i + 1}] ${h.citation}${h.repealed ? " (REPEALED)" : ""}\n` +
-        String(h.text || "").slice(0, 1200) +
-        (h.history
-          ? `\nLegislative history: ${String(h.history).slice(0, 200)}`
-          : ""),
-    )
-    .join("\n\n");
-
-  // also pre-retrieve current-session bills touching the topic, labeled [p1], [p2], ...
-  let billBlock = "";
-  try {
-    // query bills with the statute-derived topic (structural headings name the act),
-    // not the raw question, which matches unrelated subject words
-    const structuralQueries = hits
-      .slice(0, 2)
-      .map((h) => (h.structural || "").split(">").map((x: string) => x.trim().replace(/^\d+\.\s*/, "")).join(" "))
-      .filter((x) => x.length > 3);
-    const billQueries = [...new Set([question, ...structuralQueries])].slice(0, 3);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const out: any = await searchBills.execute({ queries: billQueries, limit: 3 }, undefined as never);
-    const sources = out?.sources || [];
-    if (sources.length) {
-      billBlock =
-        "\n\nBills from the 2025\u20132026 session matching this topic, labeled [p1], [p2], etc. If any is relevant, include it in the answer with its number, author, and status:\n\n" +
-        sources
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((b: any, i: number) => {
-            const cite = `${b.measure || "?"} \u2014 ${b.subject || ""} (${b.status || b.lastAction || "unknown status"})`;
-            map.set(`p${i + 1}`, cite);
-            return `[p${i + 1}] ${cite}\nAuthor: ${b.author || "unknown"}; chamber: ${b.chamber || "?"}`;
-          })
-          .join("\n\n");
-    }
-  } catch (e) {
-    console.error("[api/chat] bill pre-retrieval failed:", e);
-  }
-  return { block: block + billBlock, map };
-}
-
-type UITextPart = { type: "text"; text: string };
-
-function lastUserQuestion(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  messages: any[],
-): string {
+function lastUserQuestion(messages: any[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
     if (m?.role !== "user") continue;
     return (m.parts ?? [])
-      .filter((p: UITextPart) => p?.type === "text")
-      .map((p: UITextPart) => p.text)
+      .filter((p: { type?: string }) => p?.type === "text")
+      .map((p: { text?: string }) => p.text || "")
       .join(" ")
       .trim();
   }
   return "";
 }
 
-const CITED_RE = /\[\s*([sbrcp]?\d{1,2})\s*\]/gi;
 const AUTHORITIES_MARKER = "AUTHORITIES:";
+const CITED_RE = /\[\s*([sbrcp]?\d{1,2})\s*\]/gi;
+
+function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): string {
+  const authorities = (record as any).authorities || [];
+  return [
+    "MANDATORY RESEARCH RECORD — THIS IS EVIDENCE, NOT THE FINAL ANSWER",
+    `Research mode: ${(record as any).mode}`,
+    `Question: ${(record as any).question}`,
+    "",
+    "RESEARCH PLAN:",
+    ...((record as any).research_plan || []).map((x: string) => `- ${x}`),
+    "",
+    "AUTHORITIES / EVIDENCE:",
+    ...authorities.map((s: any) => {
+      const marker = s.marker || "[source]";
+      const type = s.authority_type || "source";
+      const citation = s.citation || s.rule || s.measure || s.caseName || "";
+      const detail = s.text || s.snippet || s.subject || "";
+      return `${marker} (${type}) ${citation}\n${String(detail).slice(0, 1400)}`;
+    }),
+    "",
+    "RELATIONSHIPS:",
+    ...((record as any).relationships || []).map((x: string) => `- ${x}`),
+    "",
+    "CHRONOLOGY FLAGS:",
+    ...((record as any).chronology || []).map((x: string) => `- ${x}`),
+    "",
+    "SYNTHESIS REQUIREMENTS:",
+    ...((record as any).synthesis_requirements || []).map((x: string) => `- ${x}`),
+    "",
+    "Use the evidence record to reason. Do not turn an inference into a quotation or attribute a case's reasoning to statutory text.",
+  ].join("\n");
+}
+
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
-
-  let system = SYSTEM_PROMPT;
-  const sourceMap: SourceMap = new Map();
   const question = lastUserQuestion(messages);
-  if (question.length > 8) {
-    try {
-      const { block, map } = await preRetrieve(question);
-      if (block) {
-        system +=
-          "\n\nStatute sources were pre-retrieved from the California Codes for this question, labeled [1], [2], etc. " +
-          "They are a starting point only: for any statutory question, also call search_statutes (and lookup_section for the governing sections) so you cite the most on-point provisions, then cite the sources you actually rely on with their exact bracketed markers. " +
-          "You MUST also call search_cases before answering whenever a statute's meaning, application, or interpretation could matter, and weave the leading opinions into the answer.\n\n" +
-          block;
-        for (const [k, v] of map) sourceMap.set(k, v);
-      }
-    } catch (e) {
-      console.error("[api/chat] pre-retrieval failed:", e);
-    }
+  if (!question) return new Response("A research question is required.", { status: 400 });
+  if (!KEY) return new Response("Research service is not configured.", { status: 503 });
+
+  const sourceMap: SourceMap = new Map();
+  let record: Awaited<ReturnType<typeof research.execute>>;
+  try {
+    // This is the architectural gate: every substantive request receives a
+    // server-side research pass before the model is allowed to synthesize.
+    record = await research.execute({ question }, undefined as never);
+    recordSources(record, sourceMap);
+  } catch (error) {
+    console.error("[api/chat] mandatory research failed", error);
+    return new Response("Research pass failed before answer generation.", { status: 502 });
   }
 
+  const wrap = (definition: any) =>
+    tool({
+      description: definition.description,
+      inputSchema: definition.inputSchema,
+      execute: async (input: any, options: any) => {
+        const out = await definition.execute(input, options);
+        recordSources(out, sourceMap);
+        return out;
+      },
+    });
+
   const TOOLS = {
-    search_statutes: wrap(searchStatutes, sourceMap),
-    lookup_section: wrap(lookupSection, sourceMap),
-    search_bills: wrap(searchBills, sourceMap),
-    search_rules: wrap(searchRules, sourceMap),
-    search_cases: wrap(searchCases, sourceMap),
+    search_statutes: wrap(searchStatutes),
+    lookup_section: wrap(lookupSection),
+    search_bills: wrap(searchBills),
+    search_rules: wrap(searchRules),
+    search_cases: wrap(searchCases),
   };
+
+  const system = `${SYSTEM_PROMPT}\n\n${researchBlock(record)}\n\nThe research pass above has already occurred. You may conduct additional targeted tool calls when a missing authority, exact section, conflict, or chronology point needs verification. Do not restart broad searching merely to add volume. The answer must be a synthesis of the evidence record and any verified follow-up research.`;
 
   const result = streamText({
     model: sarvam("sarvam-105b-conversations"),
     system,
     tools: TOOLS,
     stopWhen: stepCountIs(10),
-    // after enough research, stop letting the model call tools so it must answer
     prepareStep: (() => {
       let step = 0;
       return () => {
@@ -199,29 +151,16 @@ export async function POST(req: Request) {
         return step >= 8 ? { toolChoice: "none" as const } : {};
       };
     })(),
-    onError: (error) => {
-      console.error("[api/chat]", error);
-    },
+    onError: (error) => console.error("[api/chat]", error),
     messages: await convertToModelMessages(messages),
   });
 
-  /**
-   * Stream transform: forward the model's text as it streams, but hold back a
-   * small tail so a partially-streamed "AUTHORITIES:" marker never leaks.
-   * When the stream finishes, append a deterministic AUTHORITIES block built
-   * from the server-side source map (real tool + pre-retrieval citations),
-   * then re-emit the model's FOLLOWUPS block if it got suppressed.
-   */
   let acc = "";
   let forwarded = 0;
   let suppressedAt = -1;
-
   const tailGuard = AUTHORITIES_MARKER.length - 1;
 
-  const appendBlock = (
-    controller: TransformStreamDefaultController<StreamPart>,
-    text: string,
-  ) => {
+  const appendBlock = (controller: TransformStreamDefaultController<StreamPart>, text: string) => {
     if (!text) return;
     const id = "law-" + Math.random().toString(36).slice(2, 10);
     controller.enqueue({ type: "text-start", id });
@@ -229,68 +168,43 @@ export async function POST(req: Request) {
     controller.enqueue({ type: "text-end", id });
   };
 
-  const sourceStream = (
-    result.toUIMessageStream() as unknown as ReadableStream<StreamPart>
-  ).pipeThrough(
+  const sourceStream = (result.toUIMessageStream() as unknown as ReadableStream<StreamPart>).pipeThrough(
     new TransformStream<StreamPart, StreamPart>({
       transform(part, controller) {
         if (part.type === "text-delta" && suppressedAt < 0) {
           acc += part.delta;
           const idx = acc.indexOf(AUTHORITIES_MARKER);
           if (idx >= 0) {
-            // flush everything up to the marker before suppressing
-            if (idx > forwarded) {
-              controller.enqueue({
-                type: "text-delta",
-                id: part.id,
-                delta: acc.slice(forwarded, idx),
-              });
-            }
-            forwarded = idx;
+            if (idx > forwarded) controller.enqueue({ type: "text-delta", id: part.id, delta: acc.slice(forwarded, idx) });
             suppressedAt = idx;
           } else {
-            // forward everything except a tail that might become the marker
             const safe = Math.max(forwarded, acc.length - tailGuard);
             if (safe > forwarded) {
-              controller.enqueue({
-                type: "text-delta",
-                id: part.id,
-                delta: acc.slice(forwarded, safe),
-              });
+              controller.enqueue({ type: "text-delta", id: part.id, delta: acc.slice(forwarded, safe) });
               forwarded = safe;
             }
           }
           return;
         }
-        if (part.type === "text-delta") return; // after suppression: drop
+        if (part.type === "text-delta") return;
         if (part.type === "text-end" && suppressedAt < 0) {
-          // flush the guarded tail of the final text part
-          if (acc.length > forwarded) {
-            controller.enqueue({
-              type: "text-delta",
-              id: part.id,
-              delta: acc.slice(forwarded),
-            });
-            forwarded = acc.length;
-          }
+          if (acc.length > forwarded) controller.enqueue({ type: "text-delta", id: part.id, delta: acc.slice(forwarded) });
+          forwarded = acc.length;
           controller.enqueue(part);
           return;
         }
         if (part.type === "finish") {
-          // safety: flush any guarded tail that never got sent
           if (suppressedAt < 0 && acc.length > forwarded) {
-            const tailId = "law-tail-flush";
-            controller.enqueue({ type: "text-start", id: tailId });
-            controller.enqueue({ type: "text-delta", id: tailId, delta: acc.slice(forwarded) });
-            controller.enqueue({ type: "text-end", id: tailId });
-            forwarded = acc.length;
+            const id = "law-tail-flush";
+            controller.enqueue({ type: "text-start", id });
+            controller.enqueue({ type: "text-delta", id, delta: acc.slice(forwarded) });
+            controller.enqueue({ type: "text-end", id });
           }
-          // deterministic AUTHORITIES from the real sources
           const citedText = suppressedAt >= 0 ? acc.slice(0, suppressedAt) : acc;
           const cited: string[] = [];
           const seen = new Set<string>();
-          let m: RegExpExecArray | null;
           const re = new RegExp(CITED_RE.source, "gi");
+          let m: RegExpExecArray | null;
           while ((m = re.exec(citedText))) {
             const key = m[1].toLowerCase();
             if (!seen.has(key) && sourceMap.has(key)) {
@@ -299,23 +213,11 @@ export async function POST(req: Request) {
             }
           }
           if (cited.length) {
-            const block =
-              "\n\nAUTHORITIES:\n" +
-              cited.map((k) => `[${k}] ${sourceMap.get(k)}`).join("\n") +
-              "\n";
-            appendBlock(controller, block);
+            appendBlock(controller, "\n\nAUTHORITIES:\n" + cited.map((k) => `[${k}] ${sourceMap.get(k)}`).join("\n") + "\n");
           }
-          // re-emit a suppressed FOLLOWUPS block if the model wrote one
           if (suppressedAt >= 0) {
-            const fm = acc.slice(suppressedAt).match(
-              /\n[ \t]*FOLLOWUPS:[ \t]*\n([\s\S]*)$/i,
-            );
-            if (fm && fm[1].trim()) {
-              appendBlock(
-                controller,
-                "\nFOLLOWUPS:\n" + fm[1].replace(/\s+$/, "") + "\n",
-              );
-            }
+            const followups = acc.slice(suppressedAt).match(/\n[ \t]*FOLLOWUPS:[ \t]*\n([\s\S]*)$/i);
+            if (followups?.[1]?.trim()) appendBlock(controller, "\nFOLLOWUPS:\n" + followups[1].trim() + "\n");
           }
           controller.enqueue(part);
           return;
@@ -325,12 +227,6 @@ export async function POST(req: Request) {
     }),
   );
 
-  const uiStream = createUIMessageStream({
-    execute: ({ writer }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      writer.merge(sourceStream as any);
-    },
-  });
-
+  const uiStream = createUIMessageStream({ execute: ({ writer }) => writer.merge(sourceStream as any) });
   return createUIMessageStreamResponse({ stream: uiStream });
 }
