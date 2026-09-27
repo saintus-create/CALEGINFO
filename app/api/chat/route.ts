@@ -30,6 +30,10 @@ type SourceMap = Map<string, string>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StreamPart = { type: string; [k: string]: any };
 
+function normalizeMarker(marker: string) {
+  return marker.replace(/[\[\]\s]/g, "").toLowerCase();
+}
+
 function recordSources(out: unknown, map: SourceMap) {
   const sources = (out as { sources?: unknown })?.sources;
   if (!Array.isArray(sources)) return;
@@ -37,7 +41,7 @@ function recordSources(out: unknown, map: SourceMap) {
     if (!s || typeof s !== "object") continue;
     const item = s as Record<string, unknown>;
     if (typeof item.marker !== "string") continue;
-    const key = item.marker.replace(/[\[\]\s]/g, "").toLowerCase();
+    const key = normalizeMarker(item.marker);
     if (!key || map.has(key)) continue;
     const citation = typeof item.citation === "string" ? item.citation : "";
     const rule = typeof item.rule === "string" ? item.rule : "";
@@ -47,6 +51,15 @@ function recordSources(out: unknown, map: SourceMap) {
     const status = typeof item.status === "string" ? item.status : "";
     const label = citation || rule || measure || caseName;
     if (label) map.set(key, label + (cite && caseName ? ` (${cite})` : "") + (status && measure ? ` · ${status}` : ""));
+  }
+}
+
+function recordPropositions(record: Awaited<ReturnType<typeof research.execute>>, map: SourceMap) {
+  for (const p of record.propositions || []) {
+    const proposition = p as { proposition_id: string; source_ids: string[]; statement: string };
+    const source = (record.sources || []).find((s) => proposition.source_ids.includes(s.source_id));
+    if (!source) continue;
+    map.set(normalizeMarker(proposition.proposition_id), source.citation || source.title || source.marker);
   }
 }
 
@@ -63,39 +76,121 @@ function lastUserQuestion(messages: any[]): string {
   return "";
 }
 
-const AUTHORITIES_MARKER = "AUTHORITIES:";
-const CITED_RE = /\[\s*([sbrcp]?\d{1,2})\s*\]/gi;
+const CITED_RE = /\[\s*([psbrc]\d{1,3})\s*\]/gi;
 
 function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): string {
-  const authorities = (record as any).authorities || [];
+  const sourceLines = record.sources.map((s) =>
+    [
+      `SOURCE ${s.source_id} / ${s.marker}`,
+      `type=${s.authority_type}; role=${s.authority_role}; weight=${s.binding_weight}`,
+      `citation=${s.citation}; title=${s.title}; date=${s.date ?? "unknown"}; status=${s.status ?? "unknown"}`,
+      `jurisdiction=${s.jurisdiction}; temporal_fit=${s.temporal_fit}; verification=${s.verification}`,
+      `relevance=${s.relevance_reason}`,
+      `supported_proposition=${s.supported_proposition}`,
+      `passage=${s.relevant_passage}`,
+      `url=${s.url ?? ""}`,
+    ].join("\n"),
+  );
+
+  const propositionLines = record.propositions.map((p) =>
+    `${p.proposition_id} [source: ${p.source_ids.join(", ")}] status=${p.status}: ${p.statement}`,
+  );
+
+  const relationshipLines = record.relationships.map((r) =>
+    `${r.relationship_id} ${r.type}: ${r.from_source_id} -> ${r.to_source_id}; verification=${r.verification}; ${r.reason}`,
+  );
+
+  const chronologyLines = record.chronology.map((c) =>
+    `${c.event_id} ${c.date ?? "unknown date"} ${c.event}: source=${c.source_id}; ${c.description}`,
+  );
+
+  const gapLines = record.evidence_gaps.map((g) =>
+    `${g.gap_id} status=${g.status}; required=${g.required_authority}; ${g.issue} WHY: ${g.why_it_matters} SEARCH: ${g.search_queries.join(" | ")}`,
+  );
+
   return [
-    "MANDATORY RESEARCH RECORD — THIS IS EVIDENCE, NOT THE FINAL ANSWER",
-    `Research mode: ${(record as any).mode}`,
-    `Question: ${(record as any).question}`,
+    "MANDATORY RESEARCH RECORD — VERSION 2.0 — EVIDENCE LEDGER",
+    "This record is an input constraint for synthesis, not optional background.",
+    `Question: ${record.question}`,
+    `Mode: ${record.mode}`,
+    "",
+    "ISSUE EXTRACTION:",
+    JSON.stringify(record.issue),
     "",
     "RESEARCH PLAN:",
-    ...((record as any).research_plan || []).map((x: string) => `- ${x}`),
+    ...record.research_plan.map((x) => `- ${x}`),
     "",
-    "AUTHORITIES / EVIDENCE:",
-    ...authorities.map((s: any) => {
-      const marker = s.marker || "[source]";
-      const type = s.authority_type || "source";
-      const citation = s.citation || s.rule || s.measure || s.caseName || "";
-      const detail = s.text || s.snippet || s.subject || "";
-      return `${marker} (${type}) ${citation}\n${String(detail).slice(0, 1400)}`;
-    }),
+    "SOURCES:",
+    ...sourceLines,
+    "",
+    "PROPOSITIONS — THE ONLY AUTHORIZED BUILDING BLOCKS FOR LEGAL CLAIMS:",
+    ...propositionLines,
     "",
     "RELATIONSHIPS:",
-    ...((record as any).relationships || []).map((x: string) => `- ${x}`),
+    ...relationshipLines,
     "",
-    "CHRONOLOGY FLAGS:",
-    ...((record as any).chronology || []).map((x: string) => `- ${x}`),
+    "CHRONOLOGY:",
+    ...chronologyLines,
+    "",
+    "EVIDENCE GAPS:",
+    ...(gapLines.length ? gapLines : ["None recorded."]),
+    "",
+    "VERIFICATION TASKS:",
+    ...(record.verification_tasks.length ? record.verification_tasks.map((x) => `- ${x}`) : ["None."]),
+    "",
+    "RESEARCH ERRORS:",
+    ...(record.research_errors.length ? record.research_errors.map((x) => `- ${x}`) : ["None."]),
     "",
     "SYNTHESIS REQUIREMENTS:",
-    ...((record as any).synthesis_requirements || []).map((x: string) => `- ${x}`),
+    ...record.synthesis_requirements.map((x) => `- ${x}`),
     "",
-    "Use the evidence record to reason. Do not turn an inference into a quotation or attribute a case's reasoning to statutory text.",
+    "ANSWER CONTRACT:",
+    "- Every substantive legal/factual proposition MUST cite one or more proposition IDs, e.g. [p1], [p2].",
+    "- Proposition citations are evidence references, not decoration. Do not cite a proposition that does not support the sentence.",
+    "- You may use [1], [c1], [r1], [b1] only for compatibility with source citations, but prefer proposition IDs.",
+    "- No uncited legal claim from model memory/general knowledge.",
+    "- If evidence is missing, use the available tools for a targeted verification pass or explicitly say the proposition is unverified.",
+    "- Do not invent holdings, dates, statutory history, procedural facts, or source contents.",
   ].join("\n");
+}
+
+function validateSynthesis(text: string, record: Awaited<ReturnType<typeof research.execute>>) {
+  const valid = new Set(record.propositions.map((p) => normalizeMarker(p.proposition_id)));
+  for (const s of record.sources) valid.add(normalizeMarker(s.marker));
+
+  const citations = Array.from(text.matchAll(CITED_RE)).map((m) => normalizeMarker(m[1]));
+  const unknown = citations.filter((c) => !valid.has(c));
+  if (unknown.length) return { ok: false, reason: `Unknown evidence citation(s): ${unknown.join(", ")}` };
+
+  const gapsOpen = record.evidence_gaps.some((g) => g.status === "open");
+  const hasEvidenceCitation = citations.some((c) => valid.has(c));
+  const substantive = text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter((p) => p && !/^#{1,6}\s/.test(p))
+    .filter((p) => !/^(research plan|authorities|followups|sources)\s*:/i.test(p));
+
+  if (substantive.length && !hasEvidenceCitation) {
+    return { ok: false, reason: "The response contains substantive text but no verified evidence citation." };
+  }
+
+  // Require evidence citations on substantive paragraphs. This is deliberately
+  // conservative: it blocks generic uncited legal exposition from escaping the API.
+  const uncited = substantive.filter((paragraph) => {
+    if (/^(i can|i'm sorry|i cannot|i don't have|unverified|insufficient evidence)/i.test(paragraph)) return false;
+    return !CITED_RE.test(paragraph);
+  });
+  CITED_RE.lastIndex = 0;
+
+  if (uncited.length) {
+    return { ok: false, reason: `Uncited substantive paragraph detected (${uncited.length}).` };
+  }
+
+  if (gapsOpen && !/unverified|insufficient evidence|not established|could not verify/i.test(text)) {
+    return { ok: false, reason: "The research record contains open evidence gaps, but the answer does not disclose an unresolved gap." };
+  }
+
+  return { ok: true, reason: "" };
 }
 
 export const maxDuration = 300;
@@ -109,10 +204,9 @@ export async function POST(req: Request) {
   const sourceMap: SourceMap = new Map();
   let record: Awaited<ReturnType<typeof research.execute>>;
   try {
-    // This is the architectural gate: every substantive request receives a
-    // server-side research pass before the model is allowed to synthesize.
     record = await research.execute({ question }, undefined as never);
     recordSources(record, sourceMap);
+    recordPropositions(record, sourceMap);
   } catch (error) {
     console.error("[api/chat] mandatory research failed", error);
     return new Response("Research pass failed before answer generation.", { status: 502 });
@@ -137,11 +231,19 @@ export async function POST(req: Request) {
     search_cases: wrap(searchCases),
   };
 
-  const system = `${SYSTEM_PROMPT}\n\n${researchBlock(record)}\n\nThe research pass above has already occurred. You may conduct additional targeted tool calls when a missing authority, exact section, conflict, or chronology point needs verification. Do not restart broad searching merely to add volume. The answer must be a synthesis of the evidence record and any verified follow-up research.`;
+  const system = `${SYSTEM_PROMPT}
 
-  const result = streamText({
+${researchBlock(record)}
+
+FINAL SYNTHESIS ENFORCEMENT:
+The server will validate your completed answer before sending it to the user. An answer with unknown citations, uncited substantive paragraphs, or concealed open evidence gaps is rejected. Therefore, research first, cite the proposition that supports each substantive claim, and explicitly identify anything the record does not establish.
+`;
+
+  // We intentionally buffer the generated text until validation. Streaming an
+  // invalid answer first would make a post-generation evidence gate meaningless.
+  const generate = (extra = "") => streamText({
     model: sarvam("sarvam-105b-conversations"),
-    system,
+    system: system + extra,
     tools: TOOLS,
     stopWhen: stepCountIs(10),
     prepareStep: (() => {
@@ -152,81 +254,63 @@ export async function POST(req: Request) {
       };
     })(),
     onError: (error) => console.error("[api/chat]", error),
-    messages: await convertToModelMessages(messages),
+    messages: convertToModelMessages(messages),
   });
 
-  let acc = "";
-  let forwarded = 0;
-  let suppressedAt = -1;
-  const tailGuard = AUTHORITIES_MARKER.length - 1;
+  let result = generate();
+  let answer = "";
+  for await (const part of result.textStream) answer += part;
 
-  const appendBlock = (controller: TransformStreamDefaultController<StreamPart>, text: string) => {
-    if (!text) return;
-    const id = "law-" + Math.random().toString(36).slice(2, 10);
-    controller.enqueue({ type: "text-start", id });
-    controller.enqueue({ type: "text-delta", id, delta: text });
-    controller.enqueue({ type: "text-end", id });
-  };
+  let validation = validateSynthesis(answer, record);
 
-  const sourceStream = (result.toUIMessageStream() as unknown as ReadableStream<StreamPart>).pipeThrough(
-    new TransformStream<StreamPart, StreamPart>({
-      transform(part, controller) {
-        if (part.type === "text-delta" && suppressedAt < 0) {
-          acc += part.delta;
-          const idx = acc.indexOf(AUTHORITIES_MARKER);
-          if (idx >= 0) {
-            if (idx > forwarded) controller.enqueue({ type: "text-delta", id: part.id, delta: acc.slice(forwarded, idx) });
-            suppressedAt = idx;
-          } else {
-            const safe = Math.max(forwarded, acc.length - tailGuard);
-            if (safe > forwarded) {
-              controller.enqueue({ type: "text-delta", id: part.id, delta: acc.slice(forwarded, safe) });
-              forwarded = safe;
-            }
-          }
-          return;
-        }
-        if (part.type === "text-delta") return;
-        if (part.type === "text-end" && suppressedAt < 0) {
-          if (acc.length > forwarded) controller.enqueue({ type: "text-delta", id: part.id, delta: acc.slice(forwarded) });
-          forwarded = acc.length;
-          controller.enqueue(part);
-          return;
-        }
-        if (part.type === "finish") {
-          if (suppressedAt < 0 && acc.length > forwarded) {
-            const id = "law-tail-flush";
-            controller.enqueue({ type: "text-start", id });
-            controller.enqueue({ type: "text-delta", id, delta: acc.slice(forwarded) });
-            controller.enqueue({ type: "text-end", id });
-          }
-          const citedText = suppressedAt >= 0 ? acc.slice(0, suppressedAt) : acc;
-          const cited: string[] = [];
-          const seen = new Set<string>();
-          const re = new RegExp(CITED_RE.source, "gi");
-          let m: RegExpExecArray | null;
-          while ((m = re.exec(citedText))) {
-            const key = m[1].toLowerCase();
-            if (!seen.has(key) && sourceMap.has(key)) {
-              seen.add(key);
-              cited.push(key);
-            }
-          }
-          if (cited.length) {
-            appendBlock(controller, "\n\nAUTHORITIES:\n" + cited.map((k) => `[${k}] ${sourceMap.get(k)}`).join("\n") + "\n");
-          }
-          if (suppressedAt >= 0) {
-            const followups = acc.slice(suppressedAt).match(/\n[ \t]*FOLLOWUPS:[ \t]*\n([\s\S]*)$/i);
-            if (followups?.[1]?.trim()) appendBlock(controller, "\nFOLLOWUPS:\n" + followups[1].trim() + "\n");
-          }
-          controller.enqueue(part);
-          return;
-        }
-        controller.enqueue(part);
-      },
-    }),
-  );
+  if (!validation.ok) {
+    // One bounded repair pass is preferable to allowing unsupported text through.
+    result = generate(`
 
-  const uiStream = createUIMessageStream({ execute: ({ writer }) => writer.merge(sourceStream as any) });
+REPAIR REQUIRED:
+Your previous synthesis failed the evidence gate for this reason:
+${validation.reason}
+Produce a replacement answer, not commentary about the failure. Every substantive paragraph must contain a valid proposition/source citation. Do not use general knowledge to fill gaps. If an evidence gap remains open, explicitly say so.
+`);
+    answer = "";
+    for await (const part of result.textStream) answer += part;
+    validation = validateSynthesis(answer, record);
+  }
+
+  if (!validation.ok) {
+    console.error("[api/chat] evidence gate rejected answer", validation.reason);
+    answer = `I could not produce a fully evidence-supported answer from the retrieved research record. ${validation.reason} The unresolved evidence should be researched further rather than filled from general knowledge.`;
+  }
+
+  const cited: string[] = [];
+  const seen = new Set<string>();
+  const re = new RegExp(CITED_RE.source, "gi");
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(answer))) {
+    const key = normalizeMarker(m[1]);
+    if (!seen.has(key) && sourceMap.has(key)) {
+      seen.add(key);
+      cited.push(key);
+    }
+  }
+
+  const cleanAnswer = answer.replace(/\n?\s*AUTHORITIES:\s*[\s\S]*$/i, "").replace(/\n?\s*FOLLOWUPS:\s*[\s\S]*$/i, "").trim();
+  const finalText = cleanAnswer +
+    (cited.length
+      ? "\n\nAUTHORITIES:\n" + cited.map((k) => `[${k}] ${sourceMap.get(k)}`).join("\n")
+      : "");
+
+  const stream = new ReadableStream<StreamPart>({
+    start(controller) {
+      const id = "law-" + Math.random().toString(36).slice(2, 10);
+      controller.enqueue({ type: "text-start", id });
+      controller.enqueue({ type: "text-delta", id, delta: finalText });
+      controller.enqueue({ type: "text-end", id });
+      controller.enqueue({ type: "finish", finishReason: "stop" });
+      controller.close();
+    },
+  });
+
+  const uiStream = createUIMessageStream({ execute: ({ writer }) => writer.merge(stream as any) });
   return createUIMessageStreamResponse({ stream: uiStream });
 }
