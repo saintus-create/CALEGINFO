@@ -178,7 +178,7 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
   // conservative: it blocks generic uncited legal exposition from escaping the API.
   const uncited = substantive.filter((paragraph) => {
     if (/^(i can|i'm sorry|i cannot|i don't have|unverified|insufficient evidence)/i.test(paragraph)) return false;
-    return !CITED_RE.test(paragraph);
+    return !CITED_ONE_RE.test(paragraph);
   });
   CITED_RE.lastIndex = 0;
 
