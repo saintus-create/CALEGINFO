@@ -69,6 +69,39 @@ type ChronologyEvent = {
   description: string;
 };
 
+
+
+type ResearchTaskKind =
+  | "governing_law"
+  | "temporal_status"
+  | "interpretation"
+  | "procedure"
+  | "legislative_history"
+  | "application"
+  | "comparison"
+  | "conflict_resolution";
+
+type ResearchTaskStatus = "pending" | "complete" | "incomplete" | "blocked";
+
+type ResearchTask = {
+  task_id: string;
+  kind: ResearchTaskKind;
+  question: string;
+  queries: string[];
+  required_authority: AuthorityType[];
+  completion_criteria: string[];
+  source_ids: string[];
+  proposition_ids: string[];
+  status: ResearchTaskStatus;
+  attempts: number;
+  blocking: boolean;
+  missing_evidence: string[];
+};
+
+type StructuredIssue = ResearchRecord["issue"] & {
+  relevant_law: string[];
+};
+
 type EvidenceGap = {
   gap_id: string;
   issue: string;
@@ -92,6 +125,7 @@ export type ResearchRecord = {
   };
   mode: ResearchMode;
   research_plan: string[];
+  tasks: ResearchTask[];
   sources: ResearchSource[];
   propositions: Proposition[];
   relationships: Relationship[];
@@ -121,314 +155,310 @@ function terms(question: string): string[] {
     .filter((x) => !/^(what|when|where|which|does|did|can|could|would|should|how|why|the|and|for|with|from|about|under|into|have|has|this|that|there|their|they|are|was|were|is|of|to|a|an|in|on|or|be|as|by|it)$/i.test(x));
 }
 
-function inferMode(question: string): ResearchMode {
-  const q = question.toLowerCase();
-  if (/history|historical|former|prior|before|after|amend|amended|effective|retroactive|legislative history|overruled|superseded|conflict|contradict|compare|versus|vs\.?|timeline|procedural history|multiple cases/.test(q)) return "deep";
-  if (/mean|means|interpret|interpretation|apply|application|valid|invalid|void|due process|constitutional|exception|element|elements|standard|require|required|whether|because|under .*law|case law/.test(q)) return "analytical";
+function inferMode(issue: StructuredIssue, question: string): ResearchMode {
+  if (issue.timeframe || issue.requested_comparison || /history|historical|amend|effective|retroactive|superseded|repealed|conflict/i.test(question)) return "deep";
+  if (issue.procedural_posture || /interpret|apply|valid|invalid|void|constitutional|due process|exception|elements|standard|require/i.test(question)) return "analytical";
   return "direct";
 }
 
-function inferIssue(question: string) {
-  const q = question.toLowerCase();
+function inferIssue(question: string): StructuredIssue {
+  const normalized = clean(question, 1200);
+  const lower = normalized.toLowerCase();
   const actors = Array.from(new Set(
-    (question.match(/\b(?:court|judge|police|officer|prosecutor|district attorney|defendant|petitioner|respondent|agency|legislature|governor|county|city|state)\b/gi) || [])
+    (normalized.match(/\b(?:court|judge|police|officer|prosecutor|district attorney|defendant|petitioner|respondent|agency|legislature|governor|county|city|state|party|parties)\b/gi) || [])
       .map((x) => x.toLowerCase()),
   ));
-  const dates = question.match(/\b(?:19|20)\d{2}\b/g);
-  const codeRefs = question.match(/\b(?:[A-Z]{2,5}|Cal\.)\s*(?:Code|Rules?)[^,;]*/g) || [];
-  const posture = /appeal|trial|hearing|motion|warrant|arrest|petition|complaint|restraining|order|judgment|sentenc|convict|dismiss/i.test(q)
-    ? clean(question.match(/(?:appeal|trial|hearing|motion|warrant|arrest|petition|complaint|restraining order|judgment|sentencing|conviction|dismissal)[^.;]*/i)?.[0] || "", 240)
-    : null;
-  const comparison = /\b(?:compare|versus|vs\.?|difference|different|same|conflict|contradict|relationship)\b/i.test(question)
-    ? clean(question, 280)
-    : null;
-  const facts = question.split(/[.;?]+/).map((x) => clean(x, 180)).filter(Boolean).slice(0, 5);
+
+  const dates = normalized.match(/\b(?:19|20)\d{2}\b/g) || [];
+  const dateRanges = normalized.match(/\b(?:19|20)\d{2}\s*(?:-|to|through|–)\s*(?:19|20)\d{2}\b/gi) || [];
+  const timeframe = dateRanges.length ? Array.from(new Set(dateRanges)).join("; ") : dates.length ? Array.from(new Set(dates)).join(", ") : null;
+
+  const legalRefs = normalized.match(/\b(?:[A-Z][A-Za-z]{1,5}\s+Code|California Code of Civil Procedure|California Penal Code|California Family Code|California Evidence Code|California Constitution|Code of Civil Procedure|Penal Code|Family Code|Evidence Code)\s*(?:§|section)?\s*[\w.-]+(?:\([a-z0-9]+\))*/gi) || [];
+  const sectionRefs = normalized.match(/(?:§|section)\s*\d+[\w.-]*(?:\([a-z0-9]+\))*/gi) || [];
+  const relevantLaw = Array.from(new Set([...legalRefs, ...sectionRefs].map(clean))).slice(0, 8);
+
+  const posturePatterns = [
+    /\b(?:on appeal|appeal|appellate|trial|hearing|motion|warrant|arrest|petition|complaint|restraining order|judgment|sentencing|conviction|dismissal|pretrial|pre-trial|diversion|discovery|service|notice)\b[^.;?]*/i,
+  ];
+  const proceduralPosture = clean(posturePatterns.find((p) => p.test(normalized))?.exec(normalized)?.[0] || "", 300) || null;
+
+  const comparison = /\b(?:compare|versus|vs\.?|difference|different|same|conflict|contradict|relationship|relative to|compared with)\b/i.test(normalized)
+    ? clean(normalized, 360)
+    : relevantLaw.length > 1 ? relevantLaw.join(" vs. ") : null;
+
+  const clauses = normalized
+    .split(/\?|;|\n|(?<=\.)\s+(?=[A-Z])/)
+    .map((x) => clean(x, 240))
+    .filter(Boolean);
+  const facts = clauses.filter((x) =>
+    /\b(?:on|before|after|when|while|because|alleged|occurred|happened|arrested|served|filed|entered|issued|sent|received|contacted|did|was|were|is|are)\b/i.test(x),
+  ).slice(0, 8);
+
+  const legalIssue = clean(
+    clauses.find((x) => /\b(?:whether|does|did|can|could|may|is|are|was|were|what|when|how|under|violate|apply|require|mean)\b/i.test(x)) ||
+    normalized,
+    500,
+  );
+
   return {
-    legal_issue: clean(question, 500),
-    jurisdiction: /california|\bca\b|cal\.?/i.test(question) ? "California" : "California unless the sources establish otherwise",
-    timeframe: dates?.length ? Array.from(new Set(dates)).join(", ") : null,
-    procedural_posture: posture,
+    legal_issue: legalIssue,
+    relevant_law: relevantLaw,
+    jurisdiction: /federal|u\.s\.c\.|united states|constitution of the united states/i.test(normalized)
+      ? "California law with federal authority if implicated"
+      : /california|\bca\b|cal\.?/i.test(normalized)
+        ? "California"
+        : "California unless the sources establish otherwise",
+    timeframe,
+    procedural_posture: proceduralPosture,
     actors,
-    factual_predicates: facts,
-    requested_comparison: comparison || (codeRefs.length > 1 ? codeRefs.join(" vs. ") : null),
+    factual_predicates: facts.length ? facts : [normalized],
+    requested_comparison: comparison,
   };
 }
 
-function sourceFrom(raw: Record<string, unknown>, authorityType: AuthorityType, index: number): ResearchSource {
-  const marker = clean(raw.marker, 40) || `[${authorityType[0]}${index + 1}]`;
-  const citation = clean(raw.citation || raw.rule || raw.measure || raw.caseName || raw.cite, 300);
-  const title = clean(raw.caseName || raw.subject || raw.rule || raw.measure || raw.citation, 220);
-  const dateValue = clean(raw.date || raw.dateFiled, 40);
-  const status = clean(raw.status || raw.group, 80) || null;
-  const passage = clean(raw.text || raw.snippet || raw.subject || "", 1500);
-  const url = clean(raw.url || raw.official_text, 500) || null;
-  const bindingWeight =
-    authorityType === "statute" ? "statute" :
-    authorityType === "rule" ? "rule" :
-    authorityType === "bill" ? "legislative_material" :
-    /supreme/i.test(clean(raw.court)) ? "supreme_court" : "court_of_appeal";
-  const temporalFit = /repealed/i.test(citation) ? "historical" : dateValue ? "unknown" : "unknown";
-  const authorityRole =
-    authorityType === "statute" ? "primary" :
-    authorityType === "case" ? "binding_interpretation" :
-    authorityType === "rule" ? "procedural" : "legislative";
-  const proposition =
-    authorityType === "case"
-      ? `${title || "The retrieved opinion"} contains the reported proposition in the cited passage/snippet: “${passage.slice(0, 650)}”`
-      : authorityType === "bill"
-        ? `${title || "The retrieved legislative record"} reports the legislative status/material shown in the source: “${passage.slice(0, 650)}”`
-        : `${citation || title || "The retrieved authority"} states the following relevant text: “${passage.slice(0, 650)}”`;
+function task(
+  taskId: string,
+  kind: ResearchTaskKind,
+  question: string,
+  queries: string[],
+  requiredAuthority: AuthorityType[],
+  completionCriteria: string[],
+  blocking = true,
+): ResearchTask {
   return {
-    source_id: `s${index + 1}`,
-    marker,
-    authority_type: authorityType,
-    authority_role: authorityRole,
-    citation,
-    title,
-    date: dateValue || null,
-    status,
-    jurisdiction: authorityType === "case" ? "California appellate courts" : "California",
-    temporal_fit: temporalFit,
-    binding_weight: bindingWeight,
-    relevant_passage: passage,
-    supported_proposition: proposition,
-    relevance_reason: `Retrieved because its ${authorityType} text or metadata matched the research issue/query.`,
-    verification: passage ? "retrieved" : "unverified",
-    url,
+    task_id: taskId,
+    kind,
+    question,
+    queries: unique(queries.filter((q) => q.trim().length >= 2), (q) => q.toLowerCase()).slice(0, 4),
+    required_authority: requiredAuthority,
+    completion_criteria: completionCriteria,
+    source_ids: [],
+    proposition_ids: [],
+    status: "pending",
+    attempts: 0,
+    blocking,
+    missing_evidence: [],
   };
 }
 
-async function runSearch(
-  label: string,
-  fn: () => Promise<unknown>,
-  errors: string[],
-): Promise<Record<string, unknown>[]> {
-  try {
-    const out = await fn();
-    const sources = (out as { sources?: unknown })?.sources;
-    return Array.isArray(sources) ? sources.filter((x): x is Record<string, unknown> => !!x && typeof x === "object") : [];
-  } catch (error) {
-    errors.push(`${label}: ${error instanceof Error ? error.message : String(error)}`);
-    return [];
-  }
-}
-
-function unique<T>(items: T[], key: (item: T) => string): T[] {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const k = key(item);
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-}
-
-function queryVariants(issue: ReturnType<typeof inferIssue>, keyTerms: string[]) {
-  const legal = keyTerms.slice(0, 8).join(" ");
-  const posture = issue.procedural_posture || "";
-  const actors = issue.actors.slice(0, 3).join(" ");
-  const variants = [
-    legal,
-    [legal, posture].filter(Boolean).join(" "),
-    [legal, actors].filter(Boolean).join(" "),
-  ].filter((x) => x.trim().length >= 2);
-  return unique(variants, (x) => x.toLowerCase()).slice(0, 4);
-}
-
-function addGap(gaps: EvidenceGap[], issue: string, why: string, authority: EvidenceGap["required_authority"], queries: string[]) {
-  const id = `g${gaps.length + 1}`;
-  gaps.push({ gap_id: id, issue, why_it_matters: why, required_authority: authority, search_queries: queries.slice(0, 3), status: "open" });
-}
-
-export async function buildResearchRecord(question: string): Promise<ResearchRecord> {
-  const mode = inferMode(question);
-  const issue = inferIssue(question);
-  const keyTerms = terms(question);
-  const queries = queryVariants(issue, keyTerms);
-  const errors: string[] = [];
-  const sources: ResearchSource[] = [];
-  const plan = [
-    "Extract the legal issue, jurisdiction, timeframe, actors, procedural posture, and factual predicates.",
-    "Retrieve the governing California Code text before relying on interpretation.",
+function planTasks(issue: StructuredIssue, question: string): ResearchTask[] {
+  const law = issue.relevant_law.length ? issue.relevant_law : terms(question).slice(0, 8);
+  const base = unique([issue.legal_issue, ...issue.relevant_law, ...issue.factual_predicates], (x) => x.toLowerCase());
+  const tasks: ResearchTask[] = [
+    task("task-1", "governing_law",
+      `What California law governs this issue: ${issue.legal_issue}?`,
+      unique([...law, ...base.slice(0, 2)], (x) => x.toLowerCase()),
+      ["statute"],
+      ["At least one operative statutory or constitutional provision directly addresses the issue.", "The retrieved text identifies the relevant provision rather than merely a topical match."]),
   ];
 
-  const statuteRaw = await runSearch(
-    "California Codes",
-    () => searchStatutes.execute({ queries, limit: mode === "deep" ? 18 : mode === "analytical" ? 12 : 8 }, undefined as never),
-    errors,
-  );
-  for (const raw of statuteRaw) sources.push(sourceFrom(raw, "statute", sources.length));
-
-  const statuteTopics = statuteRaw
-    .slice(0, 5)
-    .map((s) => clean(s.citation).replace(/\s*\([^)]*\)\s*$/, ""))
-    .filter(Boolean);
-  const topicQueries = unique([...queries, ...statuteTopics], (x) => x.toLowerCase()).slice(0, 4);
-  const q = question.toLowerCase();
-
-  const needsCases = mode !== "direct" || /case|court|judge|hold|held|interpret|apply|meaning|constitutional|due process|void|valid|invalid/.test(q);
-  const needsRules = /court|hearing|filing|file|deadline|service|serve|notice|appeal|appealable|warrant|procedure|procedural|motion|trial|discovery|evidence/.test(q);
-  const needsBills = mode === "deep" || /bill|legislature|legislation|amend|chaptered|pending|passed|veto|new law|recent law|current law/.test(q);
-
-  if (needsCases) {
-    plan.push("Retrieve published California appellate/Supreme Court decisions that interpret or apply the governing provisions.");
-    const raw = await runSearch("California case law", () => searchCases.execute({ queries: topicQueries.slice(0, 3) }, undefined as never), errors);
-    for (const s of raw) sources.push(sourceFrom(s, "case", sources.length));
-  }
-  if (needsRules) {
-    plan.push("Check the California Rules of Court for procedural requirements and court mechanics.");
-    const raw = await runSearch("California Rules of Court", () => searchRules.execute({ queries: topicQueries, limit: mode === "deep" ? 8 : 5 }, undefined as never), errors);
-    for (const s of raw) sources.push(sourceFrom(s, "rule", sources.length));
-  }
-  if (needsBills) {
-    plan.push("Check legislative materials for amendments, chaptered measures, active bills, and recent changes.");
-    const raw = await runSearch("California legislative materials", () => searchBills.execute({ queries: topicQueries, limit: mode === "deep" ? 8 : 5 }, undefined as never), errors);
-    for (const s of raw) sources.push(sourceFrom(s, "bill", sources.length));
+  if (issue.timeframe) {
+    tasks.push(task("task-2", "temporal_status",
+      `What law was operative during ${issue.timeframe}?`,
+      unique([...law.map((x) => `${x} effective date`), ...base.slice(0, 2).map((x) => `${x} amendment effective`)], (x) => x.toLowerCase()),
+      ["statute", "bill"],
+      ["Operative statutory text is identified.", "Effective-date or amendment evidence establishes which version applied to the relevant date."]));
   }
 
-  // Adaptive second pass: use what the first pass actually found to narrow the
-  // next search. This is intentionally bounded so "research every time" does
-  // not become unbounded crawling.
-  const initialCases = sources.filter((s) => s.authority_type === "case");
-  const initialRules = sources.filter((s) => s.authority_type === "rule");
-  const initialBills = sources.filter((s) => s.authority_type === "bill");
-  const statuteCitations = sources
-    .filter((s) => s.authority_type === "statute")
-    .map((s) => s.citation)
-    .filter(Boolean)
-    .slice(0, 3);
+  const interpretationNeeded = !!issue.procedural_posture || /mean|interpret|apply|valid|invalid|void|constitutional|due process|exception|element|standard|require|whether|case law|held|holding/i.test(question);
+  if (interpretationNeeded) {
+    tasks.push(task(`task-${tasks.length + 1}`, "interpretation",
+      `How have controlling California appellate courts interpreted or applied the governing law?`,
+      unique([...law, ...base.slice(0, 3)].map((x) => `${x} California Court of Appeal Supreme Court`), (x) => x.toLowerCase()),
+      ["case"],
+      ["A relevant published California appellate or Supreme Court opinion is retrieved when interpretation is legally material.", "The proposition is tied to the opinion's actual reported text or holding, not keyword similarity."]));
+  }
 
-  if (needsCases && !initialCases.length && statuteCitations.length) {
-    plan.push("Adaptive follow-up: no case authority was found initially, so search directly by the retrieved statutory citations.");
-    const followup = await runSearch(
-      "Adaptive California case-law follow-up",
-      () => searchCases.execute({ queries: statuteCitations }, undefined as never),
-      errors,
-    );
-    for (const s of followup) {
-      if (!sources.some((x) => x.citation === clean(s.cite || s.caseName))) sources.push(sourceFrom(s, "case", sources.length));
+  if (issue.procedural_posture || /procedure|procedural|notice|service|deadline|hearing|warrant|filing|motion|appeal|trial|discovery/i.test(question)) {
+    tasks.push(task(`task-${tasks.length + 1}`, "procedure",
+      `What procedural rules govern the identified posture: ${issue.procedural_posture || "the procedure implicated by the question"}?`,
+      unique([`${issue.procedural_posture || ""} California Rules of Court`, ...base.slice(0, 2).map((x) => `${x} notice service hearing deadline`)], (x) => x.toLowerCase()),
+      ["rule"],
+      ["A relevant California Rule of Court is retrieved when court procedure is implicated.", "The rule addresses the actual procedural mechanism at issue."]));
+  }
+
+  if (issue.timeframe || /amend|amended|legislative history|legislature|bill|chaptered|new law|recent law|current law|former|prior/i.test(question)) {
+    tasks.push(task(`task-${tasks.length + 1}`, "legislative_history",
+      `Which amendments or legislative actions changed the governing provision, and when?`,
+      unique([...law.map((x) => `${x} amendment bill chaptered`), ...base.slice(0, 2).map((x) => `${x} legislative history`)], (x) => x.toLowerCase()),
+      ["bill", "statute"],
+      ["Relevant amendment or legislative record is retrieved.", "The record permits the amendment/status to be distinguished from merely proposed legislation."]));
+  }
+
+  if (issue.factual_predicates.length) {
+    tasks.push(task(`task-${tasks.length + 1}`, "application",
+      `What supported authority connects the governing law to these facts: ${issue.factual_predicates.slice(0, 3).join(" | ")}?`,
+      unique([...law, ...issue.factual_predicates.slice(0, 3)], (x) => x.toLowerCase()),
+      ["statute", ...(interpretationNeeded ? ["case" as AuthorityType] : [])],
+      ["Each material application proposition is supported by retrieved authority.", "The record distinguishes the source's rule from the model's application of facts."],
+      false));
+  }
+
+  if (issue.requested_comparison) {
+    tasks.push(task(`task-${tasks.length + 1}`, "comparison",
+      `What documented differences or relationships must be established for the requested comparison?`,
+      unique([issue.requested_comparison, ...law], (x) => x.toLowerCase()),
+      ["statute", "case"],
+      ["Each side of the comparison has identified authority.", "Differences are based on text, dates, jurisdiction, posture, or holding rather than shared words."],
+      false));
+  }
+
+  return tasks;
+}
+
+function refreshTaskStatus(tasks: ResearchTask[], sources: ResearchSource[], propositions: Proposition[]) {
+  for (const t of tasks) {
+    const matching = sources.filter((s) => t.required_authority.includes(s.authority_type) && (
+      t.queries.some((q) => terms(q).some((term) => (s.citation + " " + s.title + " " + s.relevant_passage).toLowerCase().includes(term.toLowerCase()))) ||
+      t.required_authority.length === 1
+    ));
+    t.source_ids = unique(matching, (s) => s.source_id).map((s) => s.source_id);
+    t.proposition_ids = propositions.filter((p) => p.source_ids.some((id) => t.source_ids.includes(id))).map((p) => p.proposition_id);
+    t.missing_evidence = [];
+
+    for (const authority of t.required_authority) {
+      if (!t.source_ids.some((id) => sources.find((s) => s.source_id === id)?.authority_type === authority)) {
+        t.missing_evidence.push(`No retrieved ${authority} authority.`);
+      }
     }
+
+    if (t.kind === "temporal_status" && !sources.some((s) => t.source_ids.includes(s.source_id) && (s.date || s.status || s.relevant_passage))) {
+      t.missing_evidence.push("No date/status evidence establishing the operative version.");
+    }
+    if (t.kind === "interpretation" && !sources.some((s) => t.source_ids.includes(s.source_id) && s.authority_type === "case" && s.relevant_passage.length > 20)) {
+      t.missing_evidence.push("No usable judicial interpretation passage.");
+    }
+    if (t.kind === "procedure" && !sources.some((s) => t.source_ids.includes(s.source_id) && s.authority_type === "rule" && s.relevant_passage.length > 20)) {
+      t.missing_evidence.push("No usable procedural rule text.");
+    }
+    t.status = t.missing_evidence.length ? (t.attempts ? "incomplete" : "pending") : "complete";
   }
+}
 
-  if (needsRules && !initialRules.length) {
-    const proceduralQueries = unique(
-      ["notice service hearing deadline procedure", ...topicQueries],
-      (x) => x.toLowerCase(),
-    ).slice(0, 3);
-    plan.push("Adaptive follow-up: no procedural rule was found initially, so retry with procedural terms.");
-    const followup = await runSearch(
-      "Adaptive California Rules of Court follow-up",
-      () => searchRules.execute({ queries: proceduralQueries, limit: 5 }, undefined as never),
-      errors,
-    );
-    for (const s of followup) sources.push(sourceFrom(s, "rule", sources.length));
-  }
-
-  if (needsBills && !initialBills.length && (mode === "deep" || statuteCitations.length)) {
-    const legislativeQueries = unique(
-      [...statuteCitations.map((x) => `${x} amendment`), ...topicQueries],
-      (x) => x.toLowerCase(),
-    ).slice(0, 3);
-    plan.push("Adaptive follow-up: no legislative material was found initially, so retry using the retrieved statutory citations and amendment terms.");
-    const followup = await runSearch(
-      "Adaptive California legislative follow-up",
-      () => searchBills.execute({ queries: legislativeQueries, limit: 6 }, undefined as never),
-      errors,
-    );
-    for (const s of followup) sources.push(sourceFrom(s, "bill", sources.length));
-  }
-
-  const propositions: Proposition[] = sources.map((s, i) => ({
-    proposition_id: `p${i + 1}`,
-    source_ids: [s.source_id],
-    statement: s.supported_proposition,
-    support_type: s.authority_type === "case" ? "case_statement" : s.authority_type === "bill" ? "legislative_record" : "direct_text",
-    status: s.verification === "retrieved" ? "supported" : "needs_verification",
-  }));
-
+function followupQueriesForTask(t: ResearchTask, sources: ResearchSource[]): string[] {
+  const have = sources.filter((s) => t.source_ids.includes(s.source_id)).map((s) => s.citation).filter(Boolean);
+  const missing = t.missing_evidence.join(" ");
+  return unique([
+    ...t.queries,
+    ...have.slice(0, 3).map((c) => `${c} ${missing}`),
+    `${t.question} ${missing}`,
+  ], (x) => x.toLowerCase()).slice(0, 3);
+}
+export async function buildResearchRecord(question: string): Promise<ResearchRecord> {
+  const issue = inferIssue(question);
+  const mode = inferMode(issue, question);
+  const tasks = planTasks(issue, question);
+  const errors: string[] = [];
+  const sources: ResearchSource[] = [];
+  const propositions: Proposition[] = [];
   const relationships: Relationship[] = [];
+  const chronology: ChronologyEvent[] = [];
+  const gaps: EvidenceGap[] = [];
+
+  const addSources = (raw: Record<string, unknown>[], authority: AuthorityType) => {
+    for (const s of raw) {
+      const candidate = sourceFrom(s, authority, sources.length);
+      const identity = candidate.citation || candidate.title || candidate.relevant_passage;
+      if (!sources.some((x) => (x.citation || x.title || x.relevant_passage) === identity)) sources.push(candidate);
+    }
+  };
+
+  const runTask = async (t: ResearchTask) => {
+    t.attempts++;
+    const queries = followupQueriesForTask(t, sources);
+    for (const authority of t.required_authority) {
+      let raw: Record<string, unknown>[] = [];
+      if (authority === "statute") raw = await runSearch(`${t.task_id} California Codes`, () => searchStatutes.execute({ queries, limit: 16 }, undefined as never), errors);
+      if (authority === "case") raw = await runSearch(`${t.task_id} California case law`, () => searchCases.execute({ queries: queries.slice(0, 3) }, undefined as never), errors);
+      if (authority === "rule") raw = await runSearch(`${t.task_id} California Rules of Court`, () => searchRules.execute({ queries, limit: 8 }, undefined as never), errors);
+      if (authority === "bill") raw = await runSearch(`${t.task_id} California legislative materials`, () => searchBills.execute({ queries, limit: 8 }, undefined as never), errors);
+      addSources(raw, authority);
+    }
+    propositions.splice(0, propositions.length, ...sources.map((s, i) => ({
+      proposition_id: `p${i + 1}`,
+      source_ids: [s.source_id],
+      statement: s.supported_proposition,
+      support_type: s.authority_type === "case" ? "case_statement" : s.authority_type === "bill" ? "legislative_record" : "direct_text",
+      status: s.verification === "retrieved" ? "supported" : "needs_verification",
+    })));
+    refreshTaskStatus(tasks, sources, propositions);
+  };
+
+  // Execute every planned task once. This makes research planning explicit:
+  // each task has a question, authority requirement, and deterministic evidence gate.
+  for (const t of tasks) await runTask(t);
+
+  // Bounded adaptive pass: only incomplete/blocked tasks get another targeted
+  // search, and only the missing authority is queried.
+  for (let pass = 0; pass < 2; pass++) {
+    const incomplete = tasks.filter((t) => t.status === "pending" || t.status === "incomplete");
+    if (!incomplete.length) break;
+    for (const t of incomplete) await runTask(t);
+  }
+
+  refreshTaskStatus(tasks, sources, propositions);
+
+  // Build conservative source relationships. These remain verification targets
+  // until the underlying opinion/text establishes the actual legal relationship.
   const statutes = sources.filter((s) => s.authority_type === "statute");
   const cases = sources.filter((s) => s.authority_type === "case");
-  for (const c of cases.slice(0, 8)) {
-    for (const s of statutes.slice(0, 4)) {
-      relationships.push({
+  for (const c of cases.slice(0, 12)) {
+    for (const s of statutes.slice(0, 6)) {
+      const overlap = terms(c.relevant_passage + " " + c.title).filter((term) => (s.citation + " " + s.title + " " + s.relevant_passage).toLowerCase().includes(term.toLowerCase()));
+      if (overlap.length >= 2) relationships.push({
         relationship_id: `rel${relationships.length + 1}`,
         type: "interprets",
         from_source_id: c.source_id,
         to_source_id: s.source_id,
-        reason: "The opinion was retrieved in the same targeted research pass as the statutory provision; the model must verify the actual interpretive relationship from the opinion.",
+        reason: `The sources share substantive terms (${overlap.slice(0, 4).join(", ")}); the opinion must be checked to establish the actual interpretive relationship.`,
         verification: "needs_followup",
       });
     }
   }
 
-  const chronology: ChronologyEvent[] = [];
   for (const s of sources) {
-    if (s.temporal_fit === "historical") chronology.push({
-      event_id: `t${chronology.length + 1}`,
-      source_id: s.source_id,
-      date: s.date,
-      event: "repealed",
-      description: "Retrieved authority is marked repealed; its historical effect must be tied to the relevant date.",
-    });
+    if (s.temporal_fit === "historical" || /repealed|superseded/i.test(s.citation + " " + (s.status || ""))) {
+      chronology.push({
+        event_id: `t${chronology.length + 1}`,
+        source_id: s.source_id,
+        date: s.date,
+        event: "status_change",
+        description: "Historical/repealed signal requires date reconstruction before it can establish operative law.",
+      });
+    }
     if (s.authority_type === "bill") chronology.push({
       event_id: `t${chronology.length + 1}`,
       source_id: s.source_id,
       date: s.date,
       event: "status_change",
-      description: `Legislative material has status ${s.status || "unknown"}; do not treat it as enacted law without verification.`,
+      description: `Legislative material status: ${s.status || "unknown"}; verify enactment and effective date.`,
     });
   }
 
-  const gaps: EvidenceGap[] = [];
-  if (!statutes.length) addGap(gaps, "No governing statute was retrieved.", "The answer cannot safely identify the operative California rule from the initial corpus search.", "statute", queries);
-  if (needsCases && !cases.length) addGap(gaps, "Case-law interpretation was requested or implied but no case was retrieved.", "A statutory text alone may not establish judicial interpretation or application.", "case", topicQueries);
-  if (needsRules && !sources.some((s) => s.authority_type === "rule")) addGap(gaps, "Procedural authority was requested or implied but no Rule of Court was retrieved.", "Procedure, deadlines, service, and hearing mechanics require procedural authority.", "rule", topicQueries);
-  if (needsBills && !sources.some((s) => s.authority_type === "bill")) addGap(gaps, "Legislative-history/current-legislation research was requested but no bill record was retrieved.", "The historical or legislative claim cannot be established from the current corpus alone.", "bill", topicQueries);
-  if (mode === "deep" && !sources.some((s) => s.temporal_fit === "historical" || s.authority_type === "bill")) {
-    addGap(gaps, "Historical chronology is required but no historical legislative/status evidence was retrieved.", "A current provision may not answer a historical-law question.", "any", topicQueries);
+  for (const t of tasks.filter((x) => x.status !== "complete")) {
+    addGap(gaps, t.question, t.missing_evidence.join(" ") || "Completion criteria were not satisfied.", t.required_authority[0] || "any", t.queries);
   }
 
-  const verificationTasks = relationships
-    .filter((r) => r.verification !== "retrieved")
-    .slice(0, 12)
-    .map((r) => `Verify ${r.type}: ${r.from_source_id} → ${r.to_source_id}.`);
+  const verificationTasks = tasks.filter((t) => t.status !== "complete")
+    .map((t) => `${t.task_id}: ${t.missing_evidence.join(" ")} Search next: ${t.queries.join(" | ")}`);
   if (errors.length) verificationTasks.push(...errors.map((e) => `Research service issue requiring retry: ${e}`));
 
-  const conflicts: Relationship[] = [];
-  // Conservative conflict detection: only flag textual signals; never declare a
-  // legal conflict merely because two sources have overlapping keywords.
-  for (const s of sources) {
-    if (/repealed|superseded/i.test(s.citation + " " + (s.status || ""))) {
-      const current = sources.find((x) => x.authority_type === "statute" && x.source_id !== s.source_id && x.temporal_fit === "current");
-      if (current) conflicts.push({
-        relationship_id: `rel${relationships.length + conflicts.length + 1}`,
-        type: "supersedes",
-        from_source_id: current.source_id,
-        to_source_id: s.source_id,
-        reason: "One retrieved authority appears current while the other is marked repealed/superseded; verify the effective dates before treating them as inconsistent.",
-        verification: "needs_followup",
-      });
-    }
-  }
-  relationships.push(...conflicts);
-
   const synthesis = [
-    "Every substantive legal proposition in the final answer must cite one or more proposition IDs using the source marker attached to that proposition.",
-    "The model may synthesize supported propositions, but may not introduce uncited legal facts from pretrained/general knowledge.",
-    "If a proposition is not supported by the record, conduct a targeted follow-up search or state that the proposition remains unverified.",
-    "Do not convert a case's reasoning into statutory text, and do not treat a bill as enacted law unless its status establishes enactment.",
-    "Use source hierarchy explicitly: operative statutory/rule text, binding judicial interpretation, then legislative material for legislative-history questions.",
-    "Do not declare a conflict merely from keyword overlap; investigate chronology, jurisdiction, and the actual holdings/text.",
+    "The research task ledger is authoritative for what the answer may assert.",
+    "Every substantive legal proposition must be traceable to one or more propositions in the record and cited with its source marker.",
+    "A task is complete only when its completion criteria are satisfied; relevance alone does not satisfy a task.",
+    "Incomplete tasks must trigger targeted follow-up or an explicit statement that the proposition remains unverified.",
+    "Do not treat shared keywords as proof of interpretation, amendment, supersession, distinction, or conflict.",
+    "Do not treat proposed or pending legislation as enacted law.",
   ];
-  if (mode === "deep") synthesis.push("Reconstruct enacted → amended → effective → interpreted → superseded/repealed chronology whenever the date can change the answer.");
 
   return {
     schema_version: "2.0",
     question,
     issue,
     mode,
-    research_plan: plan,
+    research_plan: tasks.map((t) => `${t.task_id} [${t.kind}]: ${t.question} — completion: ${t.completion_criteria.join("; ")}`),
+    tasks,
     sources,
     propositions,
     relationships,
@@ -446,8 +476,3 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
   };
 }
 
-export default {
-  description: "Run the mandatory California-law research pass and return a schema-versioned evidence ledger with sources, propositions, relationships, chronology, gaps, and verification tasks.",
-  inputSchema: researchInputSchema,
-  execute: async ({ question }: z.infer<typeof researchInputSchema>) => buildResearchRecord(question),
-};
