@@ -116,6 +116,7 @@ export type ResearchRecord = {
   question: string;
   issue: {
     legal_issue: string;
+    relevant_law: string[];
     jurisdiction: string;
     timeframe: string | null;
     procedural_posture: string | null;
@@ -163,7 +164,6 @@ function inferMode(issue: StructuredIssue, question: string): ResearchMode {
 
 function inferIssue(question: string): StructuredIssue {
   const normalized = clean(question, 1200);
-  const lower = normalized.toLowerCase();
   const actors = Array.from(new Set(
     (normalized.match(/\b(?:court|judge|police|officer|prosecutor|district attorney|defendant|petitioner|respondent|agency|legislature|governor|county|city|state|party|parties)\b/gi) || [])
       .map((x) => x.toLowerCase()),
