@@ -286,6 +286,58 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
     for (const s of raw) sources.push(sourceFrom(s, "bill", sources.length));
   }
 
+  // Adaptive second pass: use what the first pass actually found to narrow the
+  // next search. This is intentionally bounded so "research every time" does
+  // not become unbounded crawling.
+  const initialCases = sources.filter((s) => s.authority_type === "case");
+  const initialRules = sources.filter((s) => s.authority_type === "rule");
+  const initialBills = sources.filter((s) => s.authority_type === "bill");
+  const statuteCitations = sources
+    .filter((s) => s.authority_type === "statute")
+    .map((s) => s.citation)
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (needsCases && !initialCases.length && statuteCitations.length) {
+    plan.push("Adaptive follow-up: no case authority was found initially, so search directly by the retrieved statutory citations.");
+    const followup = await runSearch(
+      "Adaptive California case-law follow-up",
+      () => searchCases.execute({ queries: statuteCitations }, undefined as never),
+      errors,
+    );
+    for (const s of followup) {
+      if (!sources.some((x) => x.citation === clean(s.cite || s.caseName))) sources.push(sourceFrom(s, "case", sources.length));
+    }
+  }
+
+  if (needsRules && !initialRules.length) {
+    const proceduralQueries = unique(
+      ["notice service hearing deadline procedure", ...topicQueries],
+      (x) => x.toLowerCase(),
+    ).slice(0, 3);
+    plan.push("Adaptive follow-up: no procedural rule was found initially, so retry with procedural terms.");
+    const followup = await runSearch(
+      "Adaptive California Rules of Court follow-up",
+      () => searchRules.execute({ queries: proceduralQueries, limit: 5 }, undefined as never),
+      errors,
+    );
+    for (const s of followup) sources.push(sourceFrom(s, "rule", sources.length));
+  }
+
+  if (needsBills && !initialBills.length && (mode === "deep" || statuteCitations.length)) {
+    const legislativeQueries = unique(
+      [...statuteCitations.map((x) => `${x} amendment`), ...topicQueries],
+      (x) => x.toLowerCase(),
+    ).slice(0, 3);
+    plan.push("Adaptive follow-up: no legislative material was found initially, so retry using the retrieved statutory citations and amendment terms.");
+    const followup = await runSearch(
+      "Adaptive California legislative follow-up",
+      () => searchBills.execute({ queries: legislativeQueries, limit: 6 }, undefined as never),
+      errors,
+    );
+    for (const s of followup) sources.push(sourceFrom(s, "bill", sources.length));
+  }
+
   const propositions: Proposition[] = sources.map((s, i) => ({
     proposition_id: `p${i + 1}`,
     source_ids: [s.source_id],
@@ -346,7 +398,6 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
   const conflicts: Relationship[] = [];
   // Conservative conflict detection: only flag textual signals; never declare a
   // legal conflict merely because two sources have overlapping keywords.
-  const byCitation = new Map(sources.map((s) => [s.citation, s]));
   for (const s of sources) {
     if (/repealed|superseded/i.test(s.citation + " " + (s.status || ""))) {
       const current = sources.find((x) => x.authority_type === "statute" && x.source_id !== s.source_id && x.temporal_fit === "current");
