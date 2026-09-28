@@ -21,7 +21,11 @@ import {
   useChatRuntime,
 } from "@assistant-ui/react-ai-sdk";
 import { lastAssistantMessageIsCompleteWithToolCalls } from "ai";
-import { useEffect, useMemo } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   createBrowserThreadListAdapter,
   type AsyncStorageLike,
@@ -61,13 +65,17 @@ function useLocalChatRuntime(previewSessionId?: string | null) {
     runtimeHook: function LocalRuntimeHook() {
       const threadId = useAuiState((s) => s.threadListItem.id);
       const aui = useAui();
+      const selectedModelId = useSelectedModelId();
       const transport = useMemo(
         () =>
           new AssistantChatTransport({
             api: "/api/chat",
-            body: previewSessionId ? { previewSessionId } : undefined,
+            body: {
+              ...(previewSessionId ? { previewSessionId } : {}),
+              ...(selectedModelId ? { model: selectedModelId } : {}),
+            },
           }),
-        [previewSessionId],
+        [previewSessionId, selectedModelId],
       );
       const adapters = useMemo(
         () => ({
@@ -105,6 +113,7 @@ function CloudRuntimeProvider({
   children: React.ReactNode;
   previewSessionId?: string | null;
 }) {
+  const selectedModelId = useSelectedModelId();
   const cloud = useMemo(
     () =>
       new AssistantCloud({ baseUrl: cloudBaseUrl ?? "", anonymous: true }),
@@ -114,9 +123,12 @@ function CloudRuntimeProvider({
     () =>
       new AssistantChatTransport({
         api: "/api/chat",
-        body: previewSessionId ? { previewSessionId } : undefined,
+        body: {
+          ...(previewSessionId ? { previewSessionId } : {}),
+          ...(selectedModelId ? { model: selectedModelId } : {}),
+        },
       }),
-    [previewSessionId],
+    [previewSessionId, selectedModelId],
   );
   const adapters = useMemo(
     () => ({
@@ -155,6 +167,17 @@ function LocalRuntimeProvider({
       {children}
     </AssistantRuntimeProvider>
   );
+}
+
+function useSelectedModelId(): string | null {
+  const [modelId, setModelId] = useState<string | null>(null);
+  useEffect(() => {
+    const read = () => setModelId(localStorage.getItem("law-model-id"));
+    read();
+    window.addEventListener("law-model-change", read);
+    return () => window.removeEventListener("law-model-change", read);
+  }, []);
+  return modelId;
 }
 
 export function DemoRuntimeProvider({

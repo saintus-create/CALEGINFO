@@ -14,6 +14,7 @@ import lookupSection from "@/agent/tools/lookup_section";
 import searchBills from "@/agent/tools/search_bills";
 import searchRules from "@/agent/tools/search_rules";
 import searchCases from "@/agent/tools/search_cases";
+import { alternateModels, alternateApiKey, DEFAULT_MODEL_ID } from "@/agent/lib/models";
 import research from "@/agent/tools/research";
 
 const KEY = process.env.SARVAM_API_KEY;
@@ -25,6 +26,44 @@ const sarvam = createOpenAICompatible({
   apiKey: KEY || "",
   headers: KEY ? { "api-subscription-key": KEY } : {},
 });
+
+// per-model provider cache for alternate (OpenAI-compatible) endpoints
+const providerCache = new Map<
+  string,
+  ReturnType<typeof createOpenAICompatible>
+>();
+
+function resolveModel(requested: string | undefined): {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  provider: ReturnType<typeof createOpenAICompatible>;
+  modelId: string;
+} {
+  if (requested) {
+    const alt = alternateModels().find((m) => m.id === requested);
+    if (alt) {
+      const key = alternateApiKey(alt);
+      if (key) {
+        let provider = providerCache.get(alt.id);
+        if (!provider) {
+          provider = createOpenAICompatible({
+            name: alt.id,
+            baseURL: alt.apiBase,
+            apiKey: key,
+            headers: {
+              ...(alt.headers || {}),
+              ...(alt.apiBase.includes("sarvam.ai")
+                ? { "api-subscription-key": key }
+                : {}),
+            },
+          });
+          providerCache.set(alt.id, provider);
+        }
+        return { provider, modelId: alt.model };
+      }
+    }
+  }
+  return { provider: sarvam, modelId: DEFAULT_MODEL_ID };
+}
 
 type SourceMap = Map<string, string>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,6 +116,8 @@ function lastUserQuestion(messages: any[]): string {
 }
 
 const CITED_RE = /\[\s*([psbrc]\d{1,3})\s*\]/gi;
+// non-global variant for per-paragraph .test() checks
+const CITED_ONE_RE = /\[\s*[sbrcp]?\d{1,2}\s*\]/i;
 
 function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): string {
   const sourceLines = record.sources.map((s) =>
@@ -196,10 +237,14 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, model: requestedModel } = await req.json();
   const question = lastUserQuestion(messages);
   if (!question) return new Response("A research question is required.", { status: 400 });
-  if (!KEY) return new Response("Research service is not configured.", { status: 503 });
+  if (
+    !KEY &&
+    !alternateModels().some((a) => alternateApiKey(a))
+  )
+    return new Response("Research service is not configured.", { status: 503 });
 
   const sourceMap: SourceMap = new Map();
   let record: Awaited<ReturnType<typeof research.execute>>;
@@ -241,8 +286,14 @@ The server will validate your completed answer before sending it to the user. An
 
   // We intentionally buffer the generated text until validation. Streaming an
   // invalid answer first would make a post-generation evidence gate meaningless.
+  const modelMessages = await convertToModelMessages(messages);
   const generate = (extra = "") => streamText({
-    model: sarvam("sarvam-105b-conversations"),
+    model: (() => {
+      const { provider, modelId } = resolveModel(
+        typeof requestedModel === "string" ? requestedModel : undefined,
+      );
+      return provider(modelId);
+    })(),
     system: system + extra,
     tools: TOOLS,
     stopWhen: stepCountIs(10),
@@ -253,8 +304,19 @@ The server will validate your completed answer before sending it to the user. An
         return step >= 8 ? { toolChoice: "none" as const } : {};
       };
     })(),
-    onError: (error) => console.error("[api/chat]", error),
-    messages: convertToModelMessages(messages),
+    onError: (error) =>
+      console.error(
+        "[api/chat]",
+        error,
+        "| cause:",
+        (error as { cause?: { message?: string } })?.cause?.message,
+        "| last:",
+        (error as { lastError?: { message?: string } })?.lastError?.message,
+        "| lastCause:",
+        (error as { lastError?: { cause?: { message?: string } } })?.lastError?.cause
+          ?.message,
+      ),
+    messages: modelMessages,
   });
 
   let result = generate();

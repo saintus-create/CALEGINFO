@@ -89,7 +89,7 @@ import {
   type DirectiveChipProps,
 } from "@assistant-ui/react-lexical";
 import Image from "next/image";
-import { useState, type FC } from "react";
+import { useEffect, useState, type FC } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ModelSelector } from "@/components/assistant-ui/model-selector";
 import { docsModelOptions } from "@/components/docs/assistant/docs-model-options";
@@ -186,13 +186,36 @@ const MobileSidebar: FC = () => {
   );
 };
 
-const models = docsModelOptions();
+const DEFAULT_PICKER_MODELS = [
+  { id: DEFAULT_MODEL_ID, name: "Sarvam 105B" },
+];
 
 const ModelPicker: FC = () => {
+  const [models, setModels] =
+    useState<readonly { id: string; name: string }[]>(DEFAULT_PICKER_MODELS);
+  const [value, setValue] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("law-model-id");
+    if (saved) setValue(saved);
+    fetch("/api/models")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d?.models) && d.models.length) setModels(d.models);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <ModelSelector
       models={models}
+      value={value}
       defaultValue={DEFAULT_MODEL_ID}
+      onValueChange={(v) => {
+        setValue(v);
+        localStorage.setItem("law-model-id", v);
+        window.dispatchEvent(new Event("law-model-change"));
+      }}
       variant="ghost"
       size="sm"
       className="h-7 rounded-full"

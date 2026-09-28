@@ -147,6 +147,19 @@ function clean(value: unknown, max = 1600): string {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+/** dedupe values by a computed key (first occurrence wins) */
+function unique<T>(arr: readonly T[], key: (x: T) => string): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const x of arr) {
+    const k = key(x);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(x);
+  }
+  return out;
+}
+
 function terms(question: string): string[] {
   return question
     .replace(/[^\p{L}\p{N}\s§.-]/gu, " ")
@@ -344,6 +357,84 @@ function followupQueriesForTask(t: ResearchTask, sources: ResearchSource[]): str
     `${t.question} ${missing}`,
   ], (x) => x.toLowerCase()).slice(0, 3);
 }
+/** map a raw corpus search result into the research source shape */
+function sourceFrom(
+  s: Record<string, unknown>,
+  authority: AuthorityType,
+  index: number,
+): ResearchSource {
+  const citation = String(s.citation || s.measure || s.title || `Source ${index + 1}`);
+  const passage = String(s.text || s.snippet || s.subject || "");
+  const binding: ResearchSource["binding_weight"] =
+    authority === "statute"
+      ? "statute"
+      : authority === "bill"
+        ? "legislative_material"
+        : authority === "rule"
+          ? "rule"
+          : "court_of_appeal";
+  const role: ResearchSource["authority_role"] =
+    authority === "statute"
+      ? "primary"
+      : authority === "bill"
+        ? "legislative"
+        : authority === "rule"
+          ? "procedural"
+          : "binding_interpretation";
+  return {
+    source_id: `s${index + 1}`,
+    marker: String(s.marker || `[s${index + 1}]`),
+    authority_type: authority,
+    authority_role: role,
+    citation,
+    title: String(s.title || s.caseName || s.subject || citation),
+    date: s.dateFiled ? String(s.dateFiled) : s.date ? String(s.date) : null,
+    status: s.status ? String(s.status) : null,
+    jurisdiction: "California",
+    temporal_fit: "unknown",
+    binding_weight: binding,
+    relevant_passage: passage.slice(0, 1200),
+    supported_proposition: `${citation} provides: ${passage.slice(0, 300)}`,
+    relevance_reason:
+      "Term-overlap retrieval from the topic search; relevance to the question requires verification.",
+    verification: "retrieved",
+    url: s.url ? String(s.url) : null,
+  };
+}
+
+/** run a corpus search call, collecting failures into the error ledger */
+async function runSearch(
+  label: string,
+  fn: () => unknown,
+  errors: string[],
+): Promise<Record<string, unknown>[]> {
+  try {
+    const out = (await fn()) as { sources?: Record<string, unknown>[] } | null | undefined;
+    return Array.isArray(out?.sources) ? out.sources : [];
+  } catch (e) {
+    errors.push(`${label}: ${e instanceof Error ? e.message : String(e)}`);
+    return [];
+  }
+}
+
+/** record an open evidence gap for an incomplete task */
+function addGap(
+  gaps: EvidenceGap[],
+  issue: string,
+  whyItMatters: string,
+  authority: AuthorityType | "any",
+  queries: string[],
+) {
+  gaps.push({
+    gap_id: `g${gaps.length + 1}`,
+    issue,
+    why_it_matters: whyItMatters,
+    required_authority: authority,
+    search_queries: queries,
+    status: "open",
+  });
+}
+
 export async function buildResearchRecord(question: string): Promise<ResearchRecord> {
   const issue = inferIssue(question);
   const mode = inferMode(issue, question);
@@ -374,7 +465,7 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
       if (authority === "bill") raw = await runSearch(`${t.task_id} California legislative materials`, () => searchBills.execute({ queries, limit: 8 }, undefined as never), errors);
       addSources(raw, authority);
     }
-    propositions.splice(0, propositions.length, ...sources.map((s, i) => ({
+    propositions.splice(0, propositions.length, ...sources.map((s, i): Proposition => ({
       proposition_id: `p${i + 1}`,
       source_ids: [s.source_id],
       statement: s.supported_proposition,
@@ -476,3 +567,14 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
   };
 }
 
+
+
+/** Tool facade used by the chat route: runs the structured research pass. */
+export const research = {
+  inputSchema: researchInputSchema,
+  async execute({ question }: { question: string }, _options?: unknown) {
+    return buildResearchRecord(question);
+  },
+};
+
+export default research;
