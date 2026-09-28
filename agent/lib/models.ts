@@ -24,10 +24,26 @@ export interface AlternateModel {
 export const DEFAULT_MODEL_ID = "sarvam-105b-conversations";
 export const DEFAULT_MODEL_NAME = "Sarvam 105B";
 
+/**
+ * Built-in "Unfiltered" model: an uncensored open-weight model (Dolphin
+ * Mistral 24B Venice Edition) served through OpenRouter. It activates the
+ * moment OPENROUTER_API_KEY is set; ALTERNATE_MODELS_JSON overrides it.
+ */
+const BUILT_IN_UNFILTERED: AlternateModel = {
+  id: "unfiltered",
+  name: "Unfiltered",
+  apiBase: "https://openrouter.ai/api/v1",
+  model: "cognitivecomputations/dolphin-mistral-24b-venice-edition",
+  apiKeyEnv: "OPENROUTER_API_KEY",
+  headers: { "X-Title": "California Legislative Information" },
+};
+
 export function alternateModels(): AlternateModel[] {
   try {
     const raw = process.env.ALTERNATE_MODELS_JSON;
-    if (!raw) return [];
+    if (!raw) {
+      return process.env.OPENROUTER_API_KEY ? [BUILT_IN_UNFILTERED] : [];
+    }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(

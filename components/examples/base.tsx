@@ -186,40 +186,66 @@ const MobileSidebar: FC = () => {
   );
 };
 
-const DEFAULT_PICKER_MODELS = [
-  { id: DEFAULT_MODEL_ID, name: "Sarvam 105B" },
-];
-
-const ModelPicker: FC = () => {
-  const [models, setModels] =
-    useState<readonly { id: string; name: string }[]>(DEFAULT_PICKER_MODELS);
-  const [value, setValue] = useState<string | undefined>(undefined);
+const LawModelToggle: FC = () => {
+  const [alternate, setAlternate] = useState<{ id: string; name: string } | null>(
+    null,
+  );
+  const [on, setOn] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("law-model-id");
-    if (saved) setValue(saved);
     fetch("/api/models")
       .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d?.models) && d.models.length) setModels(d.models);
+      .then((d: { models?: Array<{ id: string; name: string }> }) => {
+        const models = Array.isArray(d?.models) ? d.models : [];
+        // first entry is the standard model; one configured alternate becomes the toggle
+        const alt = models.length > 1 ? models[1] : null;
+        setAlternate(alt);
+        setOn(!!alt && saved === alt.id);
       })
       .catch(() => {});
   }, []);
 
+  if (!alternate) return null;
+
+  const select = (useAlternate: boolean) => {
+    const id = useAlternate ? alternate.id : DEFAULT_MODEL_ID;
+    setOn(useAlternate);
+    localStorage.setItem("law-model-id", id);
+    window.dispatchEvent(new Event("law-model-change"));
+  };
+
   return (
-    <ModelSelector
-      models={models}
-      value={value}
-      defaultValue={DEFAULT_MODEL_ID}
-      onValueChange={(v) => {
-        setValue(v);
-        localStorage.setItem("law-model-id", v);
-        window.dispatchEvent(new Event("law-model-change"));
-      }}
-      variant="ghost"
-      size="sm"
-      className="h-7 rounded-full"
-    />
+    <div
+      data-slot="law-model-toggle"
+      className="flex items-center rounded-full border p-0.5"
+      title={`Standard \u2014 Sarvam 105B \u00b7 Unfiltered \u2014 ${alternate.name === "Unfiltered" ? "Dolphin Mistral 24B" : alternate.name}`}
+    >
+      <button
+        type="button"
+        onClick={() => select(false)}
+        className={cn(
+          "rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors",
+          !on
+            ? "bg-foreground text-background"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        Standard
+      </button>
+      <button
+        type="button"
+        onClick={() => select(true)}
+        className={cn(
+          "rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors",
+          on
+            ? "bg-foreground text-background"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        Unfiltered
+      </button>
+    </div>
   );
 };
 
@@ -531,7 +557,7 @@ const ComposerAction: FC = () => {
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
       <div className="flex items-center gap-1">
         <ComposerAddAttachment />
-        <ModelPicker />
+        <LawModelToggle />
       </div>
       <div className="flex items-center gap-1.5">
         <AuiIf condition={(s) => s.thread.capabilities.dictation}>
