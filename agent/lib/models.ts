@@ -42,7 +42,7 @@ export function alternateModels(): AlternateModel[] {
   try {
     const raw = process.env.ALTERNATE_MODELS_JSON;
     if (!raw) {
-      return process.env.OPENROUTER_API_KEY ? [BUILT_IN_UNFILTERED] : [];
+      return [BUILT_IN_UNFILTERED];
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -64,17 +64,21 @@ export function alternateApiKey(alt: AlternateModel): string | undefined {
 export interface ServedModel {
   id: string;
   name: string;
+  /** false when the model is configured but its API key env is missing */
+  available: boolean;
 }
 
-/** Models the server can actually serve right now (used by /api/models). */
+/** Models configured on this server (used by /api/models). */
 export function servedModels(): ServedModel[] {
   const out: ServedModel[] = [
-    { id: DEFAULT_MODEL_ID, name: DEFAULT_MODEL_NAME },
+    { id: DEFAULT_MODEL_ID, name: DEFAULT_MODEL_NAME, available: true },
   ];
   for (const alt of alternateModels()) {
-    if (alternateApiKey(alt)) {
-      out.push({ id: alt.id, name: alt.name || alt.id });
-    }
+    out.push({
+      id: alt.id,
+      name: alt.name || alt.id,
+      available: !!alternateApiKey(alt),
+    });
   }
   return out;
 }

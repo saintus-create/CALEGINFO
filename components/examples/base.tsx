@@ -187,22 +187,32 @@ const MobileSidebar: FC = () => {
 };
 
 const LawModelToggle: FC = () => {
-  const [alternate, setAlternate] = useState<{ id: string; name: string } | null>(
-    null,
-  );
+  const [alternate, setAlternate] = useState<{
+    id: string;
+    name: string;
+    available: boolean;
+  } | null>(null);
   const [on, setOn] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("law-model-id");
     fetch("/api/models")
       .then((r) => r.json())
-      .then((d: { models?: Array<{ id: string; name: string }> }) => {
-        const models = Array.isArray(d?.models) ? d.models : [];
-        // first entry is the standard model; one configured alternate becomes the toggle
-        const alt = models.length > 1 ? models[1] : null;
-        setAlternate(alt);
-        setOn(!!alt && saved === alt.id);
-      })
+      .then(
+        (d: {
+          models?: Array<{ id: string; name: string; available?: boolean }>;
+        }) => {
+          const models = Array.isArray(d?.models) ? d.models : [];
+          // first entry is the standard model; one configured alternate becomes the toggle
+          const alt = models.length > 1 ? models[1] : null;
+          setAlternate(
+            alt
+              ? { id: alt.id, name: alt.name, available: !!alt.available }
+              : null,
+          );
+          setOn(!!alt && saved === alt.id);
+        },
+      )
       .catch(() => {});
   }, []);
 
@@ -219,7 +229,11 @@ const LawModelToggle: FC = () => {
     <div
       data-slot="law-model-toggle"
       className="flex items-center rounded-full border p-0.5"
-      title={`Standard \u2014 Sarvam 105B \u00b7 Unfiltered \u2014 ${alternate.name === "Unfiltered" ? "Dolphin Mistral 24B" : alternate.name}`}
+      title={
+        alternate.available
+          ? `Standard \u2014 Sarvam 105B \u00b7 Unfiltered \u2014 Dolphin Mistral 24B (OpenRouter)`
+          : "Unfiltered needs an OpenRouter key: add OPENROUTER_API_KEY in Vercel \u2192 Redeploy"
+      }
     >
       <button
         type="button"
@@ -236,11 +250,14 @@ const LawModelToggle: FC = () => {
       <button
         type="button"
         onClick={() => select(true)}
+        disabled={!alternate.available}
         className={cn(
           "rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors",
           on
             ? "bg-foreground text-background"
             : "text-muted-foreground hover:text-foreground",
+          !alternate.available &&
+            "cursor-not-allowed opacity-40 hover:text-muted-foreground",
         )}
       >
         Unfiltered
