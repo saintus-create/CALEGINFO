@@ -117,7 +117,7 @@ function lastUserQuestion(messages: any[]): string {
   return "";
 }
 
-const CITED_RE = /\[\s*([a-z]{1,2}\d{1,3})\s*\]/gi;
+const CITED_RE = /\[\s*([a-z]{0,2}\d{1,3})\s*\]/gi;
 // non-global variant for per-paragraph .test() checks
 const CITED_ONE_RE = /\[\s*[a-z]{0,2}\d{1,3}\s*\]/i;
 
@@ -369,9 +369,23 @@ Produce a replacement answer, not commentary about the failure. Every substantiv
   }
 
   const cleanAnswer = answer.replace(/\n?\s*AUTHORITIES:\s*[\s\S]*$/i, "").replace(/\n?\s*FOLLOWUPS:\s*[\s\S]*$/i, "").trim();
+  // Preserve the model's FOLLOWUPS block (client rewrites it into Keep digging pills).
+  const followupMatch = answer.match(
+    /(?:^|\n)\s*FOLLOWUPS:[ \t]*\n([\s\S]*?)(?=\n\s*AUTHORITIES:|$)/i,
+  );
+  const followupLines = followupMatch
+    ? followupMatch[1]
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.length > 3)
+        .slice(0, 3)
+    : [];
   const finalText = cleanAnswer +
     (cited.length
       ? "\n\nAUTHORITIES:\n" + cited.map((k) => `[${k}] ${sourceMap.get(k)}`).join("\n")
+      : "") +
+    (followupLines.length
+      ? "\n\nFOLLOWUPS:\n" + followupLines.map((l) => `- ${l.replace(/^[-*\d.)\s]+/, "").trim()}`).join("\n")
       : "");
 
   const stream = new ReadableStream<StreamPart>({

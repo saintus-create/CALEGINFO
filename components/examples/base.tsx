@@ -104,12 +104,8 @@ const Logo: FC = () => {
 
   return (
     <div className="flex items-center gap-2 px-2 text-sm font-medium">
-      <Image
-        src={icon}
-        alt="logo"
-        className="size-5 dark:hue-rotate-180 dark:invert"
-      />
-      <span className="text-primary">{assistant.appName}</span>
+      <ScaleIcon className="text-primary size-5" />
+      <span className="text-foreground tracking-tight">{assistant.appName}</span>
     </div>
   );
 };
@@ -130,14 +126,10 @@ const Sidebar: FC<{ collapsed?: boolean }> = ({ collapsed }) => {
           collapsed ? "px-3.5" : "px-6",
         )}
       >
-        <Image
-          src={icon}
-          alt="logo"
-          className="size-5 shrink-0 dark:hue-rotate-180 dark:invert"
-        />
+        <ScaleIcon className="text-primary size-5 shrink-0" />
         <span
           className={cn(
-            "text-primary ml-2 text-sm font-medium whitespace-nowrap transition-opacity duration-200",
+            "text-foreground ml-2 text-sm font-medium tracking-tight whitespace-nowrap transition-opacity duration-200",
             collapsed && "opacity-0",
           )}
         >
@@ -235,7 +227,7 @@ const LawModelToggle: FC = () => {
       className="flex items-center rounded-full border p-0.5"
       title={
         alternate.available
-          ? `Standard \u2014 Sarvam 105B \u00b7 Unfiltered \u2014 Dolphin Mistral 24B (OpenRouter)`
+          ? `Answer mode: Standard or Unfiltered`
           : "Unfiltered needs an OpenRouter key: add OPENROUTER_API_KEY in Vercel \u2192 Redeploy"
       }
     >
@@ -305,6 +297,7 @@ const Header: FC<{
         </TooltipIconButton>
       )}
       <ThreadTitle />
+      <LawModelToggle />
       <nav
         aria-label="Library"
         className="ml-auto hidden items-center gap-0.5 sm:flex"
@@ -639,7 +632,6 @@ const ComposerAction: FC = () => {
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
       <div className="flex items-center gap-1">
         <ComposerAddAttachment />
-        <LawModelToggle />
       </div>
       <div className="flex items-center gap-1.5">
         <AuiIf condition={(s) => s.thread.capabilities.dictation}>
@@ -985,7 +977,7 @@ const EmptyAwareSidebar: FC<{ collapsed?: boolean }> = ({ collapsed }) => {
 };
 
 export const Base: FC = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   return (
     <div className="bg-[color-mix(in_oklab,var(--color-primary)_4%,var(--color-muted))] flex h-full w-full">

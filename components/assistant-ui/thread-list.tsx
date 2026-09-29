@@ -18,7 +18,7 @@ import { Fragment, useMemo, type FC } from "react";
 
 export const ThreadList: FC = () => {
   return (
-    <ThreadListPrimitive.Root className="aui-root aui-thread-list-root flex flex-col gap-0.5">
+    <ThreadListPrimitive.Root className="aui-root aui-thread-list-root flex flex-col gap-1.5">
       <ThreadListNew />
       <AuiIf condition={(s) => s.threads.isLoading}>
         <ThreadListSkeleton />

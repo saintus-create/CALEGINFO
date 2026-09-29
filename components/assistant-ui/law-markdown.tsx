@@ -92,7 +92,8 @@ const preprocess = (text: string): string => {
             `[${e.marker} ${e.label}](#${AUTHORITY_HREF}${encodeURIComponent(e.marker)})`,
         )
         .join("\n\n") +
-      "\n"
+      "\n" +
+      "\n\nAI-generated · verify against official sources\n"
     );
   });
 
@@ -126,6 +127,13 @@ const LawParagraph: FC<ComponentPropsWithoutRef<"p">> = ({ children, ...props })
       : Array.isArray(children)
         ? children.filter((c) => typeof c === "string").join("")
         : "";
+  if (text.startsWith("AI-generated ·")) {
+    return (
+      <p {...props} className="law-ai-warning">
+        {children}
+      </p>
+    );
+  }
   if (text === "Keep digging:" || text === "Authorities:") {
     return (
       <p {...props} className="law-section-label">
