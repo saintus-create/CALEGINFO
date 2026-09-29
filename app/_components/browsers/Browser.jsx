@@ -167,8 +167,8 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
           </p>
           <div className="grid sm:grid-cols-3 gap-3 mt-6">
             {[
-              [stats.codes ? String(stats.codes) : "30", "codes and Constitution", "Local corpus"],
-              [stats.sections ? Math.round(stats.sections / 1000) + "k+" : "162k+", "indexed sections", "Searchable text"],
+              [stats.codes > 5 ? String(stats.codes) : "30", "codes and Constitution", "Local corpus"],
+              [stats.sections > 999 ? Math.round(stats.sections / 1000) + "k+" : "162k+", "indexed sections", "Searchable text"],
               [stats.bills ? stats.bills.toLocaleString() : "5,062", "bills · " + (stats.billSession || "2025-2026") + " session", "Bills tab"],
               [stats.rules ? stats.rules.toLocaleString() : "1,501", "Rules of Court", "Rules tab"],
               [stats.agencies ? stats.agencies.toLocaleString() : "505", "agencies & vendors", "Directory tab"],

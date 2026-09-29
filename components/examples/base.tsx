@@ -83,6 +83,10 @@ import {
   SlashIcon,
   SquareIcon,
   WrenchIcon,
+  BookOpenIcon,
+  LandmarkIcon,
+  ScaleIcon,
+  Building2Icon,
 } from "lucide-react";
 import {
   LexicalComposerInput,
@@ -241,7 +245,7 @@ const LawModelToggle: FC = () => {
         className={cn(
           "rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors",
           !on
-            ? "bg-foreground text-background"
+            ? "bg-primary/15 text-primary"
             : "text-muted-foreground hover:text-foreground",
         )}
       >
@@ -254,7 +258,7 @@ const LawModelToggle: FC = () => {
         className={cn(
           "rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors",
           on
-            ? "bg-foreground text-background"
+            ? "bg-primary/15 text-primary"
             : "text-muted-foreground hover:text-foreground",
           !alternate.available &&
             "cursor-not-allowed opacity-40 hover:text-muted-foreground",
@@ -301,13 +305,32 @@ const Header: FC<{
         </TooltipIconButton>
       )}
       <ThreadTitle />
+      <nav
+        aria-label="Library"
+        className="ml-auto hidden items-center gap-0.5 sm:flex"
+      >
+        {[
+          ["Codes", "/codes"],
+          ["Bills", "/bills"],
+          ["Rules", "/rules"],
+          ["Directory", "/directory"],
+        ].map(([label, href]) => (
+          <a
+            key={href}
+            href={href}
+            className="rounded-md px-2.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
       <TooltipIconButton
         variant="ghost"
         size="icon"
         tooltip="Share"
         side="bottom"
         disabled
-        className="ml-auto size-8"
+        className="ml-auto size-8 sm:ml-0"
       >
         <ShareIcon className="size-4" />
       </TooltipIconButton>
@@ -410,6 +433,48 @@ const ThreadWelcome: FC = () => {
           {assistant.welcome.body}
         </p>
       )}
+      <div className="mt-8 grid w-full max-w-2xl grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {[
+          {
+            href: "/codes",
+            icon: BookOpenIcon,
+            title: "Codes",
+            desc: "29 codes · 162,324 sections",
+          },
+          {
+            href: "/bills",
+            icon: LandmarkIcon,
+            title: "Bills",
+            desc: "5,062 measures · 2025–26",
+          },
+          {
+            href: "/rules",
+            icon: ScaleIcon,
+            title: "Rules of Court",
+            desc: "1,501 procedural rules",
+          },
+          {
+            href: "/directory",
+            icon: Building2Icon,
+            title: "Directory",
+            desc: "505 agencies & vendors",
+          },
+        ].map((card) => (
+          <a
+            key={card.href}
+            href={card.href}
+            className="group border-border/70 bg-card/50 hover:border-primary/40 hover:bg-card flex flex-col items-start gap-1.5 rounded-xl border p-3.5 text-left transition-colors"
+          >
+            <card.icon className="text-primary size-4.5" />
+            <span className="text-foreground text-sm font-semibold">
+              {card.title}
+            </span>
+            <span className="text-muted-foreground text-xs leading-snug">
+              {card.desc}
+            </span>
+          </a>
+        ))}
+      </div>
     </div>
   );
 };
@@ -449,8 +514,8 @@ const ThreadSuggestions: FC = () => {
 
   return (
     <div className="aui-thread-welcome-suggestions flex w-full flex-col gap-2 px-4">
-      <div className="w-full scrollbar-none overflow-x-auto">
-        <div className="mx-auto flex w-max items-center gap-2">
+      <div className="w-full">
+        <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
           {assistant.suggestionGroups.map((group) => {
             const Icon = suggestionIconMap[group.icon] ?? LightbulbIcon;
             return (

@@ -65,6 +65,15 @@ export const defaultBaseConfig: ResolvedBaseConfig = {
         ],
       },
       {
+        label: "Case law",
+        icon: "document",
+        options: [
+          { label: "Coercive control cases", prompt: "How have California courts interpreted coercive control under the Domestic Violence Prevention Act?" },
+          { label: "Burglary tools rule", prompt: "How do California courts apply the burglary tools statute in California?" },
+          { label: "Continuances", prompt: "What do the California Rules of Court say about continuances in civil trials?" },
+        ],
+      },
+      {
         label: "Research",
         icon: "analyze",
         options: [
