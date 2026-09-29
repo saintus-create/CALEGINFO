@@ -165,17 +165,7 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
             The complete California Codes — every section, readable in place, with curated case notes on the
             Family Code. Pick a code to start, or search across every code at once.
           </p>
-          <div className="grid sm:grid-cols-3 gap-3 mt-6">
-            {[
-              [stats.codes > 5 ? String(stats.codes) : "30", "codes and Constitution", "Local corpus"],
-              [stats.sections > 999 ? Math.round(stats.sections / 1000) + "k+" : "162k+", "indexed sections", "Searchable text"],
-              [stats.bills ? stats.bills.toLocaleString() : "5,062", "bills · " + (stats.billSession || "2025-2026") + " session", "Bills tab"],
-              [stats.rules ? stats.rules.toLocaleString() : "1,501", "Rules of Court", "Rules tab"],
-              [stats.agencies ? stats.agencies.toLocaleString() : "505", "agencies & vendors", "Directory tab"],
-              ["Live", "official source links", "Verify before relying"],
-            ].map(([value, label, note]) => <div key={label} className="metric-card"><div className="text-xl font-semibold tracking-tight">{value}</div><div className="text-xs font-medium mt-1">{label}</div><div className="text-[11px] text-muted-foreground mt-1">{note}</div></div>)}
-          </div>
-          <form onSubmit={runGlobalSearch} className="mt-6 flex gap-2">
+                    <form onSubmit={runGlobalSearch} className="mt-6 flex gap-2">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search across all California Codes…" className="pl-9 h-11" /></div>
             <Button type="submit" className="h-11" disabled={globalBusy}>{globalBusy ? "Searching…" : "Search"}</Button>
           </form>

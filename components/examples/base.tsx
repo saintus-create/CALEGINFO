@@ -439,25 +439,25 @@ const ThreadWelcome: FC = () => {
             href: "/codes",
             icon: BookOpenIcon,
             title: "Codes",
-            desc: "29 codes · 162,324 sections",
+            desc: "The complete California Codes, readable in place",
           },
           {
             href: "/bills",
             icon: LandmarkIcon,
             title: "Bills",
-            desc: "5,062 measures · 2025–26",
+            desc: "This session's legislation, chaptered to vetoed",
           },
           {
             href: "/rules",
             icon: ScaleIcon,
             title: "Rules of Court",
-            desc: "1,501 procedural rules",
+            desc: "Procedural rules for every California court",
           },
           {
             href: "/directory",
             icon: Building2Icon,
             title: "Directory",
-            desc: "505 agencies & vendors",
+            desc: "Agencies, offices, and official sources",
           },
         ].map((card) => (
           <a

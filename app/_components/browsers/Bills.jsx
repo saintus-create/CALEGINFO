@@ -136,17 +136,6 @@ export default function Bills() {
         {meta.retrieved_at ? <> · snapshot {String(meta.retrieved_at).slice(0, 10)}</> : null}.
         {" "}Status tells you where each measure stands — <b>Chaptered</b> means it became law.
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-4">
-        {[
-          [stats.total, "measures"], [stats.assembly, "Assembly"], [stats.senate, "Senate"],
-          [stats.chaptered, "chaptered"], [stats.active, "active"], [stats.vetoed, "vetoed"],
-        ].map(([v, l]) => (
-          <div key={l} className="metric-card !p-2.5">
-            <div className="text-lg font-semibold tracking-tight">{Number(v).toLocaleString()}</div>
-            <div className="text-[11px] text-muted-foreground">{l}</div>
-          </div>
-        ))}
-      </div>
 
       <div className="flex flex-col sm:flex-row gap-2 mt-5">
         <form className="relative flex-1" onSubmit={(e) => { e.preventDefault(); setApplied(query.trim()); }}>
