@@ -74,11 +74,20 @@ export function servedModels(): ServedModel[] {
     { id: DEFAULT_MODEL_ID, name: DEFAULT_MODEL_NAME, available: true },
   ];
   for (const alt of alternateModels()) {
+    const builtIn = alt.id === BUILT_IN_UNFILTERED.id && !process.env.ALTERNATE_MODELS_JSON;
     out.push({
       id: alt.id,
       name: alt.name || alt.id,
-      available: !!alternateApiKey(alt),
+      // the built-in Unfiltered always works: it upgrades to OpenRouter when the
+      // key exists and otherwise runs in direct mode on the standard model
+      available: builtIn || !!alternateApiKey(alt),
     });
   }
   return out;
+}
+
+/** true when the request asks for the built-in Unfiltered mode */
+export function isBuiltInUnfiltered(requested: string | undefined): boolean {
+  if (!requested || process.env.ALTERNATE_MODELS_JSON) return false;
+  return requested === BUILT_IN_UNFILTERED.id;
 }
