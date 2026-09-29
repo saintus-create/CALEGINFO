@@ -14,6 +14,8 @@ import lookupSection from "@/agent/tools/lookup_section";
 import searchBills from "@/agent/tools/search_bills";
 import searchRules from "@/agent/tools/search_rules";
 import searchCases from "@/agent/tools/search_cases";
+import billTextSearch from "@/agent/tools/bill_text_search";
+import billDetail from "@/agent/tools/bill_detail";
 import { alternateModels, alternateApiKey, DEFAULT_MODEL_ID, isBuiltInUnfiltered } from "@/agent/lib/models";
 import research from "@/agent/tools/research";
 
@@ -115,9 +117,9 @@ function lastUserQuestion(messages: any[]): string {
   return "";
 }
 
-const CITED_RE = /\[\s*([psbrc]\d{1,3})\s*\]/gi;
+const CITED_RE = /\[\s*([a-z]{1,2}\d{1,3})\s*\]/gi;
 // non-global variant for per-paragraph .test() checks
-const CITED_ONE_RE = /\[\s*[sbrcp]?\d{1,2}\s*\]/i;
+const CITED_ONE_RE = /\[\s*[a-z]{0,2}\d{1,3}\s*\]/i;
 
 function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): string {
   const sourceLines = record.sources.map((s) =>
@@ -274,6 +276,8 @@ export async function POST(req: Request) {
     search_bills: wrap(searchBills),
     search_rules: wrap(searchRules),
     search_cases: wrap(searchCases),
+    bill_text_search: wrap(billTextSearch),
+    bill_detail: wrap(billDetail),
   };
 
   const unfilteredAddendum = isBuiltInUnfiltered(
