@@ -1,4 +1,4 @@
-const STOP = new Set("difference differences different between versus vs compared compare comparison similar alike same tell list every everyone\
+const STOP = new Set("california charges charge charged charging file filed filing apply applies governs govern governed issue issues difference differences different between versus vs compared compare comparison similar alike same tell list every everyone\
   what which who whom whose when where why how is are was were be been being am do does did done can could shall should would will may might must i you he she it we they me him her us them my your his its our their this that these those a an the and or but if then than so as of in to for on at by with from into about over under again further once here there all any both each few more most other some such no nor not only own same too very just dont shouldnt now".split(" "));
 
 export function termsOf(q: string): string[] {
@@ -169,7 +169,9 @@ export function scoreSections(
         // Penal-Code-style definition openers: "is guilty of burglary.",
         // "Robbery is the felonious taking"
         textLower.includes("guilty of " + t) ||
-        new RegExp("(?:^|[.;:\n]\\s*)" + t + " is the\\b", "i").test(textLower),
+        textLower.startsWith(t + " is the") ||
+        textLower.includes(". " + t + " is the") ||
+        textLower.includes(") " + t + " is the"),
     );
     if (score > 0) {
       if (
@@ -178,7 +180,7 @@ export function scoreSections(
       ) {
         score += 6;
       }
-      if (definesQueriedTerm) score += 60;
+      if (definesQueriedTerm) score += 85;
       if (effectivePriority && effectivePriority.includes(abbr)) score += 25;
       if (r.repealed) score -= 8;
       out.push({ abbr, r, score });

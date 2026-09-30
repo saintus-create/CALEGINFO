@@ -166,7 +166,7 @@ function terms(question: string): string[] {
     .split(/\s+/)
     .map((x) => x.trim())
     .filter((x) => x.length >= 3)
-    .filter((x) => !/^(difference|differences|different|between|versus|vs|compared|compare|comparison|similar|alike|same|tell|every|what|when|where|which|does|did|can|could|would|should|how|why|the|and|for|with|from|about|under|into|have|has|this|that|there|their|they|are|was|were|is|of|to|a|an|in|on|or|be|as|by|it)$/i.test(x));
+    .filter((x) => !/^(difference|differences|different|between|versus|vs|compared|compare|comparison|similar|alike|same|tell|every|charges|charge|charged|charging|file|filed|filing|apply|applies|what|when|where|which|does|did|can|could|would|should|how|why|the|and|for|with|from|about|under|into|have|has|this|that|there|their|they|are|was|were|is|of|to|a|an|in|on|or|be|as|by|it)$/i.test(x));
 }
 
 function inferMode(issue: StructuredIssue, question: string): ResearchMode {
@@ -207,8 +207,11 @@ function inferIssue(question: string): StructuredIssue {
     /\b(?:on|before|after|when|while|because|alleged|occurred|happened|arrested|served|filed|entered|issued|sent|received|contacted|did|was|were|is|are)\b/i.test(x),
   ).slice(0, 8);
 
+  // prefer the interrogative clause (what/whether/how ...) over past-tense
+  // fact clauses — the legal issue is the question, not the facts
   const legalIssue = clean(
-    clauses.find((x) => /\b(?:whether|does|did|can|could|may|is|are|was|were|what|when|how|under|violate|apply|require|mean)\b/i.test(x)) ||
+    clauses.find((x) => /\b(?:what|whether|how|why|which|when|where)\b/i.test(x)) ||
+    clauses.find((x) => /\b(?:does|did|can|could|may|is|are|was|were|under|violate|apply|require|mean)\b/i.test(x)) ||
     normalized,
     500,
   );
@@ -254,13 +257,52 @@ function task(
   };
 }
 
+// lay legal words vs statutory words: expand common colloquial terms so
+// charging questions retrieve the full offense family (homicide -> murder,
+// manslaughter, ...)
+const LEGAL_SYNONYMS: Record<string, string[]> = {
+  homicide: ["murder", "manslaughter"],
+  murder: ["homicide", "manslaughter"],
+  manslaughter: ["murder", "homicide"],
+  theft: ["larceny", "embezzlement", "robbery"],
+  larceny: ["theft", "embezzlement"],
+  embezzlement: ["theft", "larceny"],
+  robbery: ["theft", "larceny"],
+  burglary: ["theft", "robbery"],
+  assault: ["battery"],
+  battery: ["assault"],
+  dui: ["driving under the influence"],
+  "restraining order": ["protective order", "domestic violence"],
+  "protective order": ["restraining order", "domestic violence"],
+  eviction: ["unlawful detainer"],
+  divorce: ["dissolution of marriage"],
+  custody: ["visitation", "guardianship"],
+  harassment: ["stalking", "civil harassment"],
+  stalking: ["harassment"],
+};
+
+function expandLegalTerms(words: string[]): string[] {
+  const out: string[] = [];
+  for (const w of words) {
+    out.push(w);
+    for (const s of LEGAL_SYNONYMS[w.toLowerCase()] || []) out.push(s);
+  }
+  return unique(out, (x) => x.toLowerCase()).slice(0, 14);
+}
+
 function planTasks(issue: StructuredIssue, question: string): ResearchTask[] {
-  const law = issue.relevant_law.length ? issue.relevant_law : terms(question).slice(0, 8);
+  // search terms lead with the LEGAL words from the issue clause (homicide,
+  // charges, defenses) — fact words (homeowner, intruder) alone retrieve junk
+  const law = issue.relevant_law.length
+    ? issue.relevant_law
+    : expandLegalTerms(terms(issue.legal_issue));
   const base = unique([issue.legal_issue, ...issue.relevant_law, ...issue.factual_predicates], (x) => x.toLowerCase());
   const tasks: ResearchTask[] = [
     task("task-1", "governing_law",
       `What California law governs this issue: ${issue.legal_issue}?`,
-      unique([...law, ...base.slice(0, 2)], (x) => x.toLowerCase()),
+      // governing-law searches use LEGAL terms only — fact words (homeowner,
+      // intruder) retrieve landlord-tenant junk and drown the penal code
+      unique([...law, ...issue.relevant_law], (x) => x.toLowerCase()),
       ["statute"],
       ["At least one operative statutory or constitutional provision directly addresses the issue.", "The retrieved text identifies the relevant provision rather than merely a topical match."]),
   ];
