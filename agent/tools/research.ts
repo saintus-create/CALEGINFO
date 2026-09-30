@@ -166,7 +166,7 @@ function terms(question: string): string[] {
     .split(/\s+/)
     .map((x) => x.trim())
     .filter((x) => x.length >= 3)
-    .filter((x) => !/^(what|when|where|which|does|did|can|could|would|should|how|why|the|and|for|with|from|about|under|into|have|has|this|that|there|their|they|are|was|were|is|of|to|a|an|in|on|or|be|as|by|it)$/i.test(x));
+    .filter((x) => !/^(difference|differences|different|between|versus|vs|compared|compare|comparison|similar|alike|same|tell|every|what|when|where|which|does|did|can|could|would|should|how|why|the|and|for|with|from|about|under|into|have|has|this|that|there|their|they|are|was|were|is|of|to|a|an|in|on|or|be|as|by|it)$/i.test(x));
 }
 
 function inferMode(issue: StructuredIssue, question: string): ResearchMode {

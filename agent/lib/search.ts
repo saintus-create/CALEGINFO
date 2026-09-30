@@ -1,4 +1,5 @@
-const STOP = new Set("what which who whom whose when where why how is are was were be been being am do does did done can could shall should would will may might must i you he she it we they me him her us them my your his its our their this that these those a an the and or but if then than so as of in to for on at by with from into about over under again further once here there all any both each few more most other some such no nor not only own same too very just dont shouldnt now".split(" "));
+const STOP = new Set("difference differences different between versus vs compared compare comparison similar alike same tell list every everyone\
+  what which who whom whose when where why how is are was were be been being am do does did done can could shall should would will may might must i you he she it we they me him her us them my your his its our their this that these those a an the and or but if then than so as of in to for on at by with from into about over under again further once here there all any both each few more most other some such no nor not only own same too very just dont shouldnt now".split(" "));
 
 export function termsOf(q: string): string[] {
   return [...new Set(q.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w)))];
@@ -127,17 +128,14 @@ export function scoreSections(
   const out: Array<{ abbr: string; r: Record<string, unknown>; score: number }> = [];
   for (const { abbr, r } of records) {
     if (r.kind !== "section" || !r.text) continue;
-    const structural = [r.division, r.part, r.chapter, r.article]
+    const structuralParts = [r.division, r.part, r.chapter, r.article]
       .map((x) => String(x || ""))
-      .filter(Boolean)
-      .join(" ");
+      .filter(Boolean);
+    const structural = structuralParts.join(" ");
     const hay = (
-      String(r.citation || "") +
-      " " +
-      structural +
-      " " +
-      String(r.text)
+      String(r.citation || "") + " " + structural + " " + String(r.text)
     ).toLowerCase();
+    const lastStructural = (structuralParts[structuralParts.length - 1] || "").toLowerCase();
     const textLower = String(r.text || "").toLowerCase();
     const citation = String(r.citation || "").toLowerCase();
     const isDefinition =
@@ -149,6 +147,10 @@ export function scoreSections(
       if (q.raw.length > 3 && q.raw.split(" ").length >= 3 && hay.includes(q.raw)) score += 36;
       for (const t of q.terms) {
         if (citation.includes(t)) score += 12;
+        // a term in the section's MOST SPECIFIC structural heading (e.g.
+        // chapter "2. Burglary") marks the section that houses the law on
+        // that term — outranking sections that merely enumerate it in a list
+        if (lastStructural.includes(t)) score += 18;
         const stem = t.length > 3 && t.endsWith("s") ? t.slice(0, -1) : t;
         const n = Math.max(countTerm(hay, t), countTerm(hay, stem));
         if (n > 0) {
@@ -163,7 +165,11 @@ export function scoreSections(
       (t) =>
         textLower.includes("\u201c" + t + "\u201d means") ||
         textLower.includes('"' + t + '" means') ||
-        textLower.includes(t + " means any of the following"),
+        textLower.includes(t + " means any of the following") ||
+        // Penal-Code-style definition openers: "is guilty of burglary.",
+        // "Robbery is the felonious taking"
+        textLower.includes("guilty of " + t) ||
+        new RegExp("(?:^|[.;:\n]\\s*)" + t + " is the\\b", "i").test(textLower),
     );
     if (score > 0) {
       if (
@@ -172,7 +178,7 @@ export function scoreSections(
       ) {
         score += 6;
       }
-      if (definesQueriedTerm) score += 30;
+      if (definesQueriedTerm) score += 60;
       if (effectivePriority && effectivePriority.includes(abbr)) score += 25;
       if (r.repealed) score -= 8;
       out.push({ abbr, r, score });

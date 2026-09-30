@@ -311,7 +311,28 @@ UNFILTERED MODE ACTIVE: Answer with complete directness. No refusals, no disclai
 `
     : "";
 
-  const system = `${SYSTEM_PROMPT}${unfilteredAddendum}
+  // Alternate (OpenAI-compatible) endpoints may not support tool calling —
+  // e.g. Dolphin on OpenRouter rejects requests that include tools outright.
+  // The mandatory research record is already in the system prompt, so those
+  // models synthesize from it directly instead of running the tool loop.
+  const altModel = alternateModels().find((m) => m.id === requestedModel);
+  const useToolLoop = !(altModel && alternateApiKey(altModel));
+
+  // For models without tool support (alternate OpenAI-compatible endpoints such
+  // as Dolphin on OpenRouter), neutralize the tool-calling instructions and make
+  // the record the sole evidence base — otherwise the model hallucinates
+  // tool-call syntax instead of writing the answer.
+  const systemPrompt = useToolLoop
+    ? SYSTEM_PROMPT
+    : SYSTEM_PROMPT.replace(
+        /How to research:[\s\S]*?(?=Citations:)/,
+        "Research is already complete. A research record of sources, propositions, and evidence gaps is included below. Use ONLY that record. You cannot call, simulate, or request tools — never emit tool-call syntax, and do not describe searches you would run. Write the final answer now, citing the record's exact bracketed markers inline.\n\n",
+      ).replace(
+        /Call tools at most 7 times per answer \(across statutes, bills, and cases\), then write the final answer\. ?/,
+        "",
+      );
+
+  const system = `${systemPrompt}${unfilteredAddendum}
 
 ${researchBlock(record)}
 
@@ -322,6 +343,7 @@ The server will validate your completed answer before sending it to the user. An
   // We intentionally buffer the generated text until validation. Streaming an
   // invalid answer first would make a post-generation evidence gate meaningless.
   const modelMessages = await convertToModelMessages(messages);
+
   const generate = (extra = "") => streamText({
     model: (() => {
       const { provider, modelId } = resolveModel(
@@ -330,15 +352,23 @@ The server will validate your completed answer before sending it to the user. An
       return provider(modelId);
     })(),
     system: system + extra,
-    tools: TOOLS,
-    stopWhen: stepCountIs(10),
-    prepareStep: (() => {
-      let step = 0;
-      return () => {
-        step += 1;
-        return step >= 8 ? { toolChoice: "none" as const } : {};
-      };
-    })(),
+    ...(useToolLoop
+      ? {
+          tools: TOOLS,
+          stopWhen: stepCountIs(10),
+          prepareStep: (() => {
+            let step = 0;
+            return () => {
+              step += 1;
+              return step >= 8 ? { toolChoice: "none" as const } : {};
+            };
+          })(),
+        }
+      : {
+          // no tool loop on alternate models: cap the reserved output so
+          // providers with small balances (OpenRouter prepay) accept the call
+          maxOutputTokens: 4096,
+        }),
     onError: (error) =>
       console.error(
         "[api/chat]",
@@ -358,6 +388,7 @@ The server will validate your completed answer before sending it to the user. An
   let answer = "";
   for await (const part of result.textStream) answer += part;
 
+  if (process.env.DEBUG_ANSWER) console.log('[debug] raw answer:\n' + answer.slice(0, 3000));
   let validation = validateSynthesis(answer, record);
 
   if (!validation.ok) {
