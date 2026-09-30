@@ -1,0 +1,15 @@
+name = "ca-legislative-information"
+type = "sandbox"
+description = "California Legislative Information - law research assistant"
+
+[build]
+slim = false
+
+[runtime]
+generation = "mk3"
+memory = 4096
+
+[[runtime.ports]]
+name = "preview"
+target = 3000
+protocol = "tcp"
