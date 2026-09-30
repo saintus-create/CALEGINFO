@@ -1,13 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Browser from "@/app/_components/browsers/Browser";
 import { BrowseShell } from "@/app/_components/browsers/browse-shell";
 import { codes, loadCorpus } from "@/lib/engine";
 
 export default function CodesPage() {
+  return (
+    <Suspense>
+      <CodesBrowser />
+    </Suspense>
+  );
+}
+
+function CodesBrowser() {
+  const params = useSearchParams();
   const [ready, setReady] = useState(false);
-  const [activeCode, setActiveCode] = useState<string | null>(null);
+  const [activeCode, setActiveCode] = useState<string | null>(params.get("code"));
+  const [jumpSection, setJumpSection] = useState<string | null>(params.get("section"));
 
   useEffect(() => {
     loadCorpus(() => {}).then(() => setReady(true)).catch(() => setReady(true));
@@ -44,8 +55,11 @@ export default function CodesPage() {
         <div className="min-w-0 flex-1 overflow-y-auto">
           <Browser
             activeCode={activeCode}
-            jumpSection={null}
-            onCodeChange={(a: string | null) => setActiveCode(a)}
+            jumpSection={jumpSection}
+            onCodeChange={(a: string | null) => {
+              setActiveCode(a);
+              setJumpSection(null);
+            }}
           />
         </div>
       </div>

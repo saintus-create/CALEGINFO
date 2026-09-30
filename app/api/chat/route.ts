@@ -75,7 +75,19 @@ function normalizeMarker(marker: string) {
   return marker.replace(/[\[\]\s]/g, "").toLowerCase();
 }
 
-function recordSources(out: unknown, map: SourceMap) {
+function statuteUrl(code: unknown, citation: string): string | null {
+  // Statute sources may carry code like "Penal Code (PEN)", or a citation like
+  // "CIV § 2987" — either way, build a library deep-link into the code browser.
+  const abbrFromCode =
+    typeof code === "string" ? code.match(/\(([A-Z]{2,5})\)\s*$/) : null;
+  const abbrFromCitation = citation.match(/^([A-Z]{2,5})\s+§/);
+  const section = citation.match(/§\s*([0-9A-Za-z][0-9A-Za-z.]*)/);
+  const abbr = abbrFromCode || abbrFromCitation;
+  if (!abbr || !section) return null;
+  return `/codes?code=${abbr[1]}&section=${encodeURIComponent(section[1])}`;
+}
+
+function recordSources(out: unknown, map: SourceMap, urls?: Map<string, string>) {
   const sources = (out as { sources?: unknown })?.sources;
   if (!Array.isArray(sources)) return;
   for (const s of sources) {
@@ -91,16 +103,26 @@ function recordSources(out: unknown, map: SourceMap) {
     const cite = typeof item.cite === "string" ? item.cite : "";
     const status = typeof item.status === "string" ? item.status : "";
     const label = citation || rule || measure || caseName;
-    if (label) map.set(key, label + (cite && caseName ? ` (${cite})` : "") + (status && measure ? ` · ${status}` : ""));
+    if (label) {
+      map.set(key, label + (cite && caseName ? ` (${cite})` : "") + (status && measure ? ` · ${status}` : ""));
+      const url = statuteUrl(item.code, citation);
+      if (url && urls) urls.set(key, url);
+    }
   }
 }
 
-function recordPropositions(record: Awaited<ReturnType<typeof research.execute>>, map: SourceMap) {
+function recordPropositions(
+  record: Awaited<ReturnType<typeof research.execute>>,
+  map: SourceMap,
+  urls?: Map<string, string>,
+) {
   for (const p of record.propositions || []) {
     const proposition = p as { proposition_id: string; source_ids: string[]; statement: string };
     const source = (record.sources || []).find((s) => proposition.source_ids.includes(s.source_id));
     if (!source) continue;
     map.set(normalizeMarker(proposition.proposition_id), source.citation || source.title || source.marker);
+    const inherited = urls?.get(normalizeMarker(source.marker || ""));
+    if (inherited) urls?.set(normalizeMarker(proposition.proposition_id), inherited);
   }
 }
 
@@ -249,11 +271,12 @@ export async function POST(req: Request) {
     return new Response("Research service is not configured.", { status: 503 });
 
   const sourceMap: SourceMap = new Map();
+  const sourceUrls = new Map<string, string>();
   let record: Awaited<ReturnType<typeof research.execute>>;
   try {
     record = await research.execute({ question }, undefined as never);
-    recordSources(record, sourceMap);
-    recordPropositions(record, sourceMap);
+    recordSources(record, sourceMap, sourceUrls);
+    recordPropositions(record, sourceMap, sourceUrls);
   } catch (error) {
     console.error("[api/chat] mandatory research failed", error);
     return new Response("Research pass failed before answer generation.", { status: 502 });
@@ -265,7 +288,7 @@ export async function POST(req: Request) {
       inputSchema: definition.inputSchema,
       execute: async (input: any, options: any) => {
         const out = await definition.execute(input, options);
-        recordSources(out, sourceMap);
+        recordSources(out, sourceMap, sourceUrls);
         return out;
       },
     });
@@ -382,7 +405,16 @@ Produce a replacement answer, not commentary about the failure. Every substantiv
     : [];
   const finalText = cleanAnswer +
     (cited.length
-      ? "\n\nAUTHORITIES:\n" + cited.map((k) => `[${k}] ${sourceMap.get(k)}`).join("\n")
+      ? "\n\nAUTHORITIES:\n" +
+        cited
+          .map((k) => {
+            const label = sourceMap.get(k) || k;
+            const url = sourceUrls.get(k);
+            return url
+              ? `[${k} ${label}](#law-authority:${url})`
+              : `[${k}] ${label}`;
+          })
+          .join("\n")
       : "") +
     (followupLines.length
       ? "\n\nFOLLOWUPS:\n" + followupLines.map((l) => `- ${l.replace(/^[-*\d.)\s]+/, "").trim()}`).join("\n")
