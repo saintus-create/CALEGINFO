@@ -317,7 +317,7 @@ function planTasks(issue: StructuredIssue, question: string): ResearchTask[] {
 
   const interpretationNeeded =
     !!issue.procedural_posture ||
-    /mean|interpret|apply|valid|invalid|void|constitutional|due process|exception|element|standard|require|whether|case law|held|holding|charge|charged|crime|offense|guilty|defens|penalt|sentenc|felon|misdemeanor|violat|arrest|warrant|search|seizure|evidence|liab|right/i.test(
+    /mean|interpret|apply|valid|invalid|void|constitutional|due process|exception|element|standard|require|whether|case law|held|holding|defin|charge|charged|crime|offense|guilty|defens|penalt|sentenc|felon|misdemeanor|violat|arrest|warrant|search|seizure|evidence|liab|right/i.test(
       question,
     );
   if (interpretationNeeded) {
