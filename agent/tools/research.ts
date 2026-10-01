@@ -315,7 +315,11 @@ function planTasks(issue: StructuredIssue, question: string): ResearchTask[] {
       ["Operative statutory text is identified.", "Effective-date or amendment evidence establishes which version applied to the relevant date."]));
   }
 
-  const interpretationNeeded = !!issue.procedural_posture || /mean|interpret|apply|valid|invalid|void|constitutional|due process|exception|element|standard|require|whether|case law|held|holding/i.test(question);
+  const interpretationNeeded =
+    !!issue.procedural_posture ||
+    /mean|interpret|apply|valid|invalid|void|constitutional|due process|exception|element|standard|require|whether|case law|held|holding|charge|charged|crime|offense|guilty|defens|penalt|sentenc|felon|misdemeanor|violat|arrest|warrant|search|seizure|evidence|liab|right/i.test(
+      question,
+    );
   if (interpretationNeeded) {
     tasks.push(task(`task-${tasks.length + 1}`, "interpretation",
       `How have controlling California appellate courts interpreted or applied the governing law?`,
