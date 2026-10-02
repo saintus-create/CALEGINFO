@@ -225,7 +225,8 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
 
   const citations = Array.from(text.matchAll(CITED_RE)).map((m) => normalizeMarker(m[1]));
   const unknown = citations.filter((c) => !valid.has(c));
-  if (unknown.length) return { ok: false, reason: `Unknown evidence citation(s): ${unknown.join(", ")}` };
+  const unknownU = [...new Set(unknown)];
+  if (unknownU.length) return { ok: false, reason: `Unknown evidence citation(s): ${unknownU.join(", ")}` };
 
   const gapsOpen = record.evidence_gaps.some((g) => g.status === "open");
   const hasEvidenceCitation = citations.some((c) => valid.has(c));
@@ -407,7 +408,9 @@ Produce a replacement answer, not commentary about the failure. Every substantiv
 
   if (!validation.ok) {
     console.error("[api/chat] evidence gate rejected answer", validation.reason);
-    answer = `I could not produce a fully evidence-supported answer from the retrieved research record. ${validation.reason} The unresolved evidence should be researched further rather than filled from general knowledge.`;
+    answer =
+      "I wasn't able to verify this answer against the sources I retrieved, so I'm holding it back rather than risk an unsupported statement. " +
+      "Try rephrasing, or narrow the question to a specific code or section and I'll build the answer from the text.";
   }
 
   const cited: string[] = [];
