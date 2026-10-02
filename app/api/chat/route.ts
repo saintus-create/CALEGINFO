@@ -18,6 +18,7 @@ import billTextSearch from "@/agent/tools/bill_text_search";
 import billDetail from "@/agent/tools/bill_detail";
 import { alternateModels, alternateApiKey, DEFAULT_MODEL_ID, isBuiltInUnfiltered } from "@/agent/lib/models";
 import research from "@/agent/tools/research";
+import { prosecutionContract, prosecutionHeadingGaps } from "@/agent/lib/prosecution-analysis";
 
 const KEY = process.env.SARVAM_API_KEY;
 if (!KEY) console.warn("[api/chat] SARVAM_API_KEY is not configured");
@@ -219,7 +220,7 @@ function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): st
   ].join("\n");
 }
 
-function validateSynthesis(text: string, record: Awaited<ReturnType<typeof research.execute>>) {
+function validateSynthesis(text: string, record: Awaited<ReturnType<typeof research.execute>>, question: string) {
   const valid = new Set(record.propositions.map((p) => normalizeMarker(p.proposition_id)));
   for (const s of record.sources) valid.add(normalizeMarker(s.marker));
 
@@ -390,7 +391,7 @@ The server will validate your completed answer before sending it to the user. An
   for await (const part of result.textStream) answer += part;
 
   if (process.env.DEBUG_ANSWER) console.log('[debug] raw answer:\n' + answer.slice(0, 3000));
-  let validation = validateSynthesis(answer, record);
+  let validation = validateSynthesis(answer, record, question);
 
   if (!validation.ok) {
     // One bounded repair pass is preferable to allowing unsupported text through.
@@ -399,11 +400,11 @@ The server will validate your completed answer before sending it to the user. An
 REPAIR REQUIRED:
 Your previous synthesis failed the evidence gate for this reason:
 ${validation.reason}
-Produce a replacement answer, not commentary about the failure. Every substantive paragraph must contain a valid proposition/source citation. Do not use general knowledge to fill gaps. If an evidence gap remains open, explicitly say so.
+Produce a replacement answer, not commentary about the failure. Every substantive paragraph must contain a valid proposition/source citation. Do not use general knowledge to fill gaps. If an evidence gap remains open, explicitly say so. If this is a criminal-law question, include every required prosecution-grade section and explicitly separate probable cause from trial sufficiency.
 `);
     answer = "";
     for await (const part of result.textStream) answer += part;
-    validation = validateSynthesis(answer, record);
+    validation = validateSynthesis(answer, record, question);
   }
 
   if (!validation.ok) {
