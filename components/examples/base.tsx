@@ -120,7 +120,7 @@ const LIBRARY_ICONS = [
 const LibraryRail: FC = () => (
   <nav
     aria-label="Library"
-    className="hidden h-full w-14 shrink-0 flex-col items-center gap-1 py-3 md:flex"
+    className="relative z-10 hidden h-full w-14 shrink-0 flex-col items-center gap-1 py-3 md:flex"
   >
     {LIBRARY_ICONS.map(({ label, href, Icon }) => (
       <a
@@ -250,7 +250,7 @@ const LawModelToggle: FC = () => {
   return (
     <div
       data-slot="law-model-toggle"
-      className="flex items-center rounded-full border border-primary/40 bg-primary/10 p-1 shadow-[0_0_24px_-8px_var(--color-primary)]"
+      className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl"
       title={
         alternate.available
           ? `Answer mode: Standard or Unfiltered`
@@ -263,8 +263,8 @@ const LawModelToggle: FC = () => {
         className={cn(
           "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
           !on
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-primary/70 hover:text-primary",
+            ? "bg-white/20 text-white shadow-sm"
+            : "text-white/60 hover:text-white",
         )}
       >
         Standard
@@ -276,8 +276,8 @@ const LawModelToggle: FC = () => {
         className={cn(
           "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
           on
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-primary/70 hover:text-primary",
+            ? "bg-white/20 text-white shadow-sm"
+            : "text-white/60 hover:text-white",
           !alternate.available &&
             "cursor-not-allowed opacity-40 hover:text-muted-foreground",
         )}
@@ -323,11 +323,9 @@ const Header: FC<{
         </TooltipIconButton>
       )}
       <ThreadTitle />
-      {isEmpty ? null : (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <LawModelToggle />
-        </div>
-      )}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <LawModelToggle />
+      </div>
       <TooltipIconButton
         variant="ghost"
         size="icon"
@@ -353,7 +351,7 @@ const Thread: FC = () => {
 
   return (
     <ThreadPrimitive.Root
-      className="aui-root aui-thread-root bg-background @container flex h-full flex-col"
+      className="aui-root aui-thread-root @container flex h-full flex-col"
       style={{
         ["--thread-max-width" as string]: "44rem",
         ["--composer-bg" as string]:
@@ -385,24 +383,14 @@ const Thread: FC = () => {
 
         <ThreadPrimitive.ViewportFooter
           className={cn(
-            "aui-thread-viewport-footer bg-background mx-auto flex w-full max-w-(--thread-max-width) flex-col gap-4 overflow-visible pb-4 md:pb-6",
-            !isEmpty && "sticky bottom-0 mt-auto rounded-t-(--composer-radius)",
+            "aui-thread-viewport-footer mx-auto flex w-full max-w-(--thread-max-width) flex-col gap-4 overflow-visible pb-4 md:pb-6",
+            !isEmpty &&
+              "bg-background/70 sticky bottom-0 mt-auto rounded-t-(--composer-radius) backdrop-blur-md",
           )}
         >
           <ThreadScrollToBottom />
-          {isEmpty ? (
-            <div className="flex justify-center">
-              <LawModelToggle />
-            </div>
-          ) : null}
           <div className="relative">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -inset-x-[60px] -inset-y-[34px] rounded-[2.5rem] bg-blue-600/60 blur-[70px]"
-            />
-            <div className="relative">
-              <Composer />
-            </div>
+            <Composer />
           </div>
         </ThreadPrimitive.ViewportFooter>
       </ThreadPrimitive.Viewport>
@@ -993,13 +981,14 @@ export const Base: FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   return (
-    <div className="bg-[color-mix(in_oklab,var(--color-primary)_4%,var(--color-muted))] flex h-full w-full">
+    <div className="relative flex h-full w-full overflow-hidden">
+      <div className="galaxy-bg" aria-hidden />
       <LibraryRail />
-      <div className="hidden md:block">
+      <div className="relative z-10 hidden md:block">
         <EmptyAwareSidebar collapsed={sidebarCollapsed} />
       </div>
-      <div className="flex flex-1 flex-col overflow-hidden p-2 md:pl-0">
-        <div className="bg-background flex flex-1 flex-col overflow-hidden rounded-lg">
+      <div className="relative z-10 flex flex-1 flex-col overflow-hidden p-2 md:pl-0">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-lg">
           <Header
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
