@@ -110,6 +110,32 @@ const Logo: FC = () => {
   );
 };
 
+const LIBRARY_ICONS = [
+  { label: "Codes", href: "/codes", Icon: BookOpenIcon },
+  { label: "Bills", href: "/bills", Icon: LandmarkIcon },
+  { label: "Rules of Court", href: "/rules", Icon: ScaleIcon },
+  { label: "Directory", href: "/directory", Icon: Building2Icon },
+];
+
+const LibraryRail: FC = () => (
+  <nav
+    aria-label="Library"
+    className="hidden h-full w-14 shrink-0 flex-col items-center gap-1 py-3 md:flex"
+  >
+    {LIBRARY_ICONS.map(({ label, href, Icon }) => (
+      <a
+        key={href}
+        href={href}
+        title={label}
+        aria-label={label}
+        className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex size-9 items-center justify-center rounded-md transition-colors"
+      >
+        <Icon className="size-4" />
+      </a>
+    ))}
+  </nav>
+);
+
 const Sidebar: FC<{ collapsed?: boolean }> = ({ collapsed }) => {
   const { assistant } = useBaseConfig();
 
@@ -235,7 +261,7 @@ const LawModelToggle: FC = () => {
         type="button"
         onClick={() => select(false)}
         className={cn(
-          "rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors",
+          "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
           !on
             ? "bg-primary text-primary-foreground shadow-sm"
             : "text-primary/70 hover:text-primary",
@@ -248,7 +274,7 @@ const LawModelToggle: FC = () => {
         onClick={() => select(true)}
         disabled={!alternate.available}
         className={cn(
-          "rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors",
+          "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
           on
             ? "bg-primary text-primary-foreground shadow-sm"
             : "text-primary/70 hover:text-primary",
@@ -297,35 +323,18 @@ const Header: FC<{
         </TooltipIconButton>
       )}
       <ThreadTitle />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <LawModelToggle />
-      </div>
-      <nav
-        aria-label="Library"
-        className="ml-auto hidden items-center gap-0.5 sm:flex"
-      >
-        {[
-          ["Codes", "/codes"],
-          ["Bills", "/bills"],
-          ["Rules", "/rules"],
-          ["Directory", "/directory"],
-        ].map(([label, href]) => (
-          <a
-            key={href}
-            href={href}
-            className="rounded-md px-2.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-          >
-            {label}
-          </a>
-        ))}
-      </nav>
+      {isEmpty ? null : (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <LawModelToggle />
+        </div>
+      )}
       <TooltipIconButton
         variant="ghost"
         size="icon"
         tooltip="Share"
         side="bottom"
         disabled
-        className="ml-auto size-8 sm:ml-0"
+        className="ml-auto size-8"
       >
         <ShareIcon className="size-4" />
       </TooltipIconButton>
@@ -381,10 +390,15 @@ const Thread: FC = () => {
           )}
         >
           <ThreadScrollToBottom />
+          {isEmpty ? (
+            <div className="flex justify-center">
+              <LawModelToggle />
+            </div>
+          ) : null}
           <div className="relative">
             <div
               aria-hidden
-              className="pointer-events-none absolute -inset-x-[26px] -inset-y-5 rounded-[2rem] bg-primary/50 blur-[40px]"
+              className="pointer-events-none absolute -inset-x-[60px] -inset-y-[34px] rounded-[2.5rem] bg-blue-600/60 blur-[70px]"
             />
             <div className="relative">
               <Composer />
@@ -980,6 +994,7 @@ export const Base: FC = () => {
 
   return (
     <div className="bg-[color-mix(in_oklab,var(--color-primary)_4%,var(--color-muted))] flex h-full w-full">
+      <LibraryRail />
       <div className="hidden md:block">
         <EmptyAwareSidebar collapsed={sidebarCollapsed} />
       </div>
