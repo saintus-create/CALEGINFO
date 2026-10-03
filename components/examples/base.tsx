@@ -224,7 +224,7 @@ const LawModelToggle: FC = () => {
   return (
     <div
       data-slot="law-model-toggle"
-      className="flex items-center rounded-full border p-0.5"
+      className="flex items-center rounded-full border border-primary/40 bg-primary/10 p-1 shadow-[0_0_24px_-8px_var(--color-primary)]"
       title={
         alternate.available
           ? `Answer mode: Standard or Unfiltered`
@@ -235,10 +235,10 @@ const LawModelToggle: FC = () => {
         type="button"
         onClick={() => select(false)}
         className={cn(
-          "rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors",
+          "rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors",
           !on
-            ? "bg-primary/15 text-primary"
-            : "text-muted-foreground hover:text-foreground",
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-primary/70 hover:text-primary",
         )}
       >
         Standard
@@ -248,10 +248,10 @@ const LawModelToggle: FC = () => {
         onClick={() => select(true)}
         disabled={!alternate.available}
         className={cn(
-          "rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors",
+          "rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors",
           on
-            ? "bg-primary/15 text-primary"
-            : "text-muted-foreground hover:text-foreground",
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-primary/70 hover:text-primary",
           !alternate.available &&
             "cursor-not-allowed opacity-40 hover:text-muted-foreground",
         )}
@@ -282,7 +282,7 @@ const Header: FC<{
 }> = ({ sidebarCollapsed, onToggleSidebar }) => {
   const isEmpty = useAuiState(isNewChatView);
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+    <header className="relative flex h-12 shrink-0 items-center gap-2 px-4">
       {isEmpty ? null : <MobileSidebar />}
       {isEmpty ? null : (
         <TooltipIconButton
@@ -297,7 +297,9 @@ const Header: FC<{
         </TooltipIconButton>
       )}
       <ThreadTitle />
-      <LawModelToggle />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <LawModelToggle />
+      </div>
       <nav
         aria-label="Library"
         className="ml-auto hidden items-center gap-0.5 sm:flex"
@@ -382,7 +384,7 @@ const Thread: FC = () => {
           <div className="relative">
             <div
               aria-hidden
-              className="pointer-events-none absolute -inset-x-28 -inset-y-20 rounded-[3rem] bg-[radial-gradient(ellipse_at_center,color-mix(in_oklab,var(--color-primary)_70%,transparent)_0%,color-mix(in_oklab,var(--color-primary)_28%,transparent)_38%,transparent_72%)] opacity-60 blur-2xl"
+              className="pointer-events-none absolute inset-0 rounded-[1.5rem] opacity-50 shadow-[0_0_45px_12px_var(--color-primary)]"
             />
             <div className="relative">
               <Composer />
