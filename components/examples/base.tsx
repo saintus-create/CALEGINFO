@@ -359,10 +359,6 @@ const Thread: FC = () => {
           isEmpty && "justify-center",
         )}
       >
-        <AuiIf condition={isNewChatView}>
-          <ThreadWelcome />
-        </AuiIf>
-
         <div
           data-slot="aui_message-group"
           className="mb-14 flex flex-col gap-y-6 empty:hidden"
@@ -383,14 +379,15 @@ const Thread: FC = () => {
           )}
         >
           <ThreadScrollToBottom />
-          <Composer />
-          <AuiIf condition={isNewChatView}>
-            <div className="aui-thread-welcome-suggestions-shell min-h-19">
-              <AuiIf condition={(s) => s.composer.isEmpty}>
-                <ThreadSuggestions />
-              </AuiIf>
+          <div className="relative">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-x-28 -inset-y-20 rounded-[3rem] bg-[radial-gradient(ellipse_at_center,color-mix(in_oklab,var(--color-primary)_70%,transparent)_0%,color-mix(in_oklab,var(--color-primary)_28%,transparent)_38%,transparent_72%)] opacity-60 blur-2xl"
+            />
+            <div className="relative">
+              <Composer />
             </div>
-          </AuiIf>
+          </div>
         </ThreadPrimitive.ViewportFooter>
       </ThreadPrimitive.Viewport>
 
