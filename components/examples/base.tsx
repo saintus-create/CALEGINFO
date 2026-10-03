@@ -384,7 +384,7 @@ const Thread: FC = () => {
           <div className="relative">
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-[1.5rem] opacity-50 shadow-[0_0_45px_12px_var(--color-primary)]"
+              className="pointer-events-none absolute -inset-x-[26px] -inset-y-5 rounded-[2rem] bg-primary/50 blur-[40px]"
             />
             <div className="relative">
               <Composer />
