@@ -346,7 +346,7 @@ const Thread: FC = () => {
       style={{
         ["--thread-max-width" as string]: "44rem",
         ["--composer-bg" as string]:
-          "color-mix(in oklab, var(--color-muted) 30%, var(--color-background))",
+          "var(--color-muted)",
         ["--composer-radius" as string]: "1.5rem",
         ["--composer-padding" as string]: "8px",
       }}
@@ -602,7 +602,7 @@ const Composer: FC = () => {
         <ComposerPrimitive.AttachmentDropzone asChild>
           <div
             data-slot="aui_composer-shell"
-            className="border-primary/25 data-[dragging=true]:border-ring focus-within:border-primary/60 dark:border-primary/25 dark:focus-within:border-primary/70 flex w-full flex-col gap-2 rounded-(--composer-radius) border bg-(--composer-bg) p-(--composer-padding) shadow-[0_4px_16px_-8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] transition-[border-color,box-shadow] focus-within:shadow-[0_0_0_1px_var(--color-primary),0_8px_28px_-12px_var(--color-primary)] data-[dragging=true]:border-dashed data-[dragging=true]:bg-[color-mix(in_oklab,var(--color-primary)_12%,var(--color-background))] dark:shadow-none"
+            className="data-[dragging=true]:bg-[color-mix(in_oklab,var(--color-primary)_12%,var(--color-background))] flex w-full flex-col gap-2 rounded-(--composer-radius) bg-(--composer-bg) p-(--composer-padding) shadow-[0_4px_16px_-8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] transition-[background-color,box-shadow] focus-within:shadow-[0_0_0_2px_var(--color-primary),0_8px_28px_-12px_var(--color-primary)] dark:shadow-none"
           >
             <ComposerQuotePreview />
             <ComposerAttachments />
@@ -871,7 +871,7 @@ const UserMessage: FC = () => {
       <UserMessageAttachments />
 
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-        <div className="aui-user-message-content peer bg-muted text-foreground rounded-xl px-4 py-2 wrap-break-word empty:hidden">
+        <div className="aui-user-message-content peer bg-primary text-primary-foreground rounded-xl px-4 py-2 wrap-break-word empty:hidden">
           <MessagePrimitive.Quote>
             {(quote) => <QuoteBlock {...quote} />}
           </MessagePrimitive.Quote>
@@ -913,7 +913,7 @@ const EditComposer: FC = () => {
       className="mx-auto flex w-full max-w-(--thread-max-width) flex-col px-2"
     >
       <ComposerPrimitive.Unstable_TriggerPopoverRoot>
-        <ComposerPrimitive.Root className="aui-edit-composer-root border-border/60 dark:border-muted-foreground/15 ml-auto flex w-full max-w-[85%] flex-col rounded-(--composer-radius) border bg-(--composer-bg) shadow-[0_4px_16px_-8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none">
+        <ComposerPrimitive.Root className="aui-edit-composer-root ml-auto flex w-full max-w-[85%] flex-col rounded-(--composer-radius) bg-(--composer-bg) shadow-[0_4px_16px_-8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none">
           <LexicalComposerInput
             directiveChip={DirectiveChip}
             autoFocus
