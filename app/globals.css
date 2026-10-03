@@ -106,46 +106,60 @@
   --color-primary: oklch(0.7 0.12 262);
 }
 
-/* starry galaxy background */
+/* starry sky — depth from layered star fields (far/mid/near), monochrome matte */
 .galaxy-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-color: #04050c;
+  overflow: hidden;
+  background-color: #07080b;
   background-image:
-    radial-gradient(1.6px 1.6px at 20px 30px, rgba(255, 255, 255, 0.95), transparent),
-    radial-gradient(1.2px 1.2px at 120px 80px, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1px 1px at 70px 150px, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.4px 1.4px at 180px 40px, rgba(255, 255, 255, 0.85), transparent),
-    radial-gradient(1px 1px at 40px 200px, rgba(200, 220, 255, 0.6), transparent),
-    radial-gradient(1.2px 1.2px at 150px 190px, rgba(255, 255, 255, 0.65), transparent),
-    radial-gradient(1px 1px at 210px 140px, rgba(200, 220, 255, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 90px 60px, rgba(255, 255, 255, 0.8), transparent);
-  background-size: 240px 240px;
+    radial-gradient(1.3px 1.3px at 30px 40px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.1px 1.1px at 140px 90px, rgba(255, 255, 255, 0.38), transparent),
+    radial-gradient(1.2px 1.2px at 80px 170px, rgba(255, 255, 255, 0.44), transparent),
+    radial-gradient(1px 1px at 200px 50px, rgba(255, 255, 255, 0.32), transparent),
+    radial-gradient(1.4px 1.4px at 170px 210px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.1px 1.1px at 250px 150px, rgba(255, 255, 255, 0.36), transparent),
+    radial-gradient(1.2px 1.2px at 60px 240px, rgba(255, 255, 255, 0.42), transparent),
+    radial-gradient(1px 1px at 230px 250px, rgba(255, 255, 255, 0.3), transparent);
+  background-size: 300px 300px;
   background-repeat: repeat;
 }
+
+/* far field: tiny, dim, dense — recedes */
 .galaxy-bg::before {
   content: "";
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(ellipse 55% 45% at 18% 12%, rgba(70, 110, 255, 0.25), transparent 70%),
-    radial-gradient(ellipse 45% 40% at 85% 78%, rgba(150, 80, 255, 0.2), transparent 70%),
-    radial-gradient(ellipse 70% 55% at 55% 108%, rgba(30, 70, 200, 0.22), transparent 70%);
+    radial-gradient(1px 1px at 10px 20px, rgba(255, 255, 255, 0.22), transparent),
+    radial-gradient(1px 1px at 60px 70px, rgba(255, 255, 255, 0.18), transparent),
+    radial-gradient(1px 1px at 110px 30px, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1px 1px at 40px 120px, rgba(255, 255, 255, 0.16), transparent),
+    radial-gradient(1px 1px at 90px 130px, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1px 1px at 130px 100px, rgba(255, 255, 255, 0.18), transparent),
+    radial-gradient(1px 1px at 20px 90px, rgba(255, 255, 255, 0.15), transparent),
+    radial-gradient(1px 1px at 140px 60px, rgba(255, 255, 255, 0.19), transparent);
+  background-size: 150px 150px;
+  background-repeat: repeat;
 }
+
+/* near field: sparse, larger, brighter + matte edge vignette for depth */
 .galaxy-bg::after {
   content: "";
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(2.4px 2.4px at 80px 120px, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(2px 2px at 300px 40px, rgba(255, 255, 255, 0.75), transparent),
-    radial-gradient(2.6px 2.6px at 200px 330px, rgba(220, 235, 255, 0.85), transparent),
-    radial-gradient(2px 2px at 460px 240px, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(2.2px 2.2px at 520px 90px, rgba(255, 255, 255, 0.8), transparent);
-  background-size: 560px 560px;
-  background-repeat: repeat;
+    radial-gradient(ellipse 125% 105% at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.6) 100%),
+    radial-gradient(2.6px 2.6px at 100px 140px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2.2px 2.2px at 340px 60px, rgba(255, 255, 255, 0.72), transparent),
+    radial-gradient(2.8px 2.8px at 220px 380px, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(2.2px 2.2px at 500px 260px, rgba(255, 255, 255, 0.68), transparent),
+    radial-gradient(2.4px 2.4px at 600px 110px, rgba(255, 255, 255, 0.78), transparent),
+    radial-gradient(2px 2px at 430px 470px, rgba(255, 255, 255, 0.6), transparent);
+  background-size: cover, 680px 680px, 680px 680px, 680px 680px, 680px 680px, 680px 680px, 680px 680px;
+  background-repeat: no-repeat, repeat, repeat, repeat, repeat, repeat, repeat;
 }
 
 @layer base {
