@@ -6,6 +6,8 @@ import {
   UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import { MetalSeal } from "@/app/_components/metal-seal";
+import { CaMark } from "@/app/_components/ca-mark";
 import { LawMarkdownText } from "@/components/assistant-ui/law-markdown";
 import { DotMatrix } from "@/components/assistant-ui/dot-matrix";
 import { MessageTiming } from "@/components/assistant-ui/message-timing";
@@ -104,7 +106,7 @@ const Logo: FC = () => {
 
   return (
     <div className="flex items-center gap-2 px-2 text-sm font-medium">
-      <ScaleIcon className="text-primary size-5" />
+      <CaMark className="text-primary size-5" />
       <span className="text-foreground tracking-tight">{assistant.appName}</span>
     </div>
   );
@@ -153,7 +155,7 @@ const Sidebar: FC<{ collapsed?: boolean }> = ({ collapsed }) => {
           collapsed ? "px-3.5" : "px-6",
         )}
       >
-        <ScaleIcon className="text-primary size-5 shrink-0" />
+        <CaMark className="text-primary size-5 shrink-0" />
         <span
           className={cn(
             "text-foreground ml-2 text-sm font-medium tracking-tight whitespace-nowrap transition-opacity duration-200",
@@ -390,6 +392,11 @@ const Thread: FC = () => {
           )}
         >
           <ThreadScrollToBottom />
+          {isEmpty ? (
+            <div className="flex justify-center pb-2">
+              <MetalSeal className="h-32 w-32" />
+            </div>
+          ) : null}
           <div className="relative">
             <Composer />
           </div>
