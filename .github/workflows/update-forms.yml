@@ -1,0 +1,52 @@
+name: Update California court forms corpus
+
+# Refreshes public/corpus/forms/FORMS.jsonl.gz from the Judicial Council's
+# self-help portal (https://selfhelp.courts.ca.gov/json/jcc-forms) and commits
+# the result back to the branch. The dev sandbox has no egress to
+# courts.ca.gov, so the fetch runs here; the app itself only reads the
+# committed gz, exactly like the bills / rules / directory corpora.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - arena/01a10a94-caleginfo
+    paths:
+      - "scripts/fetch_forms.py"
+      - ".github/workflows/update-forms.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-forms-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch and pack the forms corpus
+        run: python3 scripts/fetch_forms.py
+
+      - name: Commit if the corpus changed
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/corpus/forms/FORMS.jsonl.gz public/corpus/manifest.json
+          if git diff --cached --quiet; then
+            echo "Forms corpus already current — nothing to commit."
+            exit 0
+          fi
+          count=$(gzip -dc public/corpus/forms/FORMS.jsonl.gz | wc -l)
+          git commit -m "corpus(forms): refresh Judicial Council forms (${count} forms)"
+          git push origin "HEAD:${{ github.ref_name }}"

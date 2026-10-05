@@ -462,6 +462,20 @@
         "cases": 64,
         "source": "saintus-create/family-x1oh1xy2 (curated DVPA case summaries)",
         "annotations": 103
+      },
+      {
+        "sha256": "9d7d9f05639873c450ede6e5799463b30b556a54f1ecaf321f611523234e3a57",
+        "key": "forms",
+        "name": "Judicial Council Forms (statewide)",
+        "file": "forms/FORMS.jsonl.gz",
+        "records": 1670,
+        "mandatory": 861,
+        "categories": 102,
+        "prefixes": 64,
+        "series": 58,
+        "retrieved_at": "2026-10-05T10:11:27.164104+00:00",
+        "source": "https://selfhelp.courts.ca.gov/json/jcc-forms",
+        "official_source": "https://selfhelp.courts.ca.gov/find-forms/all-by-category"
       }
     ]
   }

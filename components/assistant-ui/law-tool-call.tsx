@@ -25,6 +25,8 @@ function describe(toolName: string, args: any): string {
       return `Searching 2025\u201326 legislation — ${fmtQueries(args?.queries)}`;
     case "search_rules":
       return `Searching Rules of Court — ${fmtQueries(args?.queries)}`;
+    case "search_forms":
+      return `Searching Judicial Council forms — ${fmtQueries(args?.queries)}`;
     case "search_cases":
       return `Searching case law — ${fmtQueries(args?.queries)}`;
     default:

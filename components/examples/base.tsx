@@ -114,6 +114,7 @@ const LIBRARY_ICONS = [
   { label: "Codes", href: "/codes", Icon: BookOpenIcon },
   { label: "Bills", href: "/bills", Icon: LandmarkIcon },
   { label: "Rules of Court", href: "/rules", Icon: ScaleIcon },
+  { label: "Forms", href: "/forms", Icon: FileTextIcon },
   { label: "Directory", href: "/directory", Icon: Building2Icon },
 ];
 
@@ -427,7 +428,7 @@ const ThreadWelcome: FC = () => {
           {assistant.welcome.body}
         </p>
       )}
-      <div className="mt-8 grid w-full max-w-2xl grid-cols-2 gap-2.5 sm:grid-cols-4">
+      <div className="mt-8 grid w-full max-w-2xl grid-cols-2 gap-2.5 sm:grid-cols-5">
         {[
           {
             href: "/codes",
@@ -446,6 +447,12 @@ const ThreadWelcome: FC = () => {
             icon: ScaleIcon,
             title: "Rules of Court",
             desc: "Procedural rules for every California court",
+          },
+          {
+            href: "/forms",
+            icon: FileTextIcon,
+            title: "Forms",
+            desc: "Every statewide Judicial Council form, searchable",
           },
           {
             href: "/directory",
