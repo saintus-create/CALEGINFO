@@ -472,10 +472,10 @@
         "mandatory": 861,
         "categories": 102,
         "prefixes": 64,
-        "retrieved_at": "2026-10-05T05:44:57.521105+00:00",
+        "series": 58,
+        "retrieved_at": "2026-10-05T05:58:45.448068+00:00",
         "source": "https://selfhelp.courts.ca.gov/json/jcc-forms",
-        "official_source": "https://selfhelp.courts.ca.gov/find-forms/all-by-category",
-        "series": 58
+        "official_source": "https://selfhelp.courts.ca.gov/find-forms/all-by-category"
       }
     ]
   }
