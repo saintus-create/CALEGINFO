@@ -345,9 +345,35 @@ function planTasks(issue: StructuredIssue, question: string): ResearchTask[] {
       question,
     );
   if (formsNeeded) {
+    // Query the forms corpus with the filer's own topic words: "domestic
+    // violence restraining order", not the raw question, and never the words
+    // every form shares ("judicial council form").
+    const formNoise = new Set([
+      "form", "forms", "court", "courts", "judicial", "council", "mandatory",
+      "optional", "statewide", "official", "need", "needed", "needs",
+    ]);
+    const formTopic = terms(question)
+      .filter((w) => !formNoise.has(w.toLowerCase()))
+      .slice(0, 6)
+      .join(" ");
+    const posture = String(issue.procedural_posture || "")
+      .split(/\s*[,;]\s*|\band\b/i)[0]
+      .trim();
+    const formQueries = unique(
+      [
+        formTopic,
+        posture.length > 3 ? `${posture} form` : "",
+        ...law.filter((x) => !/judicial|council/i.test(x)).slice(0, 1).map((x) => `${x} form`),
+        issue.legal_issue.length <= 90 ? `${issue.legal_issue} form` : "",
+      ]
+        .filter((x) => x.length > 3)
+        // drop candidates made only of shared form words ("forms form")
+        .filter((x) => terms(x).some((w) => !formNoise.has(w.toLowerCase()))),
+      (x) => x.toLowerCase(),
+    ).slice(0, 3);
     tasks.push(task(`task-${tasks.length + 1}`, "forms",
       `Which Judicial Council form(s) implement this request, and are they mandatory?`,
-      unique([`${issue.procedural_posture || ""} Judicial Council form`, ...law.map((x) => `${x} form`), ...base.slice(0, 2).map((x) => `${x} court form`)], (x) => x.toLowerCase()),
+      formQueries,
       ["form"],
       ["The specific Judicial Council form number is retrieved from the forms corpus.", "Mandatory versus optional use and the form's effective date are established."],
       false));

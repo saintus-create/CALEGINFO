@@ -333,6 +333,13 @@ const SECONDARY_FORM_RE =
 const SECONDARY_QUERY_RE =
   /\b(order|notice|instruction|information|how to|after hearing|reconsider|renew|terminate|modify|change|end|respond|response|answer|enforce|collect|cover sheet|attachment|declaration)\b/i;
 
+// Words that carry no signal in a forms query: every record is a Judicial
+// Council form, so "form", "judicial", "council", "court" or "mandatory" would
+// otherwise match nearly every title.
+const FORM_NOISE = new Set(
+  "form forms need needed needs judicial council mandatory optional statewide official court courts".split(" "),
+);
+
 /**
  * Score Judicial Council forms against the query set. A form-number hit
  * dominates (FL-100 must return FL-100 first); then coverage of the query in
@@ -347,14 +354,14 @@ export function scoreForms(
   limit = 12,
 ): ScoredForm[] {
   const qsets = queries.map((q) => {
-    const terms = termsOf(q).filter((t) => !CODE_NAME_WORDS.has(t));
+    const terms = termsOf(q).filter((t) => !CODE_NAME_WORDS.has(t) && !FORM_NOISE.has(t));
     return {
       terms,
       nums: formNumsIn(q).map((n) => n.toLowerCase()),
       phrase: q.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim(),
       wantsInfo: /\binfo|instruction|instructions|explain|how to|guide|help\b/i.test(q),
       wantsSecondary: SECONDARY_QUERY_RE.test(q),
-    hintedSeries: SERIES_HINTS.filter(([re]) => re.test(q)).map(([, prefix]) => prefix),
+      hintedSeries: SERIES_HINTS.filter(([re]) => re.test(q)).map(([, prefix]) => prefix),
     };
   });
   const out: Array<ScoredForm & { coverage: number }> = [];
@@ -390,14 +397,15 @@ export function scoreForms(
       if (titleHits) score += Math.round(100 * (titleHits / total)) + (titleHits === total ? 10 : 0);
       if (descHits) score += Math.round(12 * (descHits / total));
       if (catHits) score += Math.round(10 * (catHits / total));
-      if (q.phrase.length > 3) {
+      if (q.terms.length && q.phrase.length > 3) {
         if (title.includes(q.phrase)) score += 15;
         else if (desc.includes(q.phrase)) score += 8;
       }
       if (num.includes(q.phrase.replace(/[^a-z0-9]/g, ""))) score += 20;
       if (!q.wantsInfo && /-info$/i.test(number)) score -= 20;
       if (!q.wantsSecondary && SECONDARY_FORM_RE.test(title)) score -= 15;
-      if (/(^|-)(001|100)(-|$)/.test(num)) score += 25;
+      // canonical first form of a series (-100 / -001) — only among relevant hits
+      if (score > 0 && /(^|-)(001|100)(-|$)/.test(num)) score += 25;
       if (q.hintedSeries.includes(formSeries(f as { series?: string; prefix?: string; number?: string }))) score += 20;
       if (coverage > bestCoverage) bestCoverage = coverage;
     }
