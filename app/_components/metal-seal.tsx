@@ -11,7 +11,7 @@ import { LiquidMetal } from "@paper-design/shaders-react";
 export function MetalSeal({ className }: { className?: string }) {
   return (
     <div
-      className={`${className ?? ""} seal-fade overflow-hidden rounded-full opacity-90`}
+      className={`${className ?? ""} overflow-hidden rounded-full`}
       style={{ position: "relative" }}
       aria-label="Great Seal of California"
     >
@@ -38,26 +38,6 @@ export function MetalSeal({ className }: { className?: string }) {
         className="relative h-full w-full object-contain"
         style={{ mixBlendMode: "luminosity" }}
       />
-      {/* edge vignette: melts the emblem into the dark background */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle closest-side at 50% 50%, transparent 0 58%, rgba(0,0,0,0.28) 74%, rgba(0,0,0,0.68) 88%, rgba(0,0,0,0.95) 97%, #000 100%)",
-        }}
-      />
-      {/* a highlight that travels around the rim, lighting the rope grooves */}
-      <div className="seal-rim-mask pointer-events-none absolute inset-0" aria-hidden>
-        <div
-          className="seal-rim-sweep absolute inset-0"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.55) 30deg, transparent 78deg, transparent 360deg)",
-            mixBlendMode: "screen",
-          }}
-        />
-      </div>
     </div>
   );
 }
