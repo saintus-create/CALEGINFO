@@ -63,17 +63,26 @@ export async function loadJsonl(rel: string): Promise<Array<Record<string, unkno
   return out;
 }
 
+/** Statewide Judicial Council forms (number, title, description, dates, PDFs). */
+export async function loadForms(): Promise<Array<Record<string, unknown>>> {
+  return loadJsonl("corpus/forms/FORMS.jsonl.gz");
+}
+
+/**
+ * Abbreviations as packed in public/corpus/law/<ABBR>.jsonl.gz and listed in
+ * corpus/manifest.json — must stay in sync with lib/engine.js CODE_NAMES.
+ */
 export const CODE_NAMES: Record<string, string> = {
   CONS: "California Constitution", BPC: "Business and Professions Code", CIV: "Civil Code",
   CCP: "Code of Civil Procedure", COM: "Commercial Code", CORP: "Corporations Code",
-  EDU: "Education Code", ELEC: "Elections Code", ETD: "Evidence Code", FAM: "Family Code",
+  EDC: "Education Code", ELEC: "Elections Code", EVID: "Evidence Code", FAM: "Family Code",
   FIN: "Financial Code", FGC: "Fish and Game Code", FAC: "Food and Agricultural Code",
-  GOV: "Government Code", HSC: "Health and Safety Code", INS: "Insurance Code",
-  LAB: "Labor Code", MIL: "Military and Veterans Code", PEN: "Penal Code",
-  PROB: "Probate Code", PUC: "Public Utilities Code", PUBRES: "Public Resources Code",
-  PUBCON: "Public Contract Code", RTC: "Revenue and Taxation Code", SHC: "Streets and Highways Code",
+  GOV: "Government Code", HNC: "Harbors and Navigation Code", HSC: "Health and Safety Code",
+  INS: "Insurance Code", LAB: "Labor Code", MVC: "Military and Veterans Code", PEN: "Penal Code",
+  PROB: "Probate Code", PCC: "Public Contract Code", PRC: "Public Resources Code",
+  PUC: "Public Utilities Code", RTC: "Revenue and Taxation Code", SHC: "Streets and Highways Code",
   UIC: "Unemployment Insurance Code", VEH: "Vehicle Code", WAT: "Water Code",
-  WEL: "Welfare and Institutions Code",
+  WIC: "Welfare and Institutions Code",
 };
 
 const ALL_ABBRS = Object.keys(CODE_NAMES);

@@ -18,7 +18,9 @@
     "typecheck": "next typegen && tsgo --noEmit -p tsconfig.json",
     "build:eve": "eve build",
     "dev:eve": "eve dev",
-    "start:eve": "eve start"
+    "start:eve": "eve start",
+    "check:forms": "tsx scripts/check_forms.ts",
+    "check:forms:corpus": "python3 scripts/check_forms.py"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.78",

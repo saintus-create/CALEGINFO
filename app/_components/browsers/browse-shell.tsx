@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenIcon, Building2Icon, GavelIcon, LandmarkIcon } from "lucide-react";
+import { BookOpenIcon, Building2Icon, FileTextIcon, GavelIcon, LandmarkIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ const TABS = [
   { href: "/codes", label: "Codes", icon: BookOpenIcon },
   { href: "/bills", label: "Bills", icon: LandmarkIcon },
   { href: "/rules", label: "Rules of Court", icon: GavelIcon },
+  { href: "/forms", label: "Forms", icon: FileTextIcon },
   { href: "/directory", label: "Directory", icon: Building2Icon },
 ];
 

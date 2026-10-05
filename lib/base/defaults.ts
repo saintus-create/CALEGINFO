@@ -52,7 +52,7 @@ export const defaultBaseConfig: ResolvedBaseConfig = {
     },
     welcome: {
       headline: "California law, answered.",
-      body: "The complete California Codes, 2025-26 bills, Rules of Court, and case law — cited inline.",
+      body: "The complete California Codes, 2025-26 bills, Rules of Court, all 1,670 Judicial Council forms, and case law — cited inline.",
     },
     suggestionGroups: [
       {
@@ -62,6 +62,15 @@ export const defaultBaseConfig: ResolvedBaseConfig = {
           { label: "Burglary vs. robbery", prompt: "What is the difference between burglary and robbery in California?" },
           { label: "PI statute of limitations", prompt: "What is the statute of limitations for personal injury in California?" },
           { label: "Landlord entry rules", prompt: "When can a landlord enter a rental unit in California?" },
+        ],
+      },
+      {
+        label: "Forms",
+        icon: "document",
+        options: [
+          { label: "DV restraining order forms", prompt: "Which Judicial Council forms do I need to file for a domestic violence restraining order in California, and which are mandatory?" },
+          { label: "Eviction (unlawful detainer)", prompt: "Which Judicial Council forms are required to file an unlawful detainer eviction case in California?" },
+          { label: "Fee waiver", prompt: "Which form do I file to ask a California court to waive filing fees, and what is it called?" },
         ],
       },
       {

@@ -228,3 +228,187 @@ export function ruleNumsIn(q: string): string[] {
   }
   return out;
 }
+
+/* ---------- Judicial Council forms ---------- */
+
+// Form numbers look like FL-100, MC-025, JV-101(A), ADOPT-050-INFO, SC-104B,
+// CH-100-INFO, CP10.5, GDC-001 — a 2-6 letter series, digits, and an optional
+// lettered/attachment suffix. Spaces are tolerated ("FL 100").
+const FORM_NUM_RE =
+  /\b(?:CP10(?:\.5)?|[A-Z]{2,6}[-\s]?\d{1,4}[A-Z]?(?:\.\d+)?(?:-[A-Z]{2,6})?(?:\([A-Z0-9]{1,3}\))?)(?![A-Za-z0-9])/g;
+
+/** Normalize a form number: "fl 100" -> "FL-100", "jv 101(a)" -> "JV-101(A)" */
+export function normalizeFormNumber(raw: string): string {
+  return String(raw)
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .replace(/^([A-Z]+)-?(\d)/, "$1-$2");
+}
+
+/** Pull Judicial Council form numbers out of a query ("form FL 100", "DV-110") */
+export function formNumsIn(q: string): string[] {
+  const out: string[] = [];
+  for (const m of String(q).toUpperCase().match(FORM_NUM_RE) || []) {
+    const n = normalizeFormNumber(m);
+    if (/\d/.test(n)) out.push(n);
+  }
+  return [...new Set(out)];
+}
+
+export interface ScoredForm {
+  number: string;
+  title: string;
+  category?: string;
+  prefix?: string;
+  mandatory?: boolean;
+  effective?: string;
+  description?: string;
+  pdf_url?: string;
+  info_url?: string;
+  languages?: string[];
+  language_urls?: Record<string, string>;
+  score: number;
+}
+
+/** Cheap stemming so "waiver" matches "waive", "fees" matches "fee", ... */
+/**
+ * Form family used for grouping and prefix filtering ("FL-1XX" -> "FL",
+ * "CP10" -> "CP"). Corpus records carry `series`; derive it as a fallback.
+ */
+export function formSeries(f: { series?: string; prefix?: string; number?: string }): string {
+  if (f.series) return String(f.series).toUpperCase();
+  const prefix = String(f.prefix || "").toUpperCase();
+  const head = prefix.split("-")[0];
+  if (head && /^[A-Z]+$/.test(head)) return head;
+  const m = String(f.number || "").toUpperCase().match(/^([A-Z]+)/);
+  return m ? m[1] : prefix;
+}
+
+function stemsOf(t: string): string[] {
+  const out = [t];
+  const variants = [
+    t.replace(/ies$/, "y").replace(/(es|s)$/, ""),
+    t.replace(/(ing|ed|ion|ions|er|ers|ship|ment|ness|ity|ities|ance|ence|able|ible)$/, ""),
+    t.replace(/e$/, ""),
+  ];
+  for (const v of variants) if (v.length >= 3 && !out.includes(v)) out.push(v);
+  return out;
+}
+
+function matchesTerm(hay: string, t: string): boolean {
+  return stemsOf(t).some((stem) => hay.includes(stem));
+}
+
+// secondary/administrative forms — "order on ... after hearing", "notice to
+// appear for reconsideration" — demoted unless the query asks for them
+// Topic -> canonical form series. A hit gives the series' forms a small boost
+// so "proof of service" surfaces the POS family and "divorce" the FL family.
+const SERIES_HINTS: Array<[RegExp, string]> = [
+  [/\bproof of service|service of process\b/i, "POS"],
+  [/\bfee waiver|waive (the )?court fees\b/i, "FW"],
+  [/\bunlawful detainer|eviction\b/i, "UD"],
+  [/\bsmall claims\b/i, "SC"],
+  [/\bname change\b/i, "NC"],
+  [/\bdomestic violence|restraining order\b/i, "DV"],
+  [/\bcivil harassment\b/i, "CH"],
+  [/\bguardianship|guardian of (a|the) (minor|person)\b/i, "GC"],
+  [/\bdecedent|probate|estate of a deceased\b/i, "DE"],
+  [/\badoption|adopt a child\b/i, "ADOPT"],
+  [/\btraffic (ticket|citation|court|violator)\b/i, "TR"],
+  [/\bexpung|dismiss (a|my) conviction|clean (my )?record\b/i, "CR"],
+  [/\bdissolution of marriage|divorce\b/i, "FL"],
+  [/\bchild custody|visitation\b/i, "FL"],
+  [/\belder abuse\b/i, "EA"],
+  [/\bworkplace violence\b/i, "WV"],
+  [/\bgun violence\b/i, "GV"],
+  [/\bappeal|appellate\b/i, "APP"],
+  [/\bdiscovery|interrogator|subpoena\b/i, "DISC"],
+  [/\bjuvenile\b/i, "JV"],
+  [/\bwage garnishment\b/i, "WG"],
+  [/\bsummons\b/i, "SUM"],
+];
+
+const SECONDARY_FORM_RE =
+  /^(attachment to|order on|order after|notice to appear|instructions for|information sheet|confidential cover sheet|application to file documents under seal|declaration in support|what is|how to|can a|can i|can your)\b/i;
+const SECONDARY_QUERY_RE =
+  /\b(order|notice|instruction|information|how to|after hearing|reconsider|renew|terminate|modify|change|end|respond|response|answer|enforce|collect|cover sheet|attachment|declaration)\b/i;
+
+/**
+ * Score Judicial Council forms against the query set. A form-number hit
+ * dominates (FL-100 must return FL-100 first); then coverage of the query in
+ * the title, the literal title wording, the topic category, and finally the
+ * plain-language description. Instruction sheets ("-INFO") and secondary
+ * "after hearing / reconsideration" forms are demoted unless the query asks
+ * for them, and series-canonical forms (‑100 / ‑001) get a small boost.
+ */
+export function scoreForms(
+  queries: string[],
+  forms: Array<Record<string, unknown>>,
+  limit = 12,
+): ScoredForm[] {
+  const qsets = queries.map((q) => {
+    const terms = termsOf(q).filter((t) => !CODE_NAME_WORDS.has(t));
+    return {
+      terms,
+      nums: formNumsIn(q).map((n) => n.toLowerCase()),
+      phrase: q.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim(),
+      wantsInfo: /\binfo|instruction|instructions|explain|how to|guide|help\b/i.test(q),
+      wantsSecondary: SECONDARY_QUERY_RE.test(q),
+    hintedSeries: SERIES_HINTS.filter(([re]) => re.test(q)).map(([, prefix]) => prefix),
+    };
+  });
+  const out: Array<ScoredForm & { coverage: number }> = [];
+  for (const f of forms) {
+    const number = String(f.number || "");
+    const num = number.toLowerCase();
+    const title = String(f.title || "").toLowerCase();
+    const desc = String(f.description || "").toLowerCase();
+    const cat = String(f.category || "").toLowerCase();
+    let score = 0;
+    let bestCoverage = 0;
+    for (const q of qsets) {
+      for (const n of q.nums) {
+        if (n === num) score += 240;
+        else if (num.startsWith(n)) score += 70;
+        else if (n.startsWith(num)) score += 40;
+      }
+      if (q.phrase.length > 3 && q.phrase.includes(num)) score += 180;
+
+      let titleHits = 0;
+      let descHits = 0;
+      let catHits = 0;
+      for (const t of q.terms) {
+        if (matchesTerm(title, t)) titleHits++;
+        if (matchesTerm(cat, t)) catHits++;
+        if (matchesTerm(desc, t)) descHits++;
+      }
+      const total = Math.max(1, q.terms.length);
+      const coverage = Math.min(
+        1,
+        (titleHits + Math.min(descHits, total) * 0.4 + Math.min(catHits, total) * 0.3) / total,
+      );
+      if (titleHits) score += Math.round(100 * (titleHits / total)) + (titleHits === total ? 10 : 0);
+      if (descHits) score += Math.round(12 * (descHits / total));
+      if (catHits) score += Math.round(10 * (catHits / total));
+      if (q.phrase.length > 3) {
+        if (title.includes(q.phrase)) score += 15;
+        else if (desc.includes(q.phrase)) score += 8;
+      }
+      if (num.includes(q.phrase.replace(/[^a-z0-9]/g, ""))) score += 20;
+      if (!q.wantsInfo && /-info$/i.test(number)) score -= 20;
+      if (!q.wantsSecondary && SECONDARY_FORM_RE.test(title)) score -= 15;
+      if (/(^|-)(001|100)(-|$)/.test(num)) score += 25;
+      if (q.hintedSeries.includes(formSeries(f as { series?: string; prefix?: string; number?: string }))) score += 20;
+      if (coverage > bestCoverage) bestCoverage = coverage;
+    }
+    if (score > 0) out.push({ ...(f as Omit<ScoredForm, "score">), number, title, score, coverage: bestCoverage });
+  }
+  out.sort(
+    (a, b) =>
+      b.score - a.score ||
+      b.coverage - a.coverage ||
+      a.title.split(/\s+/).length - b.title.split(/\s+/).length ||
+      a.number.localeCompare(b.number, undefined, { numeric: true }),
+  );
+  return out.slice(0, limit).map(({ coverage: _coverage, ...form }) => form);
+}

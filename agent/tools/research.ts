@@ -2,6 +2,7 @@ import { z } from "zod";
 import searchStatutes from "./search_statutes";
 import searchBills from "./search_bills";
 import searchRules from "./search_rules";
+import searchForms from "./search_forms";
 import searchCases from "./search_cases";
 
 /**
@@ -14,7 +15,7 @@ export const researchInputSchema = z.object({
   question: z.string().min(2),
 });
 
-type AuthorityType = "statute" | "case" | "rule" | "bill";
+type AuthorityType = "statute" | "case" | "rule" | "bill" | "form";
 type ResearchMode = "direct" | "analytical" | "deep";
 type VerificationState = "retrieved" | "needs_followup" | "unverified";
 type RelationshipType =
@@ -36,7 +37,7 @@ type ResearchSource = {
   status: string | null;
   jurisdiction: string;
   temporal_fit: "current" | "historical" | "unknown";
-  binding_weight: "constitutional" | "statute" | "supreme_court" | "court_of_appeal" | "rule" | "legislative_material";
+  binding_weight: "constitutional" | "statute" | "supreme_court" | "court_of_appeal" | "rule" | "form" | "legislative_material";
   relevant_passage: string;
   supported_proposition: string;
   relevance_reason: string;
@@ -79,7 +80,8 @@ type ResearchTaskKind =
   | "legislative_history"
   | "application"
   | "comparison"
-  | "conflict_resolution";
+  | "conflict_resolution"
+  | "forms";
 
 type ResearchTaskStatus = "pending" | "complete" | "incomplete" | "blocked";
 
@@ -336,6 +338,21 @@ function planTasks(issue: StructuredIssue, question: string): ResearchTask[] {
       ["A relevant California Rule of Court is retrieved when court procedure is implicated.", "The rule addresses the actual procedural mechanism at issue."]));
   }
 
+  // Judicial Council forms: any explicit form number/series, form-filing
+  // language ("what form do I file", "mandatory form"), or self-help procedure.
+  const formsNeeded =
+    /\bforms?\b|judicial council form|fillable|form number|self-help|pleading paper|\b(?:ADOPT|ADR|APP|AT|CH|CM|CR|DE|DISC|DV|EA|EFS|EJ|EJT|EPO|FL|FW|GC|GDC|GV|HC|ICWA|INT|JV|JURY|MC|MIL|NC|PLD|POS|RA|SC|SUBP|SUM|UD|VL|WG|WV|CP10)[-\s]?\d{1,4}\b/i.test(
+      question,
+    );
+  if (formsNeeded) {
+    tasks.push(task(`task-${tasks.length + 1}`, "forms",
+      `Which Judicial Council form(s) implement this request, and are they mandatory?`,
+      unique([`${issue.procedural_posture || ""} Judicial Council form`, ...law.map((x) => `${x} form`), ...base.slice(0, 2).map((x) => `${x} court form`)], (x) => x.toLowerCase()),
+      ["form"],
+      ["The specific Judicial Council form number is retrieved from the forms corpus.", "Mandatory versus optional use and the form's effective date are established."],
+      false));
+  }
+
   if (issue.timeframe || /amend|amended|legislative history|legislature|bill|chaptered|new law|recent law|current law|former|prior/i.test(question)) {
     tasks.push(task(`task-${tasks.length + 1}`, "legislative_history",
       `Which amendments or legislative actions changed the governing provision, and when?`,
@@ -390,6 +407,9 @@ function refreshTaskStatus(tasks: ResearchTask[], sources: ResearchSource[], pro
     if (t.kind === "procedure" && !sources.some((s) => t.source_ids.includes(s.source_id) && s.authority_type === "rule" && s.relevant_passage.length > 20)) {
       t.missing_evidence.push("No usable procedural rule text.");
     }
+    if (t.kind === "forms" && !sources.some((s) => t.source_ids.includes(s.source_id) && s.authority_type === "form")) {
+      t.missing_evidence.push("No Judicial Council form retrieved for the filing step.");
+    }
     t.status = t.missing_evidence.length ? (t.attempts ? "incomplete" : "pending") : "complete";
   }
 }
@@ -410,7 +430,7 @@ function sourceFrom(
   index: number,
 ): ResearchSource {
   const citation = String(s.citation || s.measure || s.title || `Source ${index + 1}`);
-  const passage = String(s.text || s.snippet || s.subject || "");
+  const passage = String(s.text || s.snippet || s.description || s.subject || "");
   const binding: ResearchSource["binding_weight"] =
     authority === "statute"
       ? "statute"
@@ -418,13 +438,15 @@ function sourceFrom(
         ? "legislative_material"
         : authority === "rule"
           ? "rule"
-          : "court_of_appeal";
+          : authority === "form"
+            ? "form"
+            : "court_of_appeal";
   const role: ResearchSource["authority_role"] =
     authority === "statute"
       ? "primary"
       : authority === "bill"
         ? "legislative"
-        : authority === "rule"
+        : authority === "rule" || authority === "form"
           ? "procedural"
           : "binding_interpretation";
   return {
@@ -508,6 +530,7 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
       if (authority === "statute") raw = await runSearch(`${t.task_id} California Codes`, () => searchStatutes.execute({ queries, limit: 16 }, undefined as never), errors);
       if (authority === "case") raw = await runSearch(`${t.task_id} California case law`, () => searchCases.execute({ queries: queries.slice(0, 3) }, undefined as never), errors);
       if (authority === "rule") raw = await runSearch(`${t.task_id} California Rules of Court`, () => searchRules.execute({ queries, limit: 8 }, undefined as never), errors);
+      if (authority === "form") raw = await runSearch(`${t.task_id} Judicial Council forms`, () => searchForms.execute({ queries: queries.slice(0, 3), limit: 10 }, undefined as never), errors);
       if (authority === "bill") raw = await runSearch(`${t.task_id} California legislative materials`, () => searchBills.execute({ queries, limit: 8 }, undefined as never), errors);
       addSources(raw, authority);
     }
@@ -606,7 +629,7 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
     synthesis_requirements: synthesis,
     answer_contract: {
       must_cite_propositions: true,
-      citation_format: "Use the source marker shown for the supporting proposition, e.g. [1], [c1], [r1], [b1].",
+      citation_format: "Use the source marker shown for the supporting proposition, e.g. [1], [c1], [r1], [b1], [f1].",
       may_use_uncited_general_knowledge: false,
       unsupported_claim_action: "research_or_state_unverified",
     },

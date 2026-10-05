@@ -34,6 +34,7 @@ import gzip
 import hashlib
 import io
 import json
+import re
 import sys
 import time
 import urllib.request
@@ -97,6 +98,20 @@ def clean(text: object) -> str:
     return " ".join(str(text or "").split())
 
 
+def series_of(number: str, prefix: str) -> str:
+    """Form family used for grouping: 'FL-1XX' -> 'FL', 'CP10' -> 'CP'.
+
+    The source splits some families into number ranges (FL-1XX ... FL-9XX) and
+    omits the prefix for a few forms (CP10, CP10.5, GDC-001), so fall back to
+    the leading letters of the form number.
+    """
+    head = (prefix or "").split("-")[0]
+    if head.isalpha():
+        return head
+    match = re.match(r"^([A-Z]+)", number or "")
+    return match.group(1) if match else (prefix or "")
+
+
 def normalize(rec: dict) -> dict | None:
     number = clean(rec.get("id")).upper()
     if not number:
@@ -118,9 +133,12 @@ def normalize(rec: dict) -> dict | None:
     out = {
         "number": number,
         "title": title,
-        "category": clean(rec.get("form_category")) or clean(rec.get("form_prefix_category")) or "",
-        "prefix": clean(rec.get("form_prefix")).upper(),
         "mandatory": mandatory,
+        "series": series_of(number, clean(rec.get("form_prefix")).upper()),
+    }
+    optional = {
+        "category": clean(rec.get("form_category")) or clean(rec.get("form_prefix_category")),
+        "prefix": clean(rec.get("form_prefix")).upper(),
         "effective": effective,
         "effective_dates": raw_dates,
         "description": clean(rec.get("description")),
@@ -129,11 +147,10 @@ def normalize(rec: dict) -> dict | None:
         "languages": sorted(languages.keys()),
         "language_urls": languages,
     }
-    return {k: v for k, v in out.items() if v not in ("", None, [], {})} | {
-        "number": out["number"],
-        "title": out["title"],
-        "mandatory": out["mandatory"],
-    }
+    for key, value in optional.items():
+        if value not in ("", None, [], {}):
+            out[key] = value
+    return out
 
 
 def build(records: list[dict]) -> list[dict]:
@@ -149,7 +166,7 @@ def build(records: list[dict]) -> list[dict]:
         # keep the richer record (more fields populated) for duplicate numbers
         if len(norm) > len(prev):
             out[norm["number"]] = norm
-    forms = sorted(out.values(), key=lambda f: (f.get("prefix", ""), f["number"]))
+    forms = sorted(out.values(), key=lambda f: (f["series"], f["number"]))
     return forms
 
 
@@ -171,7 +188,7 @@ def update_manifest(entry: dict) -> None:
     datasets = [d for d in extras.get("datasets", []) if d.get("key") != "forms"]
     datasets.append(entry)
     extras["datasets"] = datasets
-    path.write_text(json.dumps(manifest, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -195,6 +212,7 @@ def main() -> int:
 
     categories = sorted({f["category"] for f in forms if f.get("category")})
     prefixes = sorted({f["prefix"] for f in forms if f.get("prefix")})
+    series = sorted({f["series"] for f in forms if f.get("series")})
     entry = {
         "sha256": sha,
         "key": "forms",
@@ -204,6 +222,7 @@ def main() -> int:
         "mandatory": sum(1 for f in forms if f.get("mandatory")),
         "categories": len(categories),
         "prefixes": len(prefixes),
+        "series": len(series),
         "retrieved_at": datetime.now(timezone.utc).isoformat(),
         "source": SOURCE_URL,
         "official_source": OFFICIAL_SOURCE,

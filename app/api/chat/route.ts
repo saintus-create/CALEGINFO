@@ -13,6 +13,7 @@ import searchStatutes from "@/agent/tools/search_statutes";
 import lookupSection from "@/agent/tools/lookup_section";
 import searchBills from "@/agent/tools/search_bills";
 import searchRules from "@/agent/tools/search_rules";
+import searchForms from "@/agent/tools/search_forms";
 import searchCases from "@/agent/tools/search_cases";
 import billTextSearch from "@/agent/tools/bill_text_search";
 import billDetail from "@/agent/tools/bill_detail";
@@ -106,8 +107,14 @@ function recordSources(out: unknown, map: SourceMap, urls?: Map<string, string>)
     const label = citation || rule || measure || caseName;
     if (label) {
       map.set(key, label + (cite && caseName ? ` (${cite})` : "") + (status && measure ? ` · ${status}` : ""));
-      const url = statuteUrl(item.code, citation);
-      if (url && urls) urls.set(key, url);
+      // Judicial Council forms deep-link to the official fillable PDF; statutes
+      // deep-link into the local code browser.
+      const pdfUrl = typeof item.pdf_url === "string" ? item.pdf_url : "";
+      const url = citation ? statuteUrl(item.code, citation) : null;
+      if (urls) {
+        if (pdfUrl) urls.set(key, pdfUrl);
+        else if (url) urls.set(key, url);
+      }
     }
   }
 }
@@ -300,6 +307,7 @@ export async function POST(req: Request) {
     lookup_section: wrap(lookupSection),
     search_bills: wrap(searchBills),
     search_rules: wrap(searchRules),
+    search_forms: wrap(searchForms),
     search_cases: wrap(searchCases),
     bill_text_search: wrap(billTextSearch),
     bill_detail: wrap(billDetail),
