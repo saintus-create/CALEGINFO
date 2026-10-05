@@ -10,15 +10,19 @@ import { LiquidMetal } from "@paper-design/shaders-react";
  */
 export function MetalSeal({ className }: { className?: string }) {
   return (
-    <div className={className} style={{ position: "relative" }} aria-label="Great Seal of California">
+    <div
+      className={`${className ?? ""} overflow-hidden rounded-full`}
+      style={{ position: "relative" }}
+      aria-label="Great Seal of California"
+    >
       <LiquidMetal
         className="absolute inset-0 h-full w-full"
         shape="none"
-        speed={0.6}
-        repetition={4}
-        softness={0.5}
-        shiftRed={0.3}
-        shiftBlue={0.3}
+        speed={0.5}
+        repetition={3}
+        softness={0.6}
+        shiftRed={0}
+        shiftBlue={0}
         distortion={0}
         contour={0}
         angle={45}

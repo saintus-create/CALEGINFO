@@ -393,8 +393,13 @@ const Thread: FC = () => {
         >
           <ThreadScrollToBottom />
           {isEmpty ? (
-            <div className="flex justify-center pb-2">
-              <MetalSeal className="h-32 w-32" />
+            <div className="flex justify-center pb-6">
+              <div
+                className="shrink-0"
+                style={{ width: "min(72vw, 28rem)", height: "min(72vw, 28rem)" }}
+              >
+                <MetalSeal className="h-full w-full" />
+              </div>
             </div>
           ) : null}
           <div className="relative">
