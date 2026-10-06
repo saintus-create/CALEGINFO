@@ -568,6 +568,34 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
     return runSearch(`${t.task_id} California legislative materials`, () => searchBills.execute({ queries, limit: 8 }, undefined as never), errors);
   };
 
+  // Cache identical authority/query bundles for one request. Adaptive passes
+  // often rediscover the same query after a task is refreshed.
+  const authorityCache = new Map<string, Promise<Record<string, unknown>[]>>();
+  const cachedAuthority = (
+    t: ResearchTask,
+    authority: AuthorityType,
+    queries: string[],
+  ) => {
+    const key = authority + "\0" + unique(
+      queries.map((q) => q.trim().toLowerCase()).filter(Boolean),
+      (q) => q,
+    ).join("\0");
+    const pending = authorityCache.get(key);
+    if (pending) return pending;
+    const promise = runAuthority(t, authority, queries);
+    authorityCache.set(key, promise);
+    return promise;
+  };
+
+  // The initial pass samples the first two focused queries from each task and
+  // combines them per authority, eliminating near-duplicate network requests.
+  const MAX_AUTHORITY_QUERIES: Record<AuthorityType, number> = {
+    statute: 4,
+    case: 3,
+    rule: 4,
+    form: 3,
+    bill: 4,
+  };
   const rebuildPropositions = () => {
     propositions.splice(0, propositions.length, ...sources.map((s, i): Proposition => ({
       proposition_id: `p${i + 1}`,
@@ -583,14 +611,46 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
     const queries = followupQueriesForTask(t, sources);
     const authorities = unique(t.required_authority, (x) => x);
     const results = await Promise.all(
-      authorities.map((authority) => runAuthority(t, authority, queries)),
+      authorities.map((authority) => cachedAuthority(t, authority, queries)),
     );
     results.forEach((raw, i) => addSources(raw, authorities[i]));
   };
 
-  // Independent retrieval tasks run concurrently. This removes the previous
-  // task-by-task latency multiplier while keeping the evidence ledger deterministic.
-  await Promise.all(tasks.map(runTask));
+  // Group the initial retrieval pass by authority. Task-specific adaptive
+  // retries still run separately when the shared pass leaves a gap.
+  const runInitialAuthorityBatches = async () => {
+    const authorities = unique(
+      tasks.flatMap((t) => t.required_authority),
+      (authority) => authority,
+    );
+
+    await Promise.all(
+      authorities.map(async (authority) => {
+        const owners = tasks.filter((t) => t.required_authority.includes(authority));
+        if (!owners.length) return;
+
+        const maxQueries = MAX_AUTHORITY_QUERIES[authority];
+        const selected: string[] = [];
+        for (const t of owners) {
+          if (selected.length >= maxQueries) break;
+          if (t.queries[0]) selected.push(t.queries[0]);
+        }
+        for (const t of owners) {
+          if (selected.length >= maxQueries) break;
+          if (t.queries[1]) selected.push(t.queries[1]);
+        }
+
+        const queries = unique(selected, (q) => q.trim().toLowerCase()).slice(0, maxQueries);
+        if (!queries.length) return;
+
+        owners.forEach((t) => { t.attempts++; });
+        const raw = await cachedAuthority(owners[0], authority, queries);
+        addSources(raw, authority);
+      }),
+    );
+  };
+
+  await runInitialAuthorityBatches();
   rebuildPropositions();
   refreshTaskStatus(tasks, sources, propositions);
 
