@@ -581,10 +581,11 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
   const runTask = async (t: ResearchTask) => {
     t.attempts++;
     const queries = followupQueriesForTask(t, sources);
+    const authorities = unique(t.required_authority, (x) => x);
     const results = await Promise.all(
-      t.required_authority.map((authority) => runAuthority(t, authority, queries)),
+      authorities.map((authority) => runAuthority(t, authority, queries)),
     );
-    results.forEach((raw, i) => addSources(raw, t.required_authority[i]));
+    results.forEach((raw, i) => addSources(raw, authorities[i]));
   };
 
   // Independent retrieval tasks run concurrently. This removes the previous
