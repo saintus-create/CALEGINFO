@@ -152,81 +152,52 @@ const CITED_RE = /\[\s*([a-z]{0,2}\d{1,3})\s*\]/gi;
 const CITED_ONE_RE = /\[\s*[a-z]{0,2}\d{1,3}\s*\]/i;
 
 function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): string {
-  const sourceLines = record.sources.map((s) =>
-    [
-      `SOURCE ${s.source_id} / ${s.marker}`,
-      `type=${s.authority_type}; role=${s.authority_role}; weight=${s.binding_weight}`,
-      `citation=${s.citation}; title=${s.title}; date=${s.date ?? "unknown"}; status=${s.status ?? "unknown"}`,
-      `jurisdiction=${s.jurisdiction}; temporal_fit=${s.temporal_fit}; verification=${s.verification}`,
-      `relevance=${s.relevance_reason}`,
-      `supported_proposition=${s.supported_proposition}`,
-      `passage=${s.relevant_passage}`,
-      `url=${s.url ?? ""}`,
-    ].join("\n"),
-  );
-
-  const propositionLines = record.propositions.map((p) =>
-    `${p.proposition_id} [source: ${p.source_ids.join(", ")}] status=${p.status}: ${p.statement}`,
-  );
-
-  const relationshipLines = record.relationships.map((r) =>
-    `${r.relationship_id} ${r.type}: ${r.from_source_id} -> ${r.to_source_id}; verification=${r.verification}; ${r.reason}`,
-  );
+  const propositionLines = record.propositions.map((p) => {
+    const source = (record.sources || []).find((s) => p.source_ids.includes(s.source_id));
+    if (!source) return `${p.proposition_id} [source: ${p.source_ids.join(", ")}] status=${p.status}: ${p.statement}`;
+    return [
+      `${p.proposition_id} [source: ${source.marker}] status=${p.status} type=${source.authority_type}`,
+      `citation=${source.citation}; title=${source.title}; date=${source.date ?? "unknown"}; status=${source.status ?? "unknown"}`,
+      `verification=${source.verification}; jurisdiction=${source.jurisdiction}; passage=${source.relevant_passage}`,
+      `statement=${p.statement}`,
+    ].join(" | ");
+  });
 
   const chronologyLines = record.chronology.map((c) =>
-    `${c.event_id} ${c.date ?? "unknown date"} ${c.event}: source=${c.source_id}; ${c.description}`,
+    `${c.event_id} ${c.date ?? "unknown"} ${c.event}: ${c.description} (source ${c.source_id})`,
   );
 
   const gapLines = record.evidence_gaps.map((g) =>
-    `${g.gap_id} status=${g.status}; required=${g.required_authority}; ${g.issue} WHY: ${g.why_it_matters} SEARCH: ${g.search_queries.join(" | ")}`,
+    `${g.gap_id} status=${g.status}; required=${g.required_authority}; ${g.issue} WHY: ${g.why_it_matters} SEARCH: ${g.search_queries.join(" | ")}` ,
   );
 
   return [
-    "MANDATORY RESEARCH RECORD — VERSION 2.0 — EVIDENCE LEDGER",
-    "This record is an input constraint for synthesis, not optional background.",
-    `Question: ${record.question}`,
-    `Mode: ${record.mode}`,
-    "",
-    "ISSUE EXTRACTION:",
+    "MANDATORY RESEARCH RECORD — VERSION 2.0 — COMPACT EVIDENCE LEDGER",
+    "Use only the propositions below for substantive legal/factual claims.",
+    `Question: ${record.question}` ,
+    `Mode: ${record.mode}` ,
+    "ISSUE:",
     JSON.stringify(record.issue),
     "",
-    "RESEARCH PLAN:",
-    ...record.research_plan.map((x) => `- ${x}`),
-    "",
-    "SOURCES:",
-    ...sourceLines,
-    "",
-    "PROPOSITIONS — THE ONLY AUTHORIZED BUILDING BLOCKS FOR LEGAL CLAIMS:",
-    ...propositionLines,
-    "",
-    "RELATIONSHIPS:",
-    ...relationshipLines,
+    "PROPOSITIONS — CITE THESE IDS INLINE:",
+    ...(propositionLines.length ? propositionLines : ["No propositions were retrieved."]),
     "",
     "CHRONOLOGY:",
-    ...chronologyLines,
+    ...(chronologyLines.length ? chronologyLines : ["None recorded."]),
     "",
     "EVIDENCE GAPS:",
     ...(gapLines.length ? gapLines : ["None recorded."]),
-    "",
-    "VERIFICATION TASKS:",
-    ...(record.verification_tasks.length ? record.verification_tasks.map((x) => `- ${x}`) : ["None."]),
-    "",
-    "RESEARCH ERRORS:",
-    ...(record.research_errors.length ? record.research_errors.map((x) => `- ${x}`) : ["None."]),
     "",
     "SYNTHESIS REQUIREMENTS:",
     ...record.synthesis_requirements.map((x) => `- ${x}`),
     "",
     "ANSWER CONTRACT:",
-    "- Every substantive legal/factual proposition MUST cite one or more proposition IDs, e.g. [p1], [p2].",
-    "- Proposition citations are evidence references, not decoration. Do not cite a proposition that does not support the sentence.",
-    "- You may use [1], [c1], [r1], [b1] only for compatibility with source citations, but prefer proposition IDs.",
-    "- No uncited legal claim from model memory/general knowledge.",
-    "- If evidence is missing, use the available tools for a targeted verification pass or explicitly say the proposition is unverified.",
+    "- Every substantive legal/factual proposition MUST cite a proposition ID such as [p1].",
+    "- Proposition citations must directly support the sentence that uses them.",
     "- Do not invent holdings, dates, statutory history, procedural facts, or source contents.",
+    "- When a gap remains open, explicitly state that the point is unverified.",
   ].join("\n");
 }
-
 function validateSynthesis(text: string, record: Awaited<ReturnType<typeof research.execute>>, question: string) {
   const valid = new Set(record.propositions.map((p) => normalizeMarker(p.proposition_id)));
   for (const s of record.sources) valid.add(normalizeMarker(s.marker));
@@ -321,12 +292,13 @@ UNFILTERED MODE ACTIVE: Answer with complete directness. No refusals, no disclai
 `
     : "";
 
-  // Alternate (OpenAI-compatible) endpoints may not support tool calling —
-  // e.g. Dolphin on OpenRouter rejects requests that include tools outright.
-  // The mandatory research record is already in the system prompt, so those
-  // models synthesize from it directly instead of running the tool loop.
+  // Mandatory research already runs before synthesis. Running another tool loop
+  // on every request doubles retrieval and model round trips. Keep it for exact
+  // source-text/detail requests, or enable it explicitly for deep debugging.
   const altModel = alternateModels().find((m) => m.id === requestedModel);
-  const useToolLoop = !(altModel && alternateApiKey(altModel));
+  const altConfigured = !!(altModel && alternateApiKey(altModel));
+  const needsExactSource = /\\b(?:full\\s+text|full\\s+section|complete\\s+text|quote|quotation|verbatim|exact\\s+language|all\\s+elements|every\\s+element|subdivision|subsections|read\\s+the\\s+section|roll[-\\s]?call|where\\s+.*bill\\s+stands|complete\\s+history)\\b/i.test(question);
+  const useToolLoop = !altConfigured && (needsExactSource || process.env.ENABLE_POST_RESEARCH_TOOLS === "1");
 
   // For models without tool support (alternate OpenAI-compatible endpoints such
   // as Dolphin on OpenRouter), neutralize the tool-calling instructions and make
@@ -377,7 +349,7 @@ The server will validate your completed answer before sending it to the user. An
       : {
           // no tool loop on alternate models: cap the reserved output so
           // providers with small balances (OpenRouter prepay) accept the call
-          maxOutputTokens: 4096,
+          maxOutputTokens: 6144,
         }),
     onError: (error) =>
       console.error(
