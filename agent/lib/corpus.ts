@@ -12,7 +12,9 @@ type Section = {
 };
 
 const lawCache = new Map<string, Section[]>();
+const lawLoading = new Map<string, Promise<Section[]>>();
 const jsonlCache = new Map<string, Array<Record<string, unknown>>>();
+const jsonlLoading = new Map<string, Promise<Array<Record<string, unknown>>>>();
 
 function appOrigin(): string {
   const u = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_SITE_URL;
@@ -36,31 +38,64 @@ async function readGz(rel: string): Promise<string> {
   }
 }
 
-export async function loadCode(abbr: string): Promise<Section[]> {
-  const key = abbr.toUpperCase();
-  if (lawCache.has(key)) return lawCache.get(key)!;
-  const text = await readGz(`corpus/law/${key}.jsonl.gz`);
-  const out: Section[] = [];
-  for (const line of text.split("\n")) {
-    const t = line.trim();
-    if (!t) continue;
-    try { out.push(JSON.parse(t)); } catch { /* skip */ }
-  }
-  lawCache.set(key, out);
-  return out;
-}
-
-export async function loadJsonl(rel: string): Promise<Array<Record<string, unknown>>> {
-  if (jsonlCache.has(rel)) return jsonlCache.get(rel)!;
-  const text = await readGz(rel);
+async function parseJsonl(rel: string, text: string): Promise<Array<Record<string, unknown>>> {
   const out: Array<Record<string, unknown>> = [];
   for (const line of text.split("\n")) {
     const t = line.trim();
     if (!t) continue;
-    try { out.push(JSON.parse(t)); } catch { /* skip */ }
+    try { out.push(JSON.parse(t)); } catch { /* skip malformed record */ }
   }
-  jsonlCache.set(rel, out);
   return out;
+}
+
+export async function loadCode(abbr: string): Promise<Section[]> {
+  const key = abbr.toUpperCase();
+  const cached = lawCache.get(key);
+  if (cached) return cached;
+
+  const pending = lawLoading.get(key);
+  if (pending) return pending;
+
+  const promise = (async () => {
+    const text = await readGz(`corpus/law/${key}.jsonl.gz`);
+    const out: Section[] = [];
+    for (const line of text.split("\n")) {
+      const t = line.trim();
+      if (!t) continue;
+      try { out.push(JSON.parse(t)); } catch { /* skip malformed record */ }
+    }
+    lawCache.set(key, out);
+    return out;
+  })();
+
+  lawLoading.set(key, promise);
+  try {
+    return await promise;
+  } finally {
+    lawLoading.delete(key);
+  }
+}
+
+export async function loadJsonl(rel: string): Promise<Array<Record<string, unknown>>> {
+  const cached = jsonlCache.get(rel);
+  if (cached) return cached;
+
+  const pending = jsonlLoading.get(rel);
+  if (pending) return pending;
+
+  const promise = (async () => {
+    const text = await readGz(rel);
+    const out = await parseJsonl(rel, text);
+    jsonlCache.set(rel, out);
+    return out;
+  })();
+
+  jsonlLoading.set(rel, promise);
+  try {
+    return await promise;
+  } finally {
+    jsonlLoading.delete(rel);
+  }
 }
 
 /** Statewide Judicial Council forms (number, title, description, dates, PDFs). */
