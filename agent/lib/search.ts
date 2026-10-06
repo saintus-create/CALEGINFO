@@ -105,7 +105,7 @@ type SectionSearchView = {
   hay: string;
   lastStructural: string;
   isDefinition: boolean;
-  structural: string;
+  structuralDisplay: string;
 };
 
 const sectionSearchCache = new WeakMap<object, SectionSearchView>();
@@ -252,10 +252,7 @@ export function scoreSections(
       history: o.r.history ? String(o.r.history).slice(0, 200) : undefined,
       repealed: Boolean(o.r.repealed),
       score: o.score,
-      structural: getSectionSearchView(o.r).structural
-        .split(" ")
-        .filter(Boolean)
-        .join(" > "),
+      structural: getSectionSearchView(o.r).structuralDisplay,
     });
   }
   return res;
