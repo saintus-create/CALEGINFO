@@ -117,19 +117,20 @@ function getSectionSearchView(r: Record<string, unknown>): SectionSearchView {
   const structuralParts = [r.division, r.part, r.chapter, r.article]
     .map((x) => String(x || ""))
     .filter(Boolean);
-  const structural = structuralParts.join(" ");
+  const structuralSearch = structuralParts.join(" ");
+  const structuralDisplay = structuralParts.join(" > ");
   const text = String(r.text || "");
   const textLower = text.toLowerCase();
   const citation = String(r.citation || "").toLowerCase();
   const view: SectionSearchView = {
     text: textLower,
     citation,
-    hay: (String(r.citation || "") + " " + structural + " " + text).toLowerCase(),
+    hay: (String(r.citation || "") + " " + structuralSearch + " " + text).toLowerCase(),
     lastStructural: (structuralParts[structuralParts.length - 1] || "").toLowerCase(),
     isDefinition:
       textLower.includes("means any of the following") ||
       /[\u201c"][^\u201d"]{1,60}[\u201d"]\s+means\s/.test(textLower),
-    structural,
+    structuralDisplay,
   };
   sectionSearchCache.set(r, view);
   return view;
