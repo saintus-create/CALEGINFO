@@ -99,16 +99,57 @@ const CODE_NAME_WORDS = new Set(
     .split(" "),
 );
 
+type SectionSearchView = {
+  text: string;
+  citation: string;
+  hay: string;
+  lastStructural: string;
+  isDefinition: boolean;
+  structural: string;
+};
+
+const sectionSearchCache = new WeakMap<object, SectionSearchView>();
+
+function getSectionSearchView(r: Record<string, unknown>): SectionSearchView {
+  const cached = sectionSearchCache.get(r);
+  if (cached) return cached;
+
+  const structuralParts = [r.division, r.part, r.chapter, r.article]
+    .map((x) => String(x || ""))
+    .filter(Boolean);
+  const structural = structuralParts.join(" ");
+  const text = String(r.text || "");
+  const textLower = text.toLowerCase();
+  const citation = String(r.citation || "").toLowerCase();
+  const view: SectionSearchView = {
+    text: textLower,
+    citation,
+    hay: (String(r.citation || "") + " " + structural + " " + text).toLowerCase(),
+    lastStructural: (structuralParts[structuralParts.length - 1] || "").toLowerCase(),
+    isDefinition:
+      textLower.includes("means any of the following") ||
+      /[\u201c"][^\u201d"]{1,60}[\u201d"]\s+means\s/.test(textLower),
+    structural,
+  };
+  sectionSearchCache.set(r, view);
+  return view;
+}
+
 export function scoreSections(
   queries: string[],
   records: Array<{ abbr: string; r: Record<string, unknown> }>,
   codePriority?: string[],
   limit = 24,
 ): ScoredSection[] {
-  const qsets = queries.map((q) => ({
-    raw: q.toLowerCase(),
-    terms: termsOf(q).filter((t) => !CODE_NAME_WORDS.has(t)),
-  }));
+  const qsets = queries.map((q) => {
+    const raw = q.toLowerCase();
+    return {
+      raw,
+      terms: termsOf(q).filter((t) => !CODE_NAME_WORDS.has(t)),
+      hasLongPhrase: raw.length > 3 && raw.split(" ").length >= 3,
+      definitionQuery: /defin|what is|element|meaning|list|include/.test(raw),
+    };
+  });
   // code names in the query imply a code priority
   const implied = queries
     .join(" ")
@@ -125,74 +166,84 @@ export function scoreSections(
       ? impliedCodes
       : codePriority;
   const allTerms = [...new Set(qsets.flatMap((q) => q.terms))];
-  const out: Array<{ abbr: string; r: Record<string, unknown>; score: number }> = [];
+
+  // The old implementation kept every matching section, sorted the entire
+  // result set, and only then discarded everything beyond six results per code.
+  // Six per code is the real bound, so retaining more than six is wasted work.
+  const perCodeLimit = Math.min(6, Math.max(1, limit));
+  const buckets = new Map<string, Array<{
+    abbr: string;
+    r: Record<string, unknown>;
+    score: number;
+    order: number;
+  }>>();
+  let matchOrder = 0;
+
+  const pushTop = (
+    bucket: Array<{ abbr: string; r: Record<string, unknown>; score: number; order: number }>,
+    item: { abbr: string; r: Record<string, unknown>; score: number; order: number },
+  ) => {
+    bucket.push(item);
+    bucket.sort((a, b) => b.score - a.score || a.order - b.order);
+    if (bucket.length > perCodeLimit) bucket.pop();
+  };
+
   for (const { abbr, r } of records) {
     if (r.kind !== "section" || !r.text) continue;
-    const structuralParts = [r.division, r.part, r.chapter, r.article]
-      .map((x) => String(x || ""))
-      .filter(Boolean);
-    const structural = structuralParts.join(" ");
-    const hay = (
-      String(r.citation || "") + " " + structural + " " + String(r.text)
-    ).toLowerCase();
-    const lastStructural = (structuralParts[structuralParts.length - 1] || "").toLowerCase();
-    const textLower = String(r.text || "").toLowerCase();
-    const citation = String(r.citation || "").toLowerCase();
-    const isDefinition =
-      textLower.includes("means any of the following") ||
-      /[\u201c"][^\u201d"]{1,60}[\u201d"]\s+means\s/.test(textLower);
+
+    const view = getSectionSearchView(r);
     let score = 0;
+
     for (const q of qsets) {
-      // phrase bonus only for 3+ word phrases (short phrases are cross-reference noise)
-      if (q.raw.length > 3 && q.raw.split(" ").length >= 3 && hay.includes(q.raw)) score += 36;
+      if (q.hasLongPhrase && view.hay.includes(q.raw)) score += 36;
+
       for (const t of q.terms) {
-        if (citation.includes(t)) score += 12;
-        // a term in the section's MOST SPECIFIC structural heading (e.g.
-        // chapter "2. Burglary") marks the section that houses the law on
-        // that term — outranking sections that merely enumerate it in a list
-        if (lastStructural.includes(t)) score += 18;
+        if (view.citation.includes(t)) score += 12;
+        if (view.lastStructural.includes(t)) score += 18;
+
         const stem = t.length > 3 && t.endsWith("s") ? t.slice(0, -1) : t;
-        const n = Math.max(countTerm(hay, t), countTerm(hay, stem));
+        const n = Math.max(countTerm(view.hay, t), countTerm(view.hay, stem));
         if (n > 0) {
-          score += Math.min(10, t.length + 3); // first occurrence
-          score += Math.min(12, (n - 1) * 4); // repeat occurrences signal topicality
-        } else if (hay.includes(t)) score += Math.min(5, t.length);
+          score += Math.min(10, t.length + 3);
+          score += Math.min(12, (n - 1) * 4);
+        } else if (view.hay.includes(t)) {
+          score += Math.min(5, t.length);
+        }
       }
     }
-    // the section that DEFINES a queried term ("abuse" means ...) outranks
-    // sections that merely mention the term repeatedly
+
     const definesQueriedTerm = allTerms.some(
       (t) =>
-        textLower.includes("\u201c" + t + "\u201d means") ||
-        textLower.includes('"' + t + '" means') ||
-        textLower.includes(t + " means any of the following") ||
-        // Penal-Code-style definition openers: "is guilty of burglary.",
-        // "Robbery is the felonious taking"
-        textLower.includes("guilty of " + t) ||
-        textLower.startsWith(t + " is the") ||
-        textLower.includes(". " + t + " is the") ||
-        textLower.includes(") " + t + " is the"),
+        view.text.includes("\u201c" + t + "\u201d means") ||
+        view.text.includes('"' + t + '" means') ||
+        view.text.includes(t + " means any of the following") ||
+        view.text.includes("guilty of " + t) ||
+        view.text.startsWith(t + " is the") ||
+        view.text.includes(". " + t + " is the") ||
+        view.text.includes(") " + t + " is the"),
     );
+
     if (score > 0) {
-      if (
-        (isDefinition || definesQueriedTerm) &&
-        qsets.some((q) => /defin|what is|element|meaning|list|include/.test(q.raw))
-      ) {
+      if ((view.isDefinition || definesQueriedTerm) && qsets.some((q) => q.definitionQuery)) {
         score += 6;
       }
       if (definesQueriedTerm) score += 85;
       if (effectivePriority && effectivePriority.includes(abbr)) score += 25;
       if (r.repealed) score -= 8;
-      out.push({ abbr, r, score });
+
+      const bucket = buckets.get(abbr) || [];
+      pushTop(bucket, { abbr, r, score, order: matchOrder++ });
+      buckets.set(abbr, bucket);
     }
   }
-  out.sort((a, b) => b.score - a.score);
+
+  const candidates = [...buckets.values()]
+    .flat()
+    .sort((a, b) => b.score - a.score || a.order - b.order);
+
   const res: ScoredSection[] = [];
-  const perCode: Record<string, number> = {};
-  for (const o of out) {
+  for (const o of candidates) {
     if (res.length >= limit) break;
-    perCode[o.abbr] = (perCode[o.abbr] || 0) + 1;
-    if (perCode[o.abbr] > 6) continue;
     res.push({
       abbr: o.abbr,
       section: String(o.r.section || ""),
@@ -201,10 +252,8 @@ export function scoreSections(
       history: o.r.history ? String(o.r.history).slice(0, 200) : undefined,
       repealed: Boolean(o.r.repealed),
       score: o.score,
-      structural: [
-        o.r.division, o.r.part, o.r.chapter, o.r.article,
-      ]
-        .map((x) => String(x || ""))
+      structural: getSectionSearchView(o.r).structural
+        .split(" ")
         .filter(Boolean)
         .join(" > "),
     });
