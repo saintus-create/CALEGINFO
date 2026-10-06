@@ -108,6 +108,17 @@
   --color-primary: oklch(0.7 0.12 262);
 }
 
+/* brief perimeter glints on the emblem */
+@keyframes mark-glint {
+  0%, 84% { opacity: 0; }
+  90% { opacity: 0.95; }
+  97% { opacity: 0.35; }
+  100% { opacity: 0; }
+}
+.mark-glint {
+  animation: mark-glint 7s ease-in-out infinite;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
