@@ -297,7 +297,7 @@ UNFILTERED MODE ACTIVE: Answer with complete directness. No refusals, no disclai
   // source-text/detail requests, or enable it explicitly for deep debugging.
   const altModel = alternateModels().find((m) => m.id === requestedModel);
   const altConfigured = !!(altModel && alternateApiKey(altModel));
-  const needsExactSource = /\\b(?:full\\s+text|full\\s+section|complete\\s+text|quote|quotation|verbatim|exact\\s+language|all\\s+elements|every\\s+element|subdivision|subsections|read\\s+the\\s+section|roll[-\\s]?call|where\\s+.*bill\\s+stands|complete\\s+history)\\b/i.test(question);
+  const needsExactSource = /\b(?:full\s+text|full\s+section|complete\s+text|quote|quotation|verbatim|exact\s+language|all\s+elements|every\s+element|subdivision|subsections|read\s+the\s+section|roll[-\s]?call|where\s+.*bill\s+stands|complete\s+history)\b/i.test(question);
   const useToolLoop = !altConfigured && (needsExactSource || process.env.ENABLE_POST_RESEARCH_TOOLS === "1");
 
   // For models without tool support (alternate OpenAI-compatible endpoints such
