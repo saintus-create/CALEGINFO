@@ -548,18 +548,27 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
     }
   };
 
-  const runTask = async (t: ResearchTask) => {
-    t.attempts++;
-    const queries = followupQueriesForTask(t, sources);
-    for (const authority of t.required_authority) {
-      let raw: Record<string, unknown>[] = [];
-      if (authority === "statute") raw = await runSearch(`${t.task_id} California Codes`, () => searchStatutes.execute({ queries, limit: 16 }, undefined as never), errors);
-      if (authority === "case") raw = await runSearch(`${t.task_id} California case law`, () => searchCases.execute({ queries: queries.slice(0, 3) }, undefined as never), errors);
-      if (authority === "rule") raw = await runSearch(`${t.task_id} California Rules of Court`, () => searchRules.execute({ queries, limit: 8 }, undefined as never), errors);
-      if (authority === "form") raw = await runSearch(`${t.task_id} Judicial Council forms`, () => searchForms.execute({ queries: queries.slice(0, 3), limit: 10 }, undefined as never), errors);
-      if (authority === "bill") raw = await runSearch(`${t.task_id} California legislative materials`, () => searchBills.execute({ queries, limit: 8 }, undefined as never), errors);
-      addSources(raw, authority);
+  const runAuthority = async (
+    t: ResearchTask,
+    authority: AuthorityType,
+    queries: string[],
+  ) => {
+    if (authority === "statute") {
+      return runSearch(`${t.task_id} California Codes`, () => searchStatutes.execute({ queries, limit: 16 }, undefined as never), errors);
     }
+    if (authority === "case") {
+      return runSearch(`${t.task_id} California case law`, () => searchCases.execute({ queries: queries.slice(0, 3) }, undefined as never), errors);
+    }
+    if (authority === "rule") {
+      return runSearch(`${t.task_id} California Rules of Court`, () => searchRules.execute({ queries, limit: 8 }, undefined as never), errors);
+    }
+    if (authority === "form") {
+      return runSearch(`${t.task_id} Judicial Council forms`, () => searchForms.execute({ queries: queries.slice(0, 3), limit: 10 }, undefined as never), errors);
+    }
+    return runSearch(`${t.task_id} California legislative materials`, () => searchBills.execute({ queries, limit: 8 }, undefined as never), errors);
+  };
+
+  const rebuildPropositions = () => {
     propositions.splice(0, propositions.length, ...sources.map((s, i): Proposition => ({
       proposition_id: `p${i + 1}`,
       source_ids: [s.source_id],
@@ -567,22 +576,32 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
       support_type: s.authority_type === "case" ? "case_statement" : s.authority_type === "bill" ? "legislative_record" : "direct_text",
       status: s.verification === "retrieved" ? "supported" : "needs_verification",
     })));
-    refreshTaskStatus(tasks, sources, propositions);
   };
 
-  // Execute every planned task once. This makes research planning explicit:
-  // each task has a question, authority requirement, and deterministic evidence gate.
-  for (const t of tasks) await runTask(t);
+  const runTask = async (t: ResearchTask) => {
+    t.attempts++;
+    const queries = followupQueriesForTask(t, sources);
+    const results = await Promise.all(
+      t.required_authority.map((authority) => runAuthority(t, authority, queries)),
+    );
+    results.forEach((raw, i) => addSources(raw, t.required_authority[i]));
+  };
 
-  // Bounded adaptive pass: only incomplete/blocked tasks get another targeted
-  // search, and only the missing authority is queried.
+  // Independent retrieval tasks run concurrently. This removes the previous
+  // task-by-task latency multiplier while keeping the evidence ledger deterministic.
+  await Promise.all(tasks.map(runTask));
+  rebuildPropositions();
+  refreshTaskStatus(tasks, sources, propositions);
+
+  // Adaptive passes remain sequential because each pass depends on the evidence
+  // collected by the previous pass, but searches within a pass are concurrent.
   for (let pass = 0; pass < 2; pass++) {
     const incomplete = tasks.filter((t) => t.status === "pending" || t.status === "incomplete");
     if (!incomplete.length) break;
-    for (const t of incomplete) await runTask(t);
+    await Promise.all(incomplete.map(runTask));
+    rebuildPropositions();
+    refreshTaskStatus(tasks, sources, propositions);
   }
-
-  refreshTaskStatus(tasks, sources, propositions);
 
   // Build conservative source relationships. These remain verification targets
   // until the underlying opinion/text establishes the actual legal relationship.
