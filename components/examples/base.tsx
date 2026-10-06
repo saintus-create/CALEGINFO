@@ -6,7 +6,7 @@ import {
   UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
-import { MetalSeal } from "@/app/_components/metal-seal";
+import { MetalEmblem } from "@/app/_components/metal-seal";
 import { CaMark } from "@/app/_components/ca-mark";
 import { LawMarkdownText } from "@/components/assistant-ui/law-markdown";
 import { DotMatrix } from "@/components/assistant-ui/dot-matrix";
@@ -394,11 +394,8 @@ const Thread: FC = () => {
           <ThreadScrollToBottom />
           {isEmpty ? (
             <div className="flex justify-center pb-6">
-              <div
-                className="shrink-0"
-                style={{ width: "min(72vw, 28rem)", height: "min(72vw, 28rem)" }}
-              >
-                <MetalSeal className="h-full w-full" />
+              <div className="shrink-0" style={{ width: "min(78vw, 34rem)", aspectRatio: "943 / 529" }}>
+                <MetalEmblem className="h-full w-full" />
               </div>
             </div>
           ) : null}

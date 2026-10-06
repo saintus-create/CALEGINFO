@@ -3,17 +3,26 @@
 import { LiquidMetal } from "@paper-design/shaders-react";
 
 /**
- * The Great Seal of California in liquid metal.
- * A live WebGL liquid-metal shader (Paper, via fab-ui) with the seal's
- * engraving composited over it in luminosity, so the metal reads as a
- * cast-metal relief of the seal.
+ * A California emblem in liquid metal.
+ * A live WebGL liquid-metal shader (Paper, via fab-ui) masked to the mark's
+ * silhouette, so the metal fills the emblem exactly.
  */
-export function MetalSeal({ className }: { className?: string }) {
+export function MetalEmblem({ className }: { className?: string }) {
   return (
     <div
-      className={`${className ?? ""} overflow-hidden rounded-full`}
-      style={{ position: "relative" }}
-      aria-label="Great Seal of California"
+      className={className}
+      style={{
+        position: "relative",
+        WebkitMaskImage: "url(/mark-mask.png)",
+        maskImage: "url(/mark-mask.png)",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+      }}
+      aria-label="California emblem"
     >
       <LiquidMetal
         className="absolute inset-0 h-full w-full"
@@ -29,14 +38,6 @@ export function MetalSeal({ className }: { className?: string }) {
         scale={8}
         offsetX={0.1}
         offsetY={-0.1}
-      />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/seal-relief.png"
-        alt=""
-        aria-hidden
-        className="relative h-full w-full object-contain"
-        style={{ mixBlendMode: "luminosity" }}
       />
     </div>
   );
