@@ -253,7 +253,7 @@ const LawModelToggle: FC = () => {
   return (
     <div
       data-slot="law-model-toggle"
-      className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl"
+      className="flex items-center rounded-full border border-border bg-muted/50 p-1 backdrop-blur-xl"
       title={
         alternate.available
           ? `Answer mode: Standard or Unfiltered`
@@ -266,8 +266,8 @@ const LawModelToggle: FC = () => {
         className={cn(
           "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
           !on
-            ? "bg-white/20 text-white shadow-sm"
-            : "text-white/60 hover:text-white",
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         Standard
@@ -279,8 +279,8 @@ const LawModelToggle: FC = () => {
         className={cn(
           "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
           on
-            ? "bg-white/20 text-white shadow-sm"
-            : "text-white/60 hover:text-white",
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground",
           !alternate.available &&
             "cursor-not-allowed opacity-40 hover:text-muted-foreground",
         )}
@@ -998,7 +998,6 @@ export const Base: FC = () => {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      <div className="galaxy-bg" aria-hidden />
       <LibraryRail />
       <div className="relative z-10 hidden md:block">
         <EmptyAwareSidebar collapsed={sidebarCollapsed} />

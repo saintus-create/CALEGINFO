@@ -49,7 +49,7 @@ export function BaseConfigProvider({
 
   return (
     <BaseConfigContext.Provider value={value}>
-      <div className="dark h-full" style={style}>
+      <div className="h-full" style={style}>
         {children}
       </div>
     </BaseConfigContext.Provider>
