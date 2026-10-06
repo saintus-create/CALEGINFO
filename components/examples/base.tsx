@@ -394,7 +394,7 @@ const Thread: FC = () => {
           <ThreadScrollToBottom />
           {isEmpty ? (
             <div className="flex justify-center pb-6">
-              <div className="shrink-0" style={{ width: "min(78vw, 34rem)", aspectRatio: "943 / 529" }}>
+              <div className="shrink-0" style={{ width: "min(78vw, 34rem)", aspectRatio: "930 / 523" }}>
                 <MetalEmblem className="h-full w-full" />
               </div>
             </div>

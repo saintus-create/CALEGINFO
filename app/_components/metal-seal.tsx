@@ -13,8 +13,8 @@ export function MetalEmblem({ className }: { className?: string }) {
       className={className}
       style={{
         position: "relative",
-        WebkitMaskImage: "url(/mark-mask.png)",
-        maskImage: "url(/mark-mask.png)",
+        WebkitMaskImage: "url(/glass-mark.png)",
+        maskImage: "url(/glass-mark.png)",
         WebkitMaskRepeat: "no-repeat",
         maskRepeat: "no-repeat",
         WebkitMaskSize: "contain",
@@ -38,6 +38,14 @@ export function MetalEmblem({ className }: { className?: string }) {
         scale={8}
         offsetX={0.1}
         offsetY={-0.1}
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/glass-mark.png"
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-contain"
+        style={{ mixBlendMode: "overlay" }}
       />
     </div>
   );
