@@ -45,7 +45,8 @@ export default defineTool({
   async execute({ queries, codes, limit }) {
     const explicit = codesFor(codes);
     const hints = codes?.length ? [] : extractCodeHints(queries);
-    const abbrs = codes?.length ? explicit : (hints.length ? hints : explicit);
+    const inferred = hints.length ? hints : undefined;
+    const abbrs = codes?.length ? explicit : (inferred || ["FAM", "CCP", "PEN", "CIV", "GOV", "WIC", "EVID"]);
 
     const records = (await Promise.all(
       abbrs.map(async (abbr) => {
