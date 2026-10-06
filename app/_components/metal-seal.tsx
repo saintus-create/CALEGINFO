@@ -27,15 +27,15 @@ export function MetalEmblem({ className }: { className?: string }) {
       <LiquidMetal
         className="absolute inset-0 h-full w-full"
         shape="none"
-        speed={0.5}
-        repetition={3}
-        softness={0.6}
+        speed={0.4}
+        repetition={16}
+        softness={0.85}
         shiftRed={0}
         shiftBlue={0}
-        distortion={0}
+        distortion={0.15}
         contour={0}
-        angle={45}
-        scale={8}
+        angle={20}
+        scale={14}
         offsetX={0.1}
         offsetY={-0.1}
       />
