@@ -401,7 +401,7 @@ The server will validate your completed answer before sending it to the user. An
   if (process.env.DEBUG_ANSWER) console.log('[debug] raw answer:\n' + answer.slice(0, 3000));
   let validation = validateSynthesis(answer, record, question);
 
-  if (!validation.ok) {
+  if (!validation.ok && !/^(simple|short|greeting)$/i.test(record.mode)) {
     // One bounded repair pass is preferable to allowing unsupported text through.
     result = generate(`
 
