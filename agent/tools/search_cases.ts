@@ -71,6 +71,17 @@ function pickSnippet(r: Record<string, unknown>): string {
   return cleanSnippet(String(best?.snippet || ""));
 }
 
+type CaseHit = {
+  caseName: string;
+  cite: string;
+  court: string;
+  date: string;
+  docket: string;
+  status: string;
+  snippet: string;
+  url: string;
+};
+
 export default defineTool({
   description:
     "Search published (precedential) California Supreme Court and Court of Appeal opinions. " +
@@ -86,7 +97,7 @@ export default defineTool({
     // These searches are independent. Running them serially made the case
     // search latency equal to the sum of up to three network round trips.
     // Run the bounded query set concurrently, then merge/dedupe locally.
-    const searchOne = async (q: string): Promise<Array<Record<string, string>>> => {
+    const searchOne = async (q: string): Promise<CaseHit[]> => {
       try {
         const url =
           "https://www.courtlistener.com/api/rest/v4/search/?q=" +
@@ -101,7 +112,7 @@ export default defineTool({
         const data = (await resp.json()) as {
           results?: Array<Record<string, unknown>>;
         };
-        return (data.results || []).map((r) => {
+        return (data.results || []).map((r): CaseHit | null => {
           const caseName = String(r.caseName || r.caseNameFull || "").trim();
           if (!caseName) return null;
           return {
@@ -116,7 +127,7 @@ export default defineTool({
               ? "https://www.courtlistener.com" + String(r.absolute_url)
               : "",
           };
-        }).filter((x): x is Record<string, string> => x !== null);
+        }).filter((x): x is CaseHit => x !== null);
       } catch {
         return [];
       }
