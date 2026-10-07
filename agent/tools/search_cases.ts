@@ -83,11 +83,10 @@ export default defineTool({
     const token = process.env.COURTLISTENER_TOKEN || "";
     const headers: Record<string, string> = { Accept: "application/json" };
     if (token) headers.Authorization = "Token " + token;
-    const out: Array<Record<string, string>> = [];
-    let tried = 0;
-    for (const q of queries) {
-      if (out.length >= 6 || tried >= 3) break;
-      tried++;
+    // These searches are independent. Running them serially made the case
+    // search latency equal to the sum of up to three network round trips.
+    // Run the bounded query set concurrently, then merge/dedupe locally.
+    const searchOne = async (q: string): Promise<Array<Record<string, string>>> => {
       try {
         const url =
           "https://www.courtlistener.com/api/rest/v4/search/?q=" +
@@ -98,35 +97,42 @@ export default defineTool({
           headers,
           signal: AbortSignal.timeout(10000),
         });
-        if (!resp.ok) {
-          if (resp.status === 429) break;
-          continue;
-        }
+        if (!resp.ok) return [];
         const data = (await resp.json()) as {
           results?: Array<Record<string, unknown>>;
         };
-        for (const r of data.results || []) {
-          if (out.length >= 6) break;
+        return (data.results || []).map((r) => {
           const caseName = String(r.caseName || r.caseNameFull || "").trim();
-          if (!caseName) continue;
-          if (out.some((x) => x.caseName === caseName)) continue;
-          const snippet = pickSnippet(r);
-          out.push({
+          if (!caseName) return null;
+          return {
             caseName,
             cite: pickCite(r),
             court: String(r.court_citation_string || r.court || ""),
             date: String(r.dateFiled || ""),
             docket: String(r.docketNumber || ""),
             status: String(r.status || ""),
-            snippet,
+            snippet: pickSnippet(r),
             url: r.absolute_url
               ? "https://www.courtlistener.com" + String(r.absolute_url)
               : "",
-          });
-        }
+          };
+        }).filter((x): x is Record<string, string> => x !== null);
       } catch {
-        break;
+        return [];
       }
+    };
+
+    const results = await Promise.all(queries.slice(0, 3).map(searchOne));
+    const out: Array<Record<string, string>> = [];
+    const seen = new Set<string>();
+    for (const batch of results) {
+      for (const item of batch) {
+        if (out.length >= 6) break;
+        if (seen.has(item.caseName)) continue;
+        seen.add(item.caseName);
+        out.push(item);
+      }
+      if (out.length >= 6) break;
     }
     // precedential first
     out.sort((a, b) => (b.status === "Published" ? 1 : 0) - (a.status === "Published" ? 1 : 0));
