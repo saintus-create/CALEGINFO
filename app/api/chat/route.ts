@@ -207,12 +207,13 @@ function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): st
   ].join("\n");
 }
 function validateSynthesis(text: string, record: Awaited<ReturnType<typeof research.execute>>, question: string) {
-  const valid = new Set(record.propositions.map((p) => normalizeMarker(p.proposition_id)));
+  const propositionMarkers = new Set(
+    record.propositions.map((p) => normalizeMarker(p.proposition_id)),
+  );
+  const valid = new Set(propositionMarkers);
   for (const s of record.sources) valid.add(normalizeMarker(s.marker));
-  // Evidence-gap ids (g1, g2, ...) are part of the record, and the prompt asks
-  // the model to disclose open gaps by reference. Without registering them here
-  // any answer that honestly flags a gap is rejected as an unknown citation and
-  // the user gets the hold-back message instead of the answer.
+  // Gap markers may disclose an unresolved issue, but cannot support a legal
+  // or factual proposition by themselves.
   for (const g of record.evidence_gaps) valid.add(normalizeMarker(g.gap_id));
 
   const citations = Array.from(text.matchAll(CITED_RE)).map((m) => normalizeMarker(m[1]));
@@ -221,7 +222,7 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
   if (unknownU.length) return { ok: false, reason: `Unknown evidence citation(s): ${unknownU.join(", ")}` };
 
   const gapsOpen = record.evidence_gaps.some((g) => g.status === "open");
-  const hasEvidenceCitation = citations.some((c) => valid.has(c));
+  const hasEvidenceCitation = citations.some((c) => propositionMarkers.has(c));
   const substantive = text
     .split(/\n\s*\n/)
     .map((p) => p.trim())
@@ -236,7 +237,9 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
   // conservative: it blocks generic uncited legal exposition from escaping the API.
   const uncited = substantive.filter((paragraph) => {
     if (/^(i can|i'm sorry|i cannot|i don't have|unverified|insufficient evidence)/i.test(paragraph)) return false;
-    return !CITED_ONE_RE.test(paragraph);
+    return !Array.from(paragraph.matchAll(CITED_RE)).some((match) =>
+      propositionMarkers.has(normalizeMarker(match[1])),
+    );
   });
   CITED_RE.lastIndex = 0;
 
