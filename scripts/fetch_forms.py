@@ -150,17 +150,25 @@ def normalize(rec: dict) -> dict | None:
 
     mandatory = str(rec.get("field_mandatory") or "").strip().lower() in {"true", "1", "yes"}
 
-    synonyms = parse_synonyms(rec.get("field_synonyms"))
+    prefix = clean(rec.get("form_prefix")).upper()
+    series = series_of(number, prefix)
+    # The portal sometimes lists a form's own series as a synonym — all eight RT
+    # retail-crime records carry just "rt". Both scorers build query terms with
+    # termsOf(), which drops tokens of two characters or fewer, so such a term
+    # can never match anything and is pure dead weight in the gz. Terms that are
+    # merely redundant with the title or category are kept: deciding that is the
+    # scorer's job, and the portal's editorial labels are the source of truth.
+    synonyms = [s for s in parse_synonyms(rec.get("field_synonyms")) if len(s) > 2]
 
     out = {
         "number": number,
         "title": title,
         "mandatory": mandatory,
-        "series": series_of(number, clean(rec.get("form_prefix")).upper()),
+        "series": series,
     }
     optional = {
         "category": clean(rec.get("form_category")) or clean(rec.get("form_prefix_category")),
-        "prefix": clean(rec.get("form_prefix")).upper(),
+        "prefix": prefix,
         "effective": effective,
         "effective_dates": raw_dates,
         "description": clean(rec.get("description")),
