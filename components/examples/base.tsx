@@ -326,7 +326,7 @@ const Header: FC<{
         </TooltipIconButton>
       )}
       <ThreadTitle />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="mx-auto flex min-w-0 shrink-0 justify-center sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2">
         <LawModelToggle />
       </div>
       <TooltipIconButton
@@ -367,7 +367,7 @@ const Thread: FC = () => {
         turnAnchor="top"
         data-slot="aui_thread-viewport"
         className={cn(
-          "relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth px-4 pt-4",
+          "relative flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto scroll-smooth px-3 pt-3 pb-[env(safe-area-inset-bottom)] sm:px-4 sm:pt-4",
           isEmpty && "justify-center",
         )}
       >
