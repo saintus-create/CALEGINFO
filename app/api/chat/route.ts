@@ -14,6 +14,7 @@ import lookupSection from "@/agent/tools/lookup_section";
 import searchBills from "@/agent/tools/search_bills";
 import searchRules from "@/agent/tools/search_rules";
 import searchForms from "@/agent/tools/search_forms";
+import findCourt from "@/agent/tools/find_court";
 import searchCases from "@/agent/tools/search_cases";
 import billTextSearch from "@/agent/tools/bill_text_search";
 import billDetail from "@/agent/tools/bill_detail";
@@ -284,6 +285,7 @@ export async function POST(req: Request) {
     search_bills: wrap(searchBills),
     search_rules: wrap(searchRules),
     search_forms: wrap(searchForms),
+    find_court: wrap(findCourt),
     search_cases: wrap(searchCases),
     bill_text_search: wrap(billTextSearch),
     bill_detail: wrap(billDetail),

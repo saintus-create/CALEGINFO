@@ -477,6 +477,17 @@
         "retrieved_at": "2026-10-10T06:18:18.585253+00:00",
         "source": "https://selfhelp.courts.ca.gov/json/jcc-forms",
         "official_source": "https://selfhelp.courts.ca.gov/find-forms/all-by-category"
+      },
+      {
+        "sha256": "0f9abc2683c9800bfeb2933b3604a6702e3bd37a035766b19a7869d8adcab2b9",
+        "key": "courts",
+        "name": "Superior Court Directory (58 counties)",
+        "file": "courts/COURTS.json.gz",
+        "courts": 58,
+        "local_forms_verified": 7,
+        "retrieved_at": "2026-10-10",
+        "source": "https://www4.courts.ca.gov/6168.htm",
+        "official_source": "https://www4.courts.ca.gov/superiorcourts.htm"
       }
     ]
   }
