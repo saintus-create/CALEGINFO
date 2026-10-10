@@ -69,7 +69,7 @@ function FormRow({ f, onCategory }) {
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px]">
         {f.pdf_url && (
           <a
-            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 rounded-md border border-foreground/15 px-2 py-1 font-medium text-foreground transition-colors hover:border-foreground/35 hover:bg-muted"
             href={f.pdf_url}
             target="_blank"
             rel="noopener"
@@ -79,7 +79,7 @@ function FormRow({ f, onCategory }) {
         )}
         {f.info_url && (
           <a
-            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 rounded-md border border-foreground/15 px-2 py-1 font-medium text-foreground transition-colors hover:border-foreground/35 hover:bg-muted"
             href={f.info_url}
             target="_blank"
             rel="noopener"
@@ -89,7 +89,7 @@ function FormRow({ f, onCategory }) {
         )}
         {languages.length > 0 && (
           <details className="inline-block">
-            <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+            <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md border border-foreground/15 px-2 py-1 font-medium text-foreground transition-colors hover:border-foreground/35 hover:bg-muted [&::-webkit-details-marker]:hidden">
               <Languages className="h-3 w-3" /> {languages.length} translation{languages.length > 1 ? "s" : ""}
             </summary>
             <div className="mt-1 flex flex-wrap gap-1.5">
