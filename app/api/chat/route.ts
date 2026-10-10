@@ -272,6 +272,25 @@ export async function POST(req: Request) {
   const { messages, model: requestedModel } = await req.json();
   const question = lastUserQuestion(messages);
   if (!question) return new Response("A research question is required.", { status: 400 });
+
+  // Casual greetings should not trigger legal research or the citation validator.
+  if (/^(?:hi|hello|hey)(?:\s+there)?[.!?]*|good\s+(?:morning|afternoon|evening)[.!?]*|how\s+are\s+you[?!. ]*|what(?:'s|\s+is)\s+up[?!. ]*|thanks|thank\s+you)[\s]*$/i.test(question.trim()) && question.trim().length <= 80) {
+    const greeting = /^thank/i.test(question.trim())
+      ? "You're welcome. What California law question can I help you with?"
+      : "Hi! What California law question can I help you with?";
+    const stream = new ReadableStream<StreamPart>({
+      start(controller) {
+        const id = "law-" + Math.random().toString(36).slice(2, 10);
+        controller.enqueue({ type: "text-start", id });
+        controller.enqueue({ type: "text-delta", id, delta: greeting });
+        controller.enqueue({ type: "text-end", id });
+        controller.enqueue({ type: "finish", finishReason: "stop" });
+        controller.close();
+      },
+    });
+    const uiStream = createUIMessageStream({ execute: ({ writer }) => writer.merge(stream as any) });
+    return createUIMessageStreamResponse({ stream: uiStream });
+  }
   if (
     !KEY &&
     !alternateModels().some((a) => alternateApiKey(a))
