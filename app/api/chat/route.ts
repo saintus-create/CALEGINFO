@@ -273,7 +273,6 @@ export async function POST(req: Request) {
   const question = lastUserQuestion(messages);
   if (!question) return new Response("A research question is required.", { status: 400 });
 
-  // Casual greetings should not trigger legal research or the citation validator.
   if (/^(?:hi|hello|hey)(?:\s+there)?[.!?]*|good\s+(?:morning|afternoon|evening)[.!?]*|how\s+are\s+you[?!. ]*|what(?:'s|\s+is)\s+up[?!. ]*|thanks|thank\s+you)[\s]*$/i.test(question.trim()) && question.trim().length <= 80) {
     const greeting = /^thank/i.test(question.trim())
       ? "You're welcome. What California law question can I help you with?"
