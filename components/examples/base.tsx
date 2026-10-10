@@ -299,7 +299,7 @@ const ThreadTitle: FC = () => {
   );
 
   return (
-    <span className="min-w-0 truncate text-sm font-medium">
+    <span className="min-w-0 flex-1 truncate text-sm font-medium md:flex-none">
       {title ?? assistant.labels.newChat}
     </span>
   );
@@ -326,7 +326,7 @@ const Header: FC<{
         </TooltipIconButton>
       )}
       <ThreadTitle />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="ml-auto md:absolute md:top-1/2 md:left-1/2 md:ml-0 md:-translate-x-1/2 md:-translate-y-1/2">
         <LawModelToggle />
       </div>
       <TooltipIconButton

@@ -351,3 +351,39 @@
   color: var(--muted-foreground, #8f8f8f);
   opacity: 0.75;
 }
+
+/* ---------------------------------------------------------------------------
+   Glass button surfaces.
+
+   The Button component's variants reference .glass-bg / .glass-frosted /
+   .glass-fluted / .glass-crystal, but none of these were ever defined. Because
+   the default variant is "glass", every button that did not name a variant
+   rendered with no background and no border — it read as plain text rather
+   than a control. Define them here, tuned for the light theme.
+--------------------------------------------------------------------------- */
+.glass-bg {
+  background: color-mix(in oklab, var(--foreground) 6%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.glass-frosted {
+  background: color-mix(in oklab, var(--foreground) 9%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--foreground) 18%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+.glass-fluted {
+  background: repeating-linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--foreground) 7%, var(--background)) 0 2px,
+    color-mix(in oklab, var(--foreground) 3%, var(--background)) 2px 4px
+  );
+  border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+}
+
+.glass-crystal {
+  background: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--foreground) 11%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--background) 70%, transparent);
+}

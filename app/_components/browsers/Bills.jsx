@@ -34,7 +34,10 @@ function BillRow({ b }) {
         {b.special && <Badge variant="outline" className="text-[10px] px-1.5 py-0">special session</Badge>}
         {b.fam && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-pink-300 text-pink-700 dark:border-pink-800 dark:text-pink-400">family law</Badge>}
         <span className="text-[11px] text-muted-foreground ml-auto inline-flex items-center gap-1 whitespace-nowrap">
-          {b.type}{b.chamber ? " · " + b.chamber : ""}
+          {b.type}
+          {b.chamber && !(b.type || "").toLowerCase().includes(b.chamber.toLowerCase())
+            ? ` · ${b.chamber}`
+            : ""}
         </span>
       </div>
       {b.subject && <div className="text-[13px] mt-1.5 leading-relaxed">{b.subject}</div>}

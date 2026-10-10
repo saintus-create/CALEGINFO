@@ -95,9 +95,9 @@ export const defaultBaseConfig: ResolvedBaseConfig = {
     slashCommands: [],
   },
   brandTheme: {
-    background: "#000000",
-    text: "#ececec",
-    surface: "#212121",
+    background: "#ffffff",
+    text: "#0a0a0a",
+    surface: "#f4f4f5",
     accent: "#4c8dff",
   },
 };

@@ -167,7 +167,7 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
           </p>
                     <form onSubmit={runGlobalSearch} className="mt-6 flex gap-2">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search across all California Codes…" className="pl-9 h-11" /></div>
-            <Button type="submit" className="h-11" disabled={globalBusy}>{globalBusy ? "Searching…" : "Search"}</Button>
+            <Button type="submit" variant="default" className="h-11" disabled={globalBusy}>{globalBusy ? "Searching…" : "Search"}</Button>
           </form>
           {globalResults.length > 0 && <div className="mt-4 rounded-xl border divide-y overflow-hidden">{globalResults.map((x, i) => <button key={i} onClick={() => { onCodeChange(x.abbr); setGlobalQuery(""); setGlobalResults([]); }} className="w-full text-left p-3 hover:bg-muted/40 transition-colors"><div className="text-sm font-semibold">{x.r.citation || `${x.abbr} § ${x.r.section}`}</div><div className="text-xs text-muted-foreground mt-1 line-clamp-2">{x.r.text}</div><div className="text-[11px] text-muted-foreground mt-2">{byAbbr[x.abbr]?.name}</div></button>)}</div>}
           <div className="mt-6 rounded-xl border bg-muted/20 p-4 text-sm flex items-start gap-3"><ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" /><span className="text-muted-foreground">This is a dated research snapshot. Use the official California Legislative Information site for the current operative text.</span></div>

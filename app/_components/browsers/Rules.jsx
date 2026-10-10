@@ -171,7 +171,7 @@ export default function Rules({ jumpRule }) {
               <Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)}
                 placeholder="Search all rules (e.g. “continuance”, “service of papers”, “rule 8.1115”)…" className="pl-9 h-11" />
             </div>
-            <Button type="submit" className="h-11">Search</Button>
+            <Button type="submit" variant="default" className="h-11">Search</Button>
           </form>
           {globalResults.length > 0 && (
             <div className="mt-4 rounded-xl border divide-y overflow-hidden">
