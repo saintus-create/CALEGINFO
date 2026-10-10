@@ -20,7 +20,8 @@
     "dev:eve": "eve dev",
     "start:eve": "eve start",
     "check:forms": "tsx scripts/check_forms.ts",
-    "check:forms:corpus": "python3 scripts/check_forms.py"
+    "check:forms:corpus": "python3 scripts/check_forms.py",
+    "sync:forms:count": "python3 scripts/sync_forms_count.py"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.78",

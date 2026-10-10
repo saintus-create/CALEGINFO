@@ -7,8 +7,9 @@ complete statewide Judicial Council forms catalog as JSON —
 (Drupal view "jcc_forms_search_json_api", REST export display.)
 
 Each record carries the form number, title, plain-language description, the
-topic category, the mandatory-use flag, the effective/revision date(s), the
-official PDF URL, the form-information page, and translation URLs.
+topic category, the portal's editorial synonyms, the mandatory-use flag, the
+effective/revision date(s), the official PDF URL, the form-information page,
+and translation URLs.
 
 Outputs:
   public/corpus/forms/FORMS.jsonl.gz   gzip'd JSONL, one form per line
@@ -98,6 +99,25 @@ def clean(text: object) -> str:
     return " ".join(str(text or "").split())
 
 
+def parse_synonyms(raw: object) -> list[str]:
+    """'workplace violence, workplace violence prevention' -> ['workplace violence', ...]
+
+    The portal carries editorial topic labels in `field_synonyms` — the words a
+    filer actually types when the official title uses different ones. Kept
+    lowercased and de-duplicated (source order preserved) because both search
+    scorers match them case-insensitively.
+    """
+    text = clean(raw)
+    if not text:
+        return []
+    out: list[str] = []
+    for part in re.split(r"[,;|]", text):
+        term = " ".join(part.split()).lower()
+        if term and term not in out:
+            out.append(term)
+    return out
+
+
 def series_of(number: str, prefix: str) -> str:
     """Form family used for grouping: 'FL-1XX' -> 'FL', 'CP10' -> 'CP'.
 
@@ -130,6 +150,8 @@ def normalize(rec: dict) -> dict | None:
 
     mandatory = str(rec.get("field_mandatory") or "").strip().lower() in {"true", "1", "yes"}
 
+    synonyms = parse_synonyms(rec.get("field_synonyms"))
+
     out = {
         "number": number,
         "title": title,
@@ -142,6 +164,7 @@ def normalize(rec: dict) -> dict | None:
         "effective": effective,
         "effective_dates": raw_dates,
         "description": clean(rec.get("description")),
+        "synonyms": synonyms,
         "pdf_url": clean(rec.get("url")),
         "info_url": clean(rec.get("alias")),
         "languages": sorted(languages.keys()),
@@ -223,6 +246,7 @@ def main() -> int:
         "categories": len(categories),
         "prefixes": len(prefixes),
         "series": len(series),
+        "synonyms": sum(1 for f in forms if f.get("synonyms")),
         "retrieved_at": datetime.now(timezone.utc).isoformat(),
         "source": SOURCE_URL,
         "official_source": OFFICIAL_SOURCE,
