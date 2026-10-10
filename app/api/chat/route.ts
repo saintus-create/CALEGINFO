@@ -278,17 +278,14 @@ export async function POST(req: Request) {
     const greeting = /^thank/i.test(question.trim())
       ? "You're welcome. What California law question can I help you with?"
       : "Hi! What California law question can I help you with?";
-    const stream = new ReadableStream<StreamPart>({
-      start(controller) {
-        const id = "law-" + Math.random().toString(36).slice(2, 10);
-        controller.enqueue({ type: "text-start", id });
-        controller.enqueue({ type: "text-delta", id, delta: greeting });
-        controller.enqueue({ type: "text-end", id });
-        controller.enqueue({ type: "finish", finishReason: "stop" });
-        controller.close();
+    const uiStream = createUIMessageStream({
+      execute: ({ writer }) => {
+        const id = "law-greeting";
+        writer.write({ type: "text-start", id });
+        writer.write({ type: "text-delta", id, delta: greeting });
+        writer.write({ type: "text-end", id });
       },
     });
-    const uiStream = createUIMessageStream({ execute: ({ writer }) => writer.merge(stream as any) });
     return createUIMessageStreamResponse({ stream: uiStream });
   }
   if (
