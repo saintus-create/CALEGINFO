@@ -152,6 +152,9 @@ function lastUserQuestion(messages: any[]): string {
   return "";
 }
 
+// Record markers always carry a letter prefix (p1, s2, c3, g4). A bare number
+// like [2] is a formatting slip, not a citation — treating it as one rejected
+// otherwise-correct answers and made the app hold them back.
 const CITED_RE = /\[\s*([a-z]{1,2}\d{1,3})\s*\]/gi;
 // non-global variant for per-paragraph .test() checks
 const CITED_ONE_RE = /\[\s*[a-z]{1,2}\d{1,3}\s*\]/i;
@@ -206,6 +209,11 @@ function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): st
 function validateSynthesis(text: string, record: Awaited<ReturnType<typeof research.execute>>, question: string) {
   const valid = new Set(record.propositions.map((p) => normalizeMarker(p.proposition_id)));
   for (const s of record.sources) valid.add(normalizeMarker(s.marker));
+  // Evidence-gap ids (g1, g2, ...) are part of the record, and the prompt asks
+  // the model to disclose open gaps by reference. Without registering them here
+  // any answer that honestly flags a gap is rejected as an unknown citation and
+  // the user gets the hold-back message instead of the answer.
+  for (const g of record.evidence_gaps) valid.add(normalizeMarker(g.gap_id));
 
   const citations = Array.from(text.matchAll(CITED_RE)).map((m) => normalizeMarker(m[1]));
   const unknown = citations.filter((c) => !valid.has(c));
@@ -233,10 +241,25 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
   CITED_RE.lastIndex = 0;
 
   if (uncited.length) {
-    return { ok: false, reason: `Uncited substantive paragraph detected (${uncited.length}).` };
+    // Quote the offending paragraph so the repair pass can target it directly.
+    const sample = uncited[0].replace(/\s+/g, " ").slice(0, 220);
+    return {
+      ok: false,
+      reason: `Uncited substantive paragraph detected (${uncited.length}). Offending paragraph: "${sample}"`,
+    };
   }
 
-  if (gapsOpen && !/unverified|insufficient evidence|not established|could not verify/i.test(text)) {
+  // Disclosing a gap is a matter of wording, so accept any phrasing that flags
+  // it. The old four-phrase list rejected answers that plainly said the point
+  // was not in the record. Citing a gap id counts as disclosure too.
+  const disclosed =
+    /unverified|not verif|cannot be verified|insufficient evidence|not established|does not establish|does not (?:contain|address|resolve|disclose|provide)|not addressed|no (?:case )?authority|remains? (?:open|unresolved)|unresolved|absent from the record|not (?:reproduced|present|included) in the (?:research )?record/i.test(
+      text,
+    ) ||
+    citations.some((c) =>
+      record.evidence_gaps.some((g) => normalizeMarker(g.gap_id) === c),
+    );
+  if (gapsOpen && !disclosed) {
     return { ok: false, reason: "The research record contains open evidence gaps, but the answer does not disclose an unresolved gap." };
   }
 
@@ -378,14 +401,19 @@ The server will validate your completed answer before sending it to the user. An
   if (process.env.DEBUG_ANSWER) console.log('[debug] raw answer:\n' + answer.slice(0, 3000));
   let validation = validateSynthesis(answer, record, question);
 
-  if (!validation.ok && !/^(simple|short|greeting)$/i.test(record.mode)) {
-    // One bounded repair pass is preferable to allowing unsupported text through.
+  // Up to two bounded repair passes. The gate is strict by design, so give the
+  // model a targeted second chance rather than serving nothing at all.
+  for (
+    let attempt = 0;
+    !validation.ok && attempt < 2 && !/^(simple|short|greeting)$/i.test(record.mode);
+    attempt++
+  ) {
     result = generate(`
 
 REPAIR REQUIRED:
 Your previous synthesis failed the evidence gate for this reason:
 ${validation.reason}
-Produce a replacement answer, not commentary about the failure. Every substantive paragraph must contain a valid proposition/source citation. Do not use general knowledge to fill gaps. If an evidence gap remains open, explicitly say so. If this is a criminal-law question, include every required prosecution-grade section and explicitly separate probable cause from trial sufficiency.
+Produce a replacement answer, not commentary about the failure. Every paragraph — including any opening or framing sentence — must carry a valid bracketed record marker. If a sentence cannot be supported by any marker in the record, delete it rather than leaving it uncited. Do not use general knowledge to fill gaps. If an evidence gap remains open, explicitly say so. If this is a criminal-law question, include every required prosecution-grade section and explicitly separate probable cause from trial sufficiency.
 `);
     answer = "";
     for await (const part of result.textStream) answer += part;
