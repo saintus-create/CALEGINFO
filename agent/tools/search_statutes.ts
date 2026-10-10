@@ -1,7 +1,7 @@
 import { defineTool } from "eve/tools";
 import { z } from "zod";
 import { CODE_NAMES, codesFor, loadCode } from "../lib/corpus";
-import { scoreSections } from "../lib/search";
+import { fuseEmbeddings, hybridRetrieve, interpretQuery, screenDocs } from "../lib/retrieval";
 
 function extractCodeHints(queries: string[]): string[] {
   const text = queries.join(" ").toLowerCase();
@@ -36,13 +36,25 @@ function extractCodeHints(queries: string[]): string[] {
 export default defineTool({
   description:
     "Search the complete California Codes (all 29 codes + the Constitution, every section with full text and legislative history). " +
+    "Runs a multi-stage retrieval pipeline: it interprets the question, ranks sections by BM25 content match fused with metadata " +
+    "(code hints, recency, repealed status, definitional language), enriches the query with discriminative terms mined from the " +
+    "first-pass results (an inspectable second pass), reranks the top candidates, and can screen results with natural-language criteria. " +
+    "Set mode='keyword' for a reproducible literal-term search with no enrichment. " +
     "Use this FIRST for any California law question. Returns numbered statute sources like [1], [2] to cite inline.",
   inputSchema: z.object({
     queries: z.array(z.string().min(2)).min(1).max(4).describe("Search phrases — the question's key terms"),
     codes: z.array(z.string()).optional().describe("Optional code abbreviations to prioritize, e.g. [\"CIV\", \"CCP\"]"),
     limit: z.number().int().min(4).max(24).optional(),
+    mode: z.enum(["hybrid", "keyword"]).optional().describe("hybrid (default) enables query enrichment + fusion; keyword is literal and reproducible"),
+    screen: z
+      .object({
+        include: z.array(z.string()).optional(),
+        exclude: z.array(z.string()).optional(),
+      })
+      .optional()
+      .describe("Natural-language screening criteria applied to the retrieved set (e.g. include ['penalties'], exclude ['repealed'])"),
   }),
-  async execute({ queries, codes, limit }) {
+  async execute({ queries, codes, limit, mode, screen }) {
     const explicit = codesFor(codes);
     const hints = codes?.length ? [] : extractCodeHints(queries);
     const inferred = hints.length ? hints : undefined;
@@ -55,16 +67,52 @@ export default defineTool({
       }),
     )).flat();
 
-    const hits = scoreSections(queries, records, codes ?? (hints.length ? hints : undefined), limit ?? 16);
-    if (!hits.length) return { sources: [], note: "No matching statutes found. Try different terms." };
+    // Stage 1 — question interpretation
+    const plan = interpretQuery(queries.join(" ; "), { codes, mode: mode || "hybrid" });
+
+    // Stages 2–4 — hybrid BM25 retrieval, query enrichment, reranking
+    const { docs, expandedTerms, stats } = hybridRetrieve(records, plan, {
+      limit: limit ?? 16,
+      expand: plan.mode === "hybrid",
+    });
+
+    // Stage 5 — natural-language screening
+    const screened = screen ? screenDocs(docs, screen) : docs;
+
+    // Optional dense fusion (no-op unless an embedding endpoint is configured)
+    const finalDocs = await fuseEmbeddings(screened, queries.join(" "));
+
+    if (!finalDocs.length) {
+      return {
+        sources: [],
+        note: screen
+          ? "No matching statutes survived screening. Try different terms or loosen the criteria."
+          : "No matching statutes found. Try different terms.",
+        ...(expandedTerms.length ? { expanded_terms: expandedTerms } : {}),
+      };
+    }
+
     return {
-      note: "Cite these inline with their bracketed markers, e.g. [1] or [2], right after the sentence each supports.",
-      sources: hits.map((h, i) => ({
+      note:
+        "Multi-stage retrieval (interpret → hybrid BM25 + metadata → query enrichment → rerank → screen). " +
+        "Cite these inline with their bracketed markers, e.g. [1] or [2], right after the sentence each supports.",
+      pipeline: {
+        mode: plan.mode,
+        intent: plan.intent,
+        scanned: stats.scanned,
+        candidates: stats.candidates,
+        reranked: stats.reranked,
+        ...(expandedTerms.length ? { expanded_terms: expandedTerms } : {}),
+      },
+      sources: finalDocs.map((h, i) => ({
         marker: `[${i + 1}]`,
-        citation: h.citation + (h.repealed ? " (REPEALED)" : ""),
+        citation: String(h.r.citation || "") + (h.r.repealed ? " (REPEALED)" : ""),
         code: (CODE_NAMES[h.abbr] || h.abbr) + " (" + h.abbr + ")",
-        text: h.text,
-        ...(h.history ? { legislative_history: h.history } : {}),
+        text: String(h.r.text || "").slice(0, 1600),
+        score: h.score,
+        signals: h.signals,
+        ...(h.matchedExpansion.length ? { matched_expansion: h.matchedExpansion } : {}),
+        ...(h.r.history ? { legislative_history: String(h.r.history).slice(0, 200) } : {}),
       })),
     };
   },
