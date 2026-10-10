@@ -211,83 +211,77 @@ const MobileSidebar: FC = () => {
   );
 };
 
-const LawModelToggle: FC = () => {
-  const [alternate, setAlternate] = useState<{
-    id: string;
-    name: string;
-    available: boolean;
-  } | null>(null);
-  const [on, setOn] = useState(false);
+const LawModelSelector: FC = () => {
+  const [models, setModels] = useState<
+    Array<{ id: string; name: string; available?: boolean }>
+  >([]);
+  const [selectedId, setSelectedId] = useState(DEFAULT_MODEL_ID);
 
   useEffect(() => {
-    const saved = localStorage.getItem("law-model-id");
+    let active = true;
     fetch("/api/models")
-      .then((r) => r.json())
-      .then(
-        (d: {
-          models?: Array<{ id: string; name: string; available?: boolean }>;
-        }) => {
-          const models = Array.isArray(d?.models) ? d.models : [];
-          // first entry is the standard model; one configured alternate becomes the toggle
-          const alt = models.length > 1 ? models[1] : null;
-          setAlternate(
-            alt
-              ? { id: alt.id, name: alt.name, available: !!alt.available }
-              : null,
-          );
-          setOn(!!alt && saved === alt.id);
-        },
-      )
-      .catch(() => {});
+      .then((response) => {
+        if (!response.ok) throw new Error("Could not load models");
+        return response.json();
+      })
+      .then((data: {
+        models?: Array<{ id: string; name: string; available?: boolean }>;
+      }) => {
+        if (!active) return;
+        const availableModels = Array.isArray(data?.models) ? data.models : [];
+        setModels(availableModels);
+        const saved = localStorage.getItem("law-model-id");
+        const savedModel = availableModels.find(
+          (model) => model.id === saved && model.available !== false,
+        );
+        const defaultModel = availableModels.find(
+          (model) => model.id === DEFAULT_MODEL_ID && model.available !== false,
+        );
+        const initialId = savedModel?.id ?? defaultModel?.id ?? availableModels[0]?.id;
+        if (initialId) {
+          setSelectedId(initialId);
+          localStorage.setItem("law-model-id", initialId);
+          window.dispatchEvent(new Event("law-model-change"));
+        }
+      })
+      .catch(() => {
+        if (active) setModels([]);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
-  if (!alternate) return null;
-
-  const select = (useAlternate: boolean) => {
-    const id = useAlternate ? alternate.id : DEFAULT_MODEL_ID;
-    setOn(useAlternate);
+  const selectModel = (id: string) => {
+    const model = models.find((item) => item.id === id);
+    if (!model || model.available === false) return;
+    setSelectedId(id);
     localStorage.setItem("law-model-id", id);
     window.dispatchEvent(new Event("law-model-change"));
   };
 
+  if (models.length === 0) return null;
+
   return (
-    <div
-      data-slot="law-model-toggle"
-      className="flex items-center rounded-full border border-border bg-muted/50 p-1 backdrop-blur-xl"
-      title={
-        alternate.available
-          ? `Answer mode: Standard or Unfiltered`
-          : "Unfiltered needs an OpenRouter key: add OPENROUTER_API_KEY in Vercel \u2192 Redeploy"
-      }
-    >
-      <button
-        type="button"
-        onClick={() => select(false)}
-        className={cn(
-          "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
-          !on
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground",
-        )}
+    <label className="flex items-center gap-2">
+      <span className="sr-only">AI model</span>
+      <select
+        aria-label="AI model"
+        value={selectedId}
+        onChange={(event) => selectModel(event.target.value)}
+        className="h-9 max-w-52 rounded-md border border-border bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
       >
-        Standard
-      </button>
-      <button
-        type="button"
-        onClick={() => select(true)}
-        disabled={!alternate.available}
-        className={cn(
-          "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
-          on
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground",
-          !alternate.available &&
-            "cursor-not-allowed opacity-40 hover:text-muted-foreground",
-        )}
-      >
-        Unfiltered
-      </button>
-    </div>
+        {models.map((model) => (
+          <option
+            key={model.id}
+            value={model.id}
+            disabled={model.available === false}
+          >
+            {model.name}{model.available === false ? " (API key not configured)" : ""}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 };
 
@@ -327,7 +321,7 @@ const Header: FC<{
       )}
       <ThreadTitle />
       <div className="mx-auto flex min-w-0 shrink-0 justify-center sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2">
-        <LawModelToggle />
+        <LawModelSelector />
       </div>
       <TooltipIconButton
         variant="ghost"
