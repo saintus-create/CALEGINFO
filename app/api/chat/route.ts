@@ -152,9 +152,9 @@ function lastUserQuestion(messages: any[]): string {
   return "";
 }
 
-const CITED_RE = /\[\s*([a-z]{0,2}\d{1,3})\s*\]/gi;
+const CITED_RE = /\[\s*([a-z]{1,2}\d{1,3})\s*\]/gi;
 // non-global variant for per-paragraph .test() checks
-const CITED_ONE_RE = /\[\s*[a-z]{0,2}\d{1,3}\s*\]/i;
+const CITED_ONE_RE = /\[\s*[a-z]{1,2}\d{1,3}\s*\]/i;
 
 function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): string {
   const propositionLines = record.propositions.map((p) => {
