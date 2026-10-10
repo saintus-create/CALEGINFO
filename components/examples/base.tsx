@@ -1002,13 +1002,13 @@ export const Base: FC = () => {
       <div className="relative z-10 hidden md:block">
         <EmptyAwareSidebar collapsed={sidebarCollapsed} />
       </div>
-      <div className="relative z-10 flex flex-1 flex-col overflow-hidden p-2 md:pl-0">
-        <div className="flex flex-1 flex-col overflow-hidden rounded-lg">
+      <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0 sm:p-2 md:pl-0">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-none sm:rounded-lg">
           <Header
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
-          <main className="flex-1 overflow-hidden">
+          <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
             <Thread />
           </main>
         </div>
