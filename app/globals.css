@@ -102,11 +102,9 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-.dark {
-  --color-background: oklch(0 0 0);
-  --color-muted: oklch(0.21 0 0);
-  --color-primary: oklch(0.7 0.12 262);
-}
+/* Palette is neutral by design (zero chroma). A previous override forced
+   --color-primary to a blue (oklch(0.7 0.12 262)) in dark mode, which is what
+   tinted the user bubble, the model toggle and the action buttons. Removed. */
 
 /* brief perimeter glints on the emblem */
 @keyframes mark-glint {
@@ -350,4 +348,28 @@
   letter-spacing: 0.01em;
   color: var(--muted-foreground, #8f8f8f);
   opacity: 0.75;
+}
+
+/* Gradient transition for in-progress states (from the eve chat template). */
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--muted-foreground) 0%,
+    var(--foreground) 45%,
+    var(--muted-foreground) 90%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-text 1.8s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes shimmer-text {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-text { animation: none; }
 }
