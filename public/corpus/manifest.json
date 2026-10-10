@@ -464,7 +464,7 @@
         "annotations": 103
       },
       {
-        "sha256": "9d7d9f05639873c450ede6e5799463b30b556a54f1ecaf321f611523234e3a57",
+        "sha256": "5a446ccc97624be420e7d3d97641797d39823d73381964e10efcc70829101a9f",
         "key": "forms",
         "name": "Judicial Council Forms (statewide)",
         "file": "forms/FORMS.jsonl.gz",
@@ -473,7 +473,8 @@
         "categories": 102,
         "prefixes": 64,
         "series": 58,
-        "retrieved_at": "2026-10-05T10:12:02.397491+00:00",
+        "synonyms": 123,
+        "retrieved_at": "2026-10-10T06:14:16.519673+00:00",
         "source": "https://selfhelp.courts.ca.gov/json/jcc-forms",
         "official_source": "https://selfhelp.courts.ca.gov/find-forms/all-by-category"
       }
