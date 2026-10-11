@@ -3,17 +3,18 @@
 import type { ReactNode } from "react";
 
 import { BorderBeam } from "@/components/spectrumui/ui/border-beam";
+import { Card } from "@/components/spectrumui/ui/card";
 import { cn } from "@/lib/utils";
 
 /**
- * A card wrapped in Spectrum UI's animated border beam.
+ * Spectrum's Card, carrying Spectrum's animated border beam.
  *
- * Spectrum ships a BeamCard in its registry, but this repo vendored only the
- * BorderBeam primitive it is built on, and the registry host is not reachable
- * from the build environment. So this composes a card around Spectrum's own
- * primitive rather than restating their component from guesswork.
+ * Both halves are the vendored components. Spectrum's registry also ships a
+ * pre-wrapped BeamCard, but that item was never vendored into this repo and
+ * its registry host does not resolve from the build environment, so the two
+ * vendored pieces are composed rather than the item restated.
  *
- * BorderBeam paints `absolute inset-0` and inherits the radius, so the wrapper
+ * BorderBeam paints `absolute inset-0` and inherits the radius, so the Card
  * must be `relative` and carry the rounding.
  */
 export function BeamCard({
@@ -24,12 +25,7 @@ export function BeamCard({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-2xl border border-border bg-card",
-        className,
-      )}
-    >
+    <Card className={cn("relative rounded-2xl", className)}>
       <BorderBeam
         size={220}
         duration={14}
@@ -38,6 +34,6 @@ export function BeamCard({
         colorTo="#4c8dff"
       />
       {children}
-    </div>
+    </Card>
   );
 }
