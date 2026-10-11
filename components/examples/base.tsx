@@ -71,6 +71,7 @@ import {
   FileTextIcon,
   GlobeIcon,
   HelpCircleIcon,
+  HeadphonesIcon,
   LanguagesIcon,
   LightbulbIcon,
   MenuIcon,
@@ -95,6 +96,7 @@ import {
   type DirectiveChipProps,
 } from "@assistant-ui/react-lexical";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState, type FC } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DEFAULT_MODEL_ID } from "@/constants/model";
@@ -321,13 +323,22 @@ const Header: FC<{
       <div className="mx-auto flex min-w-0 shrink-0 justify-center sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2">
         <LawModelSelector />
       </div>
+      <Link
+        href="/voice"
+        aria-label="Open accessible voice conversation"
+        title="Voice conversation"
+        className="ml-auto inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border/70 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <HeadphonesIcon className="size-4" aria-hidden="true" />
+        <span className="sr-only">Voice conversation</span>
+      </Link>
       <TooltipIconButton
         variant="ghost"
         size="icon"
         tooltip="Share"
         side="bottom"
         disabled
-        className="ml-auto size-8"
+        className="size-8"
       >
         <ShareIcon className="size-4" />
       </TooltipIconButton>
