@@ -12,6 +12,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "@/app/_components/wordmark";
+import { StarMark } from "@/app/_components/star-mark";
 
 const TABS: Array<{ href: string; label: string; icon: Icon }> = [
   { href: "/codes", label: "Codes", icon: BookOpen },
@@ -25,7 +26,8 @@ export function BrowseShell({ active, children }: { active: string; children: Re
   return (
     <div className="flex h-dvh flex-col bg-background">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
-        <Link className="mr-1 shrink-0" href="/" aria-label="California Legislation">
+        <Link className="mr-1 flex shrink-0 items-center gap-2" href="/" aria-label="California Legislation">
+          <StarMark className="size-4 text-[#c8102e]" />
           <Wordmark className="text-[12px]" />
         </Link>
         <nav className="flex items-center gap-1" aria-label="Research library">
