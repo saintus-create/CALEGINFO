@@ -326,9 +326,6 @@ const Header: FC<{
         </TooltipIconButton>
       )}
       <ThreadTitle />
-      <div className="ml-auto flex min-w-0 shrink-0 justify-center md:absolute md:top-1/2 md:left-1/2 md:ml-0 md:-translate-x-1/2 md:-translate-y-1/2">
-        <LawModelToggle />
-      </div>
       <TooltipIconButton
         variant="ghost"
         size="icon"
@@ -356,7 +353,7 @@ const Thread: FC = () => {
     <ThreadPrimitive.Root
       className="aui-root aui-thread-root @container flex h-full flex-col"
       style={{
-        ["--thread-max-width" as string]: "44rem",
+        ["--thread-max-width" as string]: "42rem",
         ["--composer-bg" as string]:
           "var(--color-muted)",
         ["--composer-radius" as string]: "1.5rem",
@@ -504,7 +501,7 @@ const suggestionIconMap: Record<
 };
 
 const suggestionChipClass =
-  "aui-thread-welcome-suggestion border-primary/35 bg-primary/5 text-foreground hover:bg-primary/15 hover:border-primary/60 h-auto gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-normal whitespace-nowrap transition-colors [&_svg]:size-4 [&_svg]:text-primary";
+  "aui-thread-welcome-suggestion border-border bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground h-auto gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-normal whitespace-nowrap transition-colors [&_svg]:size-4";
 
 const ThreadSuggestions: FC = () => {
   const { assistant } = useBaseConfig();
@@ -619,7 +616,7 @@ const Composer: FC = () => {
         <ComposerPrimitive.AttachmentDropzone asChild>
           <div
             data-slot="aui_composer-shell"
-            className="data-[dragging=true]:bg-[color-mix(in_oklab,var(--color-primary)_12%,var(--color-background))] flex w-full flex-col gap-2 rounded-(--composer-radius) bg-(--composer-bg) p-(--composer-padding) shadow-[0_4px_16px_-8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] transition-[background-color,box-shadow] focus-within:shadow-[0_0_0_2px_var(--color-primary),0_8px_28px_-12px_var(--color-primary)] dark:shadow-none"
+            className="data-[dragging=true]:border-dashed flex w-full flex-col gap-2 rounded-[14px] border border-border/80 bg-card/95 p-2 shadow-sm transition-colors focus-within:border-border focus-within:ring-[1px] focus-within:ring-foreground/5 dark:bg-muted/45 dark:focus-within:ring-white/5"
           >
             <ComposerQuotePreview />
             <ComposerAttachments />
@@ -735,7 +732,7 @@ const AssistantWorkingIndicator: FC = () => {
         className="text-muted-foreground inline-flex items-center gap-2 align-middle"
       >
         <DotMatrix state="connecting" aria-hidden />
-        <span className="text-sm">Connecting</span>
+        <span className="shimmer-text text-sm font-medium">Connecting</span>
       </span>
     );
   }
@@ -888,7 +885,7 @@ const UserMessage: FC = () => {
       <UserMessageAttachments />
 
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-        <div className="aui-user-message-content peer bg-primary text-primary-foreground rounded-xl px-4 py-2 wrap-break-word empty:hidden">
+        <div className="aui-user-message-content peer rounded-[18px] border border-border/40 bg-muted/70 px-3.5 py-2 text-[15px] leading-6 shadow-sm wrap-break-word empty:hidden">
           <MessagePrimitive.Quote>
             {(quote) => <QuoteBlock {...quote} />}
           </MessagePrimitive.Quote>
