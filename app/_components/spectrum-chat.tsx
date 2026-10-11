@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { AIChatCard } from "@/components/spectrumui/ai-chat-card";
+import { ChatEmptyState } from "@/components/spectrumui/blocks/ai-assistants/chat-empty-state";
 import { MessageActions } from "@/components/spectrumui/blocks/ai-assistants/message-actions";
 import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/prompt-composer";
 import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/streaming-text";
@@ -245,17 +245,24 @@ export function SpectrumChat() {
 
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {empty ? (
-          <div className="grid min-h-full place-items-center px-4 py-8 sm:px-6">
-            <AIChatCard
-              title=""
-              subtitle=""
-              greeting=""
-              prompt=""
-              prompts={SUGGESTIONS.map((item) => item.prompt ?? item.label)}
+          <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6">
+            <ChatEmptyState
+              title="Ask anything about California law"
+              subtitle="Every answer is cited to the statute, rule or case it comes from."
+              prompts={SUGGESTIONS}
+              onSelectPrompt={(item) => send(item.prompt ?? item.label)}
+              variant="Centered"
+            />
+            <PromptComposer
               placeholder="Ask anything about California law…"
-              onSend={(value) => send(value)}
-              className="min-h-[520px] max-w-[520px]"
-              icon={<StarMark className="h-5 w-5" />}
+              models={models.map((m) => ({
+                id: m.id,
+                name: m.name,
+                disabled: m.available === false,
+              }))}
+              defaultModelId={models[0]?.id}
+              onSend={(value: string) => send(value)}
+              isGenerating={busy}
             />
           </div>
         ) : (
