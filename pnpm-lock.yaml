@@ -200,6 +200,9 @@ importers:
       lucide-react:
         specifier: 1.33.0
         version: 1.33.0(react@19.2.8)
+      metal-fx:
+        specifier: ^2.0.11
+        version: 2.0.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       motion:
         specifier: ^12.43.0
         version: 12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -4219,6 +4222,12 @@ packages:
 
   mermaid@11.17.2:
     resolution: {integrity: sha512-V6K3C8EBdEsPFZXSKMJe6ppQOENxuHARr9GvHX4hh47lAbhMRD9qf4oEK7LoaRQxULMa80/qt5gHO73aCleBBg==}
+
+  metal-fx@2.0.11:
+    resolution: {integrity: sha512-BdAdXXmJmqVbPxwjb3mN5TmS9r1+fde4RhGdK6In3ktT53/oLNFIwM2idRxR9KmVCa+7Yod1i0tR9nljsfLH1g==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
 
   micromark-core-commonmark@2.0.3:
     resolution: {integrity: sha512-RDBrHEMSxVFLg6xvnXmb1Ayr2WzLAWjeSATAoxwKYJV94TeNavgoIdA0a9ytzDSVzBy2YKFK+emCPOEibLeCrg==}
@@ -8946,6 +8955,11 @@ snapshots:
       stylis: 4.4.0
       ts-dedent: 2.3.0
       uuid: 14.0.2
+
+  metal-fx@2.0.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
 
   micromark-core-commonmark@2.0.3:
     dependencies:
