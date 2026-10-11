@@ -168,8 +168,8 @@ importers:
         specifier: 2.0.0
         version: 2.0.0(next@16.3.4(@types/node@25.9.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       ai:
-        specifier: 7.0.105
-        version: 7.0.105(zod@4.4.3)
+        specifier: 7.0.116
+        version: 7.0.116(zod@4.4.3)
       assistant-stream:
         specifier: ^0.3.45
         version: 0.3.45

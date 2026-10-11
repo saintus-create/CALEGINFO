@@ -120,6 +120,8 @@ export default function Forms({ jumpForm }) {
   const [series, setSeries] = useState("all");
   const [mandatoryOnly, setMandatoryOnly] = useState(false);
   const [shown, setShown] = useState(60);
+  // Local forms are published by each superior court separately from statewide forms.
+  const [county, setCounty] = useState("all");
 
   useEffect(() => {
     let on = true;
@@ -163,6 +165,11 @@ export default function Forms({ jumpForm }) {
     }
     return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [ready]);
+
+  const court = useMemo(
+    () => (county !== "all" ? extras.courts.find((c) => c.county === county) || null : null),
+    [county, ready],
+  );
 
   const results = useMemo(() => {
     if (!ready) return [];
@@ -337,17 +344,51 @@ export default function Forms({ jumpForm }) {
         )}
       </div>
 
-      <p className="mt-6 text-xs text-muted-foreground">
-        Statewide Judicial Council forms only — superior courts publish additional local forms.{" "}
-        <a
-          className="inline-flex items-center gap-1 underline hover:text-foreground"
-          href="https://selfhelp.courts.ca.gov/find-forms"
-          target="_blank"
-          rel="noopener"
-        >
-          Verify at California Courts <ArrowSquareOut className="h-3 w-3" />
-        </a>
-      </p>
+      <div className="mt-6 border-t pt-4">
+        <p className="text-xs text-muted-foreground">
+          These are statewide Judicial Council forms. California’s 58 superior courts also publish local forms, which are not included here; local form numbers can overlap with statewide form numbers.
+        </p>
+        {extras.courts.length > 0 && (
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select onValueChange={setCounty} value={county}>
+              <SelectTrigger className="h-9 w-full sm:w-64">
+                <SelectValue placeholder="Select a county…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All counties ({extras.courts.length})</SelectItem>
+                {extras.courts.map((c) => (
+                  <SelectItem key={c.county} value={c.county}>
+                    {c.county}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {court && (
+              <a
+                className="inline-flex items-center gap-1 text-xs underline hover:text-foreground"
+                href={court.local_forms || court.site}
+                target="_blank"
+                rel="noopener"
+              >
+                {court.local_forms
+                  ? `${court.county} local forms`
+                  : `${court.county} court site — look for “local forms”`}
+                <ArrowSquareOut className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+        )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          <a
+            className="inline-flex items-center gap-1 underline hover:text-foreground"
+            href="https://selfhelp.courts.ca.gov/find-forms"
+            target="_blank"
+            rel="noopener"
+          >
+            Verify at California Courts <ArrowSquareOut className="h-3 w-3" />
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
