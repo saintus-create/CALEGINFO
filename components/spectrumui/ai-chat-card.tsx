@@ -81,37 +81,43 @@ export function AIChatCard({
         className,
       )}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 border-b border-border px-5 pb-4 pt-5">
-        <div>
-          <h3 className="text-[16px] font-medium leading-6 text-foreground">
-            {title}
-          </h3>
-          <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
-            {subtitle}
-          </p>
-        </div>
-        <motion.button
-          type="button"
-          onClick={() => {
-            setSpins((count) => count + 1);
-            setUserActive(false);
-            setUserMessage("");
-            onReset?.();
-          }}
-          whileTap={{ scale: 0.9 }}
-          aria-label="Reset conversation"
-          className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[18px] border border-border bg-white text-muted-foreground transition-colors hover:text-foreground dark:bg-neutral-950"
-        >
-          <motion.span
-            animate={{ rotate: spins * 360 }}
-            transition={{ type: "spring", bounce: 0.2, duration: 0.7 }}
-            className="flex"
+      {/* Header: omitted when no title, subtitle, or reset action is provided. */}
+      {(title || subtitle || onReset) && (
+        <div className="flex items-start justify-between gap-4 border-b border-border px-5 pb-4 pt-5">
+          <div>
+            {title && (
+              <h3 className="text-[16px] font-medium leading-6 text-foreground">
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          <motion.button
+            type="button"
+            onClick={() => {
+              setSpins((count) => count + 1);
+              setUserActive(false);
+              setUserMessage("");
+              onReset?.();
+            }}
+            whileTap={{ scale: 0.9 }}
+            aria-label="Reset conversation"
+            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[18px] border border-border bg-white text-muted-foreground transition-colors hover:text-foreground dark:bg-neutral-950"
           >
-            <RefreshCw className="h-4 w-4" />
-          </motion.span>
-        </motion.button>
-      </div>
+            <motion.span
+              animate={{ rotate: spins * 360 }}
+              transition={{ type: "spring", bounce: 0.2, duration: 0.7 }}
+              className="flex"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </motion.span>
+          </motion.button>
+        </div>
+      )}
 
       {/* Empty state */}
       <div className="flex flex-1 flex-col items-center justify-center px-8 py-10 text-center">
@@ -122,24 +128,28 @@ export function AIChatCard({
         >
           {icon ?? <MessageCircleDashed className="h-5 w-5 text-foreground" />}
         </motion.div>
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
-          className="mt-4 text-[18px] font-medium leading-7 tracking-[-0.45px] text-foreground"
-        >
-          {greeting}
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.25, ease: "easeOut" }}
-          className="mt-1.5 max-w-[190px] text-sm leading-[22.75px] text-muted-foreground"
-        >
-          {prompt}
-        </motion.p>
+        {greeting && (
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+            className="mt-4 text-[18px] font-medium leading-7 tracking-[-0.45px] text-foreground"
+          >
+            {greeting}
+          </motion.p>
+        )}
+        {prompt && (
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.25, ease: "easeOut" }}
+            className="mt-1.5 max-w-[190px] text-sm leading-[22.75px] text-muted-foreground"
+          >
+            {prompt}
+          </motion.p>
+        )}
       </div>
 
       {/* Composer */}
