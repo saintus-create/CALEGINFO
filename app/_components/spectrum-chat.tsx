@@ -5,6 +5,7 @@ import {
   BookOpen,
   Buildings,
   FileText,
+  Info,
   Scales,
   Scroll,
   type Icon,
@@ -231,6 +232,7 @@ export function SpectrumChat() {
               ["Rules", "/rules", Scales],
               ["Directory", "/directory", Buildings],
               ["Forms", "/forms", FileText],
+              ["Method", "/method", Info],
             ] as Array<[string, string, Icon]>
           ).map(([label, href, Glyph]) => (
             <a

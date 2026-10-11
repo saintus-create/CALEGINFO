@@ -4,6 +4,7 @@ import {
   BookOpen,
   Buildings,
   FileText,
+  Info,
   Scales,
   Scroll,
   type Icon,
@@ -19,6 +20,7 @@ const TABS: Array<{ href: string; label: string; icon: Icon }> = [
   { href: "/rules", label: "Rules of Court", icon: Scales },
   { href: "/forms", label: "Forms", icon: FileText },
   { href: "/directory", label: "Directory", icon: Buildings },
+  { href: "/method", label: "Method", icon: Info },
 ];
 
 export function BrowseShell({ active, children }: { active: string; children: ReactNode }) {
