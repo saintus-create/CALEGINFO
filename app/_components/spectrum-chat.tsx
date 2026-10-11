@@ -10,18 +10,11 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 
-import {
-  ChatEmptyState,
-} from "@/components/spectrumui/blocks/ai-assistants/chat-empty-state";
-import {
-  ConversationList,
-  type ConversationEntry,
-} from "@/components/spectrumui/blocks/ai-assistants/conversation-list";
+import { AIChatCard } from "@/components/spectrumui/ai-chat-card";
 import { MessageActions } from "@/components/spectrumui/blocks/ai-assistants/message-actions";
 import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/prompt-composer";
 import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/streaming-text";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
-import { MegaSitemapFooter } from "@/components/spectrumui/blocks/footers/mega-sitemap-footer";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
 
 type Role = "user" | "assistant";
@@ -89,7 +82,6 @@ export function SpectrumChat() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [models, setModels] = useState<Array<{ id: string; name: string; available?: boolean }>>([]);
-  const [activeId, setActiveId] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
@@ -189,65 +181,56 @@ export function SpectrumChat() {
     [busy, turns],
   );
 
-  const conversations: ConversationEntry[] = turns
-    .filter((t) => t.role === "user")
-    .map((t) => ({ id: t.id, title: t.content.slice(0, 48), group: "Today" }));
-  if (conversations.length) conversations[0].pinned = true;
-
   const empty = turns.length === 0;
 
   return (
-    <div className="flex h-dvh w-full bg-background text-foreground">
-      <aside className="hidden w-64 shrink-0 border-r border-border/60 lg:block">
-        <ConversationList
-          conversations={conversations}
-          activeId={activeId}
-          onSelect={setActiveId}
-        />
-      </aside>
+    <div className="flex h-dvh w-full flex-col bg-background text-foreground">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-5 sm:px-7">
+        <a href="/" className="text-[15px] font-medium tracking-[-0.2px]">
+          California Legislative Information
+        </a>
+        <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
+          {(
+            [
+              ["Codes", "/codes", BookOpen],
+              ["Bills", "/bills", Scroll],
+              ["Rules", "/rules", Scales],
+              ["Directory", "/directory", Buildings],
+              ["Forms", "/forms", FileText],
+            ] as Array<[string, string, Icon]>
+          ).map(([label, href, Glyph]) => (
+            <a
+              key={href}
+              href={href}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Glyph aria-hidden className="size-4" weight="regular" />
+              {label}
+            </a>
+          ))}
+        </nav>
+      </header>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border/60 px-4">
-          <span className="text-[15px] font-semibold tracking-tight">
-            California Legislative Information
-          </span>
-          <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
-            {(
-              [
-                ["Codes", "/codes", BookOpen],
-                ["Bills", "/bills", Scroll],
-                ["Rules", "/rules", Scales],
-                ["Directory", "/directory", Buildings],
-                ["Forms", "/forms", FileText],
-              ] as Array<[string, string, Icon]>
-            ).map(([label, href, Glyph]) => (
-              <a
-                key={href}
-                href={href}
-                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <Glyph aria-hidden className="size-4" weight="regular" />
-                {label}
-              </a>
-            ))}
-          </nav>
-        </header>
-
-        <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
-            {empty && (
-              <ChatEmptyState
-                title="California law, answered."
-                subtitle="The complete California Codes, 2025-26 bills, Rules of Court, and case law — cited inline."
-                prompts={SUGGESTIONS}
-                onSelectPrompt={(p) => send(p.prompt ?? p.label)}
-              />
-            )}
-
+      <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
+        {empty ? (
+          <div className="grid min-h-full place-items-center px-4 py-8 sm:px-6">
+            <AIChatCard
+              title="California Legal Research"
+              subtitle="Search statutes, bills, court rules, forms, and case law"
+              greeting="California law, answered."
+              prompt="Ask a legal question and get an answer grounded in California authority."
+              prompts={SUGGESTIONS.map((item) => item.prompt ?? item.label)}
+              placeholder="Ask anything about California law…"
+              onSend={(value) => send(value)}
+              className="min-h-[520px] max-w-[520px]"
+            />
+          </div>
+        ) : (
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-7 px-4 py-8 sm:px-6">
             {turns.map((t) =>
               t.role === "user" ? (
                 <div key={t.id} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-[18px] border border-border/40 bg-muted/70 px-3.5 py-2 text-[15px] leading-6">
+                  <div className="max-w-[85%] rounded-[18px] bg-muted px-4 py-2.5 text-[15px] leading-6">
                     {t.content}
                   </div>
                 </div>
@@ -279,53 +262,17 @@ export function SpectrumChat() {
             )}
 
             {notice && (
-              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground">
+              <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground">
                 {notice}
               </div>
             )}
-
-            {empty && (
-              <MegaSitemapFooter
-                brand="California Legislative Information"
-                tagline="AI legal research for California law — the complete Codes, bills, Rules of Court and case law."
-                columns={[
-                  {
-                    groups: [
-                      {
-                        title: "Browse",
-                        links: [
-                          { label: "California Codes", href: "/codes" },
-                          { label: "Bills", href: "/bills" },
-                          { label: "Rules of Court", href: "/rules" },
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    groups: [
-                      {
-                        title: "More",
-                        links: [
-                          { label: "Directory", href: "/directory" },
-                          { label: "Judicial Council Forms", href: "/forms" },
-                        ],
-                      },
-                    ],
-                  },
-                ]}
-                legal={[
-                  { label: "Not legal advice", href: "#" },
-                  { label: "Verify against official sources", href: "#" },
-                ]}
-                copyright="AI-generated · verify against official sources"
-                className="mt-4 rounded-xl border border-border/60"
-              />
-            )}
           </div>
-        </div>
+        )}
+      </main>
 
-        <div className="shrink-0 border-t border-border/60 bg-background/80 px-4 py-3 backdrop-blur">
-          <div className="mx-auto w-full max-w-2xl">
+      {!empty && (
+        <div className="shrink-0 border-t border-border/60 bg-background px-4 py-3">
+          <div className="mx-auto w-full max-w-3xl">
             <PromptComposer
               placeholder="Ask anything about California law…"
               models={models.map((m) => ({
@@ -339,9 +286,13 @@ export function SpectrumChat() {
             />
           </div>
         </div>
-      </div>
+      )}
+      {notice && empty && (
+        <div role="alert" className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-border bg-background px-4 py-3 text-sm shadow-lg">
+          {notice}
+        </div>
+      )}
     </div>
   );
 }
-
 export default SpectrumChat;
