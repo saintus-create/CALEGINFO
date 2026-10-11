@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Wordmark } from "@/app/_components/wordmark";
 
 const TABS: Array<{ href: string; label: string; icon: Icon }> = [
   { href: "/codes", label: "Codes", icon: BookOpen },
@@ -24,14 +25,8 @@ export function BrowseShell({ active, children }: { active: string; children: Re
   return (
     <div className="flex h-dvh flex-col bg-background">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
-        <Link
-          className="hidden text-sm font-medium hover:text-muted-foreground sm:block"
-          href="/"
-        >
-          ← Chat
-        </Link>
-        <Link className="text-sm font-medium sm:hidden" href="/">
-          ←
+        <Link className="mr-1 shrink-0" href="/" aria-label="California Legislation">
+          <Wordmark className="text-[12px]" />
         </Link>
         <nav className="flex items-center gap-1" aria-label="Research library">
           {TABS.map((t) => {

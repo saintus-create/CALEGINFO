@@ -14,10 +14,27 @@ import { AIChatCard } from "@/components/spectrumui/ai-chat-card";
 import { MessageActions } from "@/components/spectrumui/blocks/ai-assistants/message-actions";
 import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/prompt-composer";
 import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/streaming-text";
+import { Wordmark } from "@/app/_components/wordmark";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
 
 type Role = "user" | "assistant";
+
+/** StreamingText calls new URL(url).hostname, so a relative deep-link (or a
+ *  bare fragment) would throw and break the answer. Resolve against the
+ *  origin, falling back to the official source. */
+function absoluteUrl(raw?: string): string {
+  const base =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://leginfo.legislature.ca.gov";
+  if (!raw) return base + "/";
+  try {
+    return new URL(raw, base).href;
+  } catch {
+    return base + "/";
+  }
+}
 
 interface Turn {
   id: string;
@@ -52,16 +69,21 @@ function splitAnswer(raw: string) {
     for (const line of rest.slice(0, end).split("\n")) {
       const m = line.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
       if (!m) continue;
-      const marker = m[1].trim();
-      let label = m[2].trim();
+      const raw = m[1].trim();
+      // The server writes "[p1 PEN § 211](#law-authority:/codes?…)" or
+      // "[p1] PEN § 211". The marker is the first token; the rest is the label.
+      const marker = raw.split(/\s+/)[0];
+      let label = raw.slice(marker.length).trim();
       let url = "";
-      const link = label.match(/\[([^\]]*)\]\(([^)]+)\)/);
+      const link = m[2].match(/^\((#law-authority:[^)]+)\)\s*$/);
       if (link) {
-        label = link[1] || label;
-        url = link[2];
+        url = link[1].replace(/^#law-authority:/, "");
+        if (!label) label = "Library reference";
+      } else if (!label) {
+        label = m[2].trim();
       }
       const index = parseInt(marker.replace(/\D/g, ""), 10) || citations.length + 1;
-      citations.push({ id: marker, index, url, title: label || marker });
+      citations.push({ id: marker, index, url: absoluteUrl(url), title: label || marker });
     }
   }
 
@@ -75,7 +97,19 @@ function splitAnswer(raw: string) {
     }
   }
 
-  return { body, citations, followUps };
+  // The blocks only style bare-digit markers, and the server emits [p1] /
+  // [s2] / [c3]. Renumber the inline markers to the citation index so they
+  // render as chips instead of literal text.
+  let out = body;
+  if (citations.length) {
+    const byMarker = new Map(citations.map((c) => [c.id.toLowerCase(), c.index]));
+    out = body.replace(/\[([a-z]{1,2}\d{1,3})\]/gi, (m, marker: string) => {
+      const idx = byMarker.get(String(marker).toLowerCase());
+      return idx ? `[${idx}]` : m;
+    });
+  }
+
+  return { body: out, citations, followUps };
 }
 
 export function SpectrumChat() {
@@ -186,8 +220,8 @@ export function SpectrumChat() {
   return (
     <div className="flex h-dvh w-full flex-col bg-background text-foreground">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-5 sm:px-7">
-        <a href="/" className="text-[15px] font-medium tracking-[-0.2px]">
-          California Legislative Information
+        <a href="/" aria-label="California Legislation" className="shrink-0">
+          <Wordmark className="text-[13px]" />
         </a>
         <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
           {(
@@ -246,6 +280,8 @@ export function SpectrumChat() {
                         citations={t.citations}
                         followUps={t.followUps}
                         onFollowUp={(p) => send(p.prompt ?? p.label)}
+                        variant="Sources"
+                        className="max-w-none [&_p]:whitespace-pre-wrap"
                       />
                       {!t.streaming && (
                         <MessageActions
