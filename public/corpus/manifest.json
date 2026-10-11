@@ -480,11 +480,11 @@
       {
         "key": "wpdigest",
         "name": "Words and Phrases \u2014 West's California Digest 2d (F\u2013O, Various, Z)",
-        "file": "library/digest-words-and-phrases.txt.gz",
+        "file": "library/wp-digest.jsonl.gz",
+        "entries": 4672,
         "pages": 700,
-        "char_count": 3753900,
         "source": "West's California Digest 2d \u2014 Words and Phrases (uploaded scan)",
-        "sha256": "e4a5e0552348830c9e712d14827a45fd1f87f57724520c15690462373d8c6b5d"
+        "sha256": "2151527d823867e0d456e85ac7b1974d8a6620a1c1cb9d659e0af2a65cb3e100"
       }
     ]
   }
