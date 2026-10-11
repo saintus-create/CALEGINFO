@@ -332,7 +332,7 @@ export function SpectrumChat() {
                         followUps={t.followUps}
                         onFollowUp={(p) => send(p.prompt ?? p.label)}
                         variant="Sources"
-                        className="max-w-[560px] rounded-[18px] border border-[#d6e2f2] bg-[#edf3fb] px-4 py-3 dark:border-[#28476e] dark:bg-[#10294c] sm:px-5"
+                        className="w-fit max-w-[560px] rounded-[18px] border border-[#d6e2f2] bg-[#edf3fb] px-4 py-3 dark:border-[#28476e] dark:bg-[#10294c] sm:px-5"
                       />
                       {!t.streaming && (
                         <MessageActions
