@@ -98,9 +98,48 @@ export async function loadJsonl(rel: string): Promise<Array<Record<string, unkno
   }
 }
 
+const jsonCache = new Map<string, unknown>();
+const jsonLoading = new Map<string, Promise<unknown>>();
+
+/**
+ * Load one gzipped JSON document (an array or an object, unlike loadJsonl's
+ * one-record-per-line format), cached and de-duplicated the same way.
+ */
+export async function loadJson(rel: string): Promise<unknown> {
+  if (jsonCache.has(rel)) return jsonCache.get(rel);
+
+  const pending = jsonLoading.get(rel);
+  if (pending) return pending;
+
+  const promise = (async () => {
+    const text = await readGz(rel);
+    const value = JSON.parse(text);
+    jsonCache.set(rel, value);
+    return value;
+  })();
+
+  jsonLoading.set(rel, promise);
+  try {
+    return await promise;
+  } finally {
+    jsonLoading.delete(rel);
+  }
+}
+
 /** Statewide Judicial Council forms (number, title, description, dates, PDFs). */
 export async function loadForms(): Promise<Array<Record<string, unknown>>> {
   return loadJsonl("corpus/forms/FORMS.jsonl.gz");
+}
+
+/**
+ * The 58 superior courts and where each publishes its local forms. Local forms
+ * are the layer above the statewide Judicial Council catalog; the Judicial
+ * Council keeps no central index of them, so this directory is what lets the
+ * agent route a filer to the right county.
+ */
+export async function loadCourts(): Promise<Array<Record<string, unknown>>> {
+  const rows = await loadJson("corpus/courts/COURTS.json.gz");
+  return Array.isArray(rows) ? (rows as Array<Record<string, unknown>>) : [];
 }
 
 /**

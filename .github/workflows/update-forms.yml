@@ -8,12 +8,20 @@ name: Update California court forms corpus
 
 on:
   workflow_dispatch:
+  schedule:
+    # Mondays 09:00 UTC on the default branch. The Judicial Council revises
+    # forms on a quarterly cycle (Jan 1 / Apr 1 / Jul 1 / Oct 1), so a weekly
+    # sweep picks a revision up within days of it posting instead of waiting
+    # for someone to notice. Without this the corpus is a frozen snapshot:
+    # nothing else in the repo re-runs the fetch.
+    - cron: "0 9 * * 1"
   push:
     branches:
       - main
-      - arena/01a10a94-caleginfo
     paths:
       - "scripts/fetch_forms.py"
+      - "scripts/check_forms.py"
+      - "scripts/sync_forms_count.py"
       - ".github/workflows/update-forms.yml"
 
 permissions:
@@ -37,12 +45,38 @@ jobs:
       - name: Fetch and pack the forms corpus
         run: python3 scripts/fetch_forms.py
 
+      # A truncated upstream export (paginated or interrupted) still packs and
+      # hashes cleanly, and fetch_forms.py would happily write the smaller gz
+      # and rewrite the manifest to match — so nothing downstream would notice
+      # the records were lost. check_forms.py is the gate: it enforces a floor
+      # on the record count, re-checks the manifest sha/records/series, and
+      # confirms the sentinel forms are still present. If it fails, the job
+      # stops here and the committed corpus is left untouched.
+      - name: Sync the advertised catalog size
+        run: python3 scripts/sync_forms_count.py
+
+      - name: Verify the packed corpus
+        run: python3 scripts/check_forms.py
+
       - name: Commit if the corpus changed
         run: |
           set -euo pipefail
+          # fetch_forms.py stamps retrieved_at from the clock, so the manifest
+          # changes on every run even when the upstream catalog has not moved at
+          # all — which would commit a content-free "refresh" every week. The
+          # packed gz is the source of truth: every other derived manifest field
+          # (records, series, synonyms, sha256) follows from it, so if the gz is
+          # byte-identical there is nothing to commit and the timestamp churn is
+          # discarded.
+          if git diff --quiet -- public/corpus/forms/FORMS.jsonl.gz; then
+            git checkout -- public/corpus/manifest.json agent/tools/search_forms.ts lib/engine.js
+            echo "Forms corpus unchanged upstream — nothing to commit."
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/corpus/forms/FORMS.jsonl.gz public/corpus/manifest.json
+          git add public/corpus/forms/FORMS.jsonl.gz public/corpus/manifest.json \
+                  agent/tools/search_forms.ts lib/engine.js
           if git diff --cached --quiet; then
             echo "Forms corpus already current — nothing to commit."
             exit 0

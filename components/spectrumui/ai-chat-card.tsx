@@ -22,6 +22,8 @@ export interface AIChatCardProps {
   onSend?: (message: string) => void;
   onReset?: () => void;
   onAttach?: () => void;
+  /** Center the icon and composer together when the intro text is omitted. */
+  centeredComposer?: boolean;
   className?: string;
 }
 
@@ -44,6 +46,7 @@ export function AIChatCard({
   onSend,
   onReset,
   onAttach,
+  centeredComposer = false,
   className,
 }: AIChatCardProps) {
   const rootRef = React.useRef<HTMLDivElement>(null);
@@ -74,7 +77,11 @@ export function AIChatCard({
   return (
     <div
       ref={rootRef}
-      className={cn("flex w-full flex-col bg-transparent", className)}
+      className={cn(
+        "flex w-full flex-col bg-transparent",
+        centeredComposer && "justify-center",
+        className,
+      )}
     >
       {/* Header: omitted when no title, subtitle, or reset action is provided. */}
       {(title || subtitle || onReset) && (
@@ -115,7 +122,12 @@ export function AIChatCard({
       )}
 
       {/* Empty state */}
-      <div className="flex flex-1 flex-col items-center justify-center px-8 py-10 text-center">
+      <div
+        className={cn(
+          "flex flex-1 flex-col items-center justify-center px-8 py-10 text-center",
+          centeredComposer && "flex-none py-4",
+        )}
+      >
         <motion.div
           animate={{ y: [0, -3, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}

@@ -314,6 +314,7 @@ export interface ScoredForm {
   info_url?: string;
   languages?: string[];
   language_urls?: Record<string, string>;
+  synonyms?: string[];
   score: number;
 }
 
@@ -388,12 +389,31 @@ const FORM_NOISE = new Set(
 );
 
 /**
+ * Editorial topic labels packed from the portal's `field_synonyms` — the words a
+ * filer actually types when the official title uses different ones ("workplace
+ * violence" across the WV series). Corpora packed before the field was carried
+ * over have no `synonyms` key at all, so this tolerates a missing value and a
+ * raw comma-separated string alike.
+ */
+export function formSynonyms(f: Record<string, unknown>): string[] {
+  const raw = f.synonyms;
+  const parts = Array.isArray(raw) ? raw.map(String) : typeof raw === "string" ? raw.split(/[,;|]/) : [];
+  const out: string[] = [];
+  for (const p of parts) {
+    const term = p.toLowerCase().replace(/\s+/g, " ").trim();
+    if (term && !out.includes(term)) out.push(term);
+  }
+  return out;
+}
+
+/**
  * Score Judicial Council forms against the query set. A form-number hit
  * dominates (FL-100 must return FL-100 first); then coverage of the query in
- * the title, the literal title wording, the topic category, and finally the
- * plain-language description. Instruction sheets ("-INFO") and secondary
- * "after hearing / reconsideration" forms are demoted unless the query asks
- * for them, and series-canonical forms (‑100 / ‑001) get a small boost.
+ * the title, the literal title wording, the editorial synonyms, the topic
+ * category, and finally the plain-language description. Instruction sheets
+ * ("-INFO") and secondary "after hearing / reconsideration" forms are demoted
+ * unless the query asks for them, and series-canonical forms (‑100 / ‑001) get
+ * a small boost.
  */
 export function scoreForms(
   queries: string[],
@@ -418,6 +438,7 @@ export function scoreForms(
     const title = String(f.title || "").toLowerCase();
     const desc = String(f.description || "").toLowerCase();
     const cat = String(f.category || "").toLowerCase();
+    const syn = formSynonyms(f).join(" ");
     let score = 0;
     let bestCoverage = 0;
     for (const q of qsets) {
@@ -431,21 +452,29 @@ export function scoreForms(
       let titleHits = 0;
       let descHits = 0;
       let catHits = 0;
+      let synHits = 0;
       for (const t of q.terms) {
         if (matchesTerm(title, t)) titleHits++;
         if (matchesTerm(cat, t)) catHits++;
         if (matchesTerm(desc, t)) descHits++;
+        if (syn && matchesTerm(syn, t)) synHits++;
       }
       const total = Math.max(1, q.terms.length);
       const coverage = Math.min(
         1,
-        (titleHits + Math.min(descHits, total) * 0.4 + Math.min(catHits, total) * 0.3) / total,
+        (titleHits +
+          Math.min(descHits, total) * 0.4 +
+          Math.min(synHits, total) * 0.35 +
+          Math.min(catHits, total) * 0.3) /
+          total,
       );
       if (titleHits) score += Math.round(100 * (titleHits / total)) + (titleHits === total ? 10 : 0);
+      if (synHits) score += Math.round(18 * (synHits / total));
       if (descHits) score += Math.round(12 * (descHits / total));
       if (catHits) score += Math.round(10 * (catHits / total));
       if (q.terms.length && q.phrase.length > 3) {
         if (title.includes(q.phrase)) score += 15;
+        else if (syn && syn.includes(q.phrase)) score += 12;
         else if (desc.includes(q.phrase)) score += 8;
       }
       if (num.includes(q.phrase.replace(/[^a-z0-9]/g, ""))) score += 20;

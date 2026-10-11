@@ -14,6 +14,7 @@ import lookupSection from "@/agent/tools/lookup_section";
 import searchBills from "@/agent/tools/search_bills";
 import searchRules from "@/agent/tools/search_rules";
 import searchForms from "@/agent/tools/search_forms";
+import findCourt from "@/agent/tools/find_court";
 import searchCases from "@/agent/tools/search_cases";
 import billTextSearch from "@/agent/tools/bill_text_search";
 import billDetail from "@/agent/tools/bill_detail";
@@ -115,9 +116,16 @@ function recordSources(out: unknown, map: SourceMap, urls?: Map<string, string>)
       // Judicial Council forms deep-link to the official fillable PDF; statutes
       // deep-link into the local code browser.
       const pdfUrl = typeof item.pdf_url === "string" ? item.pdf_url : "";
+      const courtUrl =
+        typeof item.local_forms === "string" && item.local_forms
+          ? item.local_forms
+          : typeof item.site === "string"
+            ? item.site
+            : "";
       const url = citation ? statuteUrl(item.code, citation) : null;
       if (urls) {
         if (pdfUrl) urls.set(key, pdfUrl);
+        else if (courtUrl) urls.set(key, courtUrl);
         else if (url) urls.set(key, url);
       }
     }
@@ -156,9 +164,6 @@ function lastUserQuestion(messages: any[]): string {
 // like [2] is a formatting slip, not a citation — treating it as one rejected
 // otherwise-correct answers and made the app hold them back.
 const CITED_RE = /\[\s*([a-z]{1,2}\d{1,3})\s*\]/gi;
-// non-global variant for per-paragraph .test() checks
-const CITED_ONE_RE = /\[\s*[a-z]{1,2}\d{1,3}\s*\]/i;
-
 function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): string {
   const propositionLines = record.propositions.map((p) => {
     const source = (record.sources || []).find((s) => p.source_ids.includes(s.source_id));
@@ -206,8 +211,26 @@ function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): st
     "- When a gap remains open, explicitly state that the point is unverified.",
   ].join("\n");
 }
-function validateSynthesis(text: string, record: Awaited<ReturnType<typeof research.execute>>, question: string) {
-  const valid = new Set(record.propositions.map((p) => normalizeMarker(p.proposition_id)));
+function validateSynthesis(
+  text: string,
+  record: Awaited<ReturnType<typeof research.execute>>,
+  question: string,
+  externalSourceMarkers: Iterable<string> = [],
+) {
+  // Only source-backed propositions substantiate legal/factual claims. Direct
+  // court-directory markers may support the administrative fact/link they return,
+  // but an evidence-gap marker never counts as proof of a substantive claim.
+  const propositionMarkers = new Set(
+    record.propositions.map((p) => normalizeMarker(p.proposition_id)),
+  );
+  const externalMarkers = Array.from(externalSourceMarkers).map(normalizeMarker);
+  const directCourtMarkers = new Set(
+    externalMarkers.filter((marker) => /^ct\d+$/.test(marker)),
+  );
+  const valid = new Set(propositionMarkers);
+  // Extra tool results are recognized citations, but only propositions and
+  // verified court-directory facts can satisfy the evidence gate below.
+  for (const marker of externalMarkers) valid.add(marker);
   for (const s of record.sources) valid.add(normalizeMarker(s.marker));
   // Evidence-gap ids (g1, g2, ...) are part of the record, and the prompt asks
   // the model to disclose open gaps by reference. Without registering them here
@@ -221,7 +244,9 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
   if (unknownU.length) return { ok: false, reason: `Unknown evidence citation(s): ${unknownU.join(", ")}` };
 
   const gapsOpen = record.evidence_gaps.some((g) => g.status === "open");
-  const hasEvidenceCitation = citations.some((c) => valid.has(c));
+  const hasEvidenceCitation = citations.some(
+    (c) => propositionMarkers.has(c) || directCourtMarkers.has(c),
+  );
   const substantive = text
     .split(/\n\s*\n/)
     .map((p) => p.trim())
@@ -236,7 +261,10 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
   // conservative: it blocks generic uncited legal exposition from escaping the API.
   const uncited = substantive.filter((paragraph) => {
     if (/^(i can|i'm sorry|i cannot|i don't have|unverified|insufficient evidence)/i.test(paragraph)) return false;
-    return !CITED_ONE_RE.test(paragraph);
+    return !Array.from(paragraph.matchAll(CITED_RE)).some((match) => {
+      const marker = normalizeMarker(match[1]);
+      return propositionMarkers.has(marker) || directCourtMarkers.has(marker);
+    });
   });
   CITED_RE.lastIndex = 0;
 
@@ -322,6 +350,7 @@ export async function POST(req: Request) {
     search_bills: wrap(searchBills),
     search_rules: wrap(searchRules),
     search_forms: wrap(searchForms),
+    find_court: wrap(findCourt),
     search_cases: wrap(searchCases),
     bill_text_search: wrap(billTextSearch),
     bill_detail: wrap(billDetail),
@@ -414,7 +443,7 @@ The server will validate your completed answer before sending it to the user. An
   for await (const part of result.textStream) answer += part;
 
   if (process.env.DEBUG_ANSWER) console.log('[debug] raw answer:\n' + answer.slice(0, 3000));
-  let validation = validateSynthesis(answer, record, question);
+  let validation = validateSynthesis(answer, record, question, sourceMap.keys());
 
   // Up to two bounded repair passes. The gate is strict by design, so give the
   // model a targeted second chance rather than serving nothing at all.
@@ -432,7 +461,7 @@ Produce a replacement answer, not commentary about the failure. Every paragraph 
 `);
     answer = "";
     for await (const part of result.textStream) answer += part;
-    validation = validateSynthesis(answer, record, question);
+    validation = validateSynthesis(answer, record, question, sourceMap.keys());
   }
 
   if (!validation.ok) {
