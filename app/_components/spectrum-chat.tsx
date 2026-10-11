@@ -17,10 +17,20 @@ import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/pro
 import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/streaming-text";
 import { StarMark } from "@/app/_components/star-mark";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
+import { BeamCard } from "@/app/_components/beam-card";
+import { SuggestionBanner } from "@/components/spectrumui/blocks/ai-assistants/suggestion-banner";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
 
 type Role = "user" | "assistant";
+
+/** The gate's own disclosure vocabulary. An answer that says something could
+ *  not be sourced is the signal for offering a narrower follow-up. */
+function gapDisclosed(text: string) {
+  return /unverified|not (?:contained|found) in the (?:corpus|record)|no (?:case )?authority|could not (?:be )?verif/i.test(
+    text,
+  );
+}
 
 /** StreamingText calls new URL(url).hostname, so a relative deep-link (or a
  *  bare fragment) would throw and break the answer. Resolve against the
@@ -252,17 +262,19 @@ export function SpectrumChat() {
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {empty ? (
           <div className="grid min-h-full place-items-center px-4 py-8 sm:px-6">
-            <AIChatCard
-              title=""
-              subtitle=""
-              greeting=""
-              prompt=""
-              prompts={SUGGESTIONS.map((item) => item.prompt ?? item.label)}
-              placeholder="Ask anything about California law…"
-              onSend={(value) => send(value)}
-              className="min-h-[520px] max-w-[520px]"
-              icon={<StarMark className="h-5 w-5" />}
-            />
+            <BeamCard className="w-full max-w-[520px]">
+              <AIChatCard
+                title=""
+                subtitle=""
+                greeting=""
+                prompt=""
+                prompts={SUGGESTIONS.map((item) => item.prompt ?? item.label)}
+                placeholder="Ask anything about California law…"
+                onSend={(value) => send(value)}
+                className="min-h-[520px] w-full"
+                icon={<StarMark className="h-5 w-5" />}
+              />
+            </BeamCard>
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-7 px-4 py-8 sm:px-6">
@@ -293,6 +305,17 @@ export function SpectrumChat() {
                           onCopy={() => {
                             navigator.clipboard?.writeText(t.content);
                           }}
+                        />
+                      )}
+                      {!t.streaming && gapDisclosed(t.content) && (
+                        <SuggestionBanner
+                          suggestion="Narrow this to the statutes that actually support it"
+                          detail="This answer flagged something the corpus does not cover."
+                          onApply={() =>
+                            send(
+                              "Narrow the previous answer to the specific statutes that support it, and drop anything you cannot source.",
+                            )
+                          }
                         />
                       )}
                     </>
