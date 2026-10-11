@@ -13,11 +13,6 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Spectrum UI's border-beam primitive uses animate-border-beam, but the
-     install shipped neither the keyframes nor this variable, so the beam was
-     painted and never travelled. Completed here. */
-  --animate-border-beam: border-beam calc(var(--duration, 15) * 1s) linear infinite;
-
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -110,12 +105,6 @@
 /* Palette is neutral by design (zero chroma). A previous override forced
    --color-primary to a blue (oklch(0.7 0.12 262)) in dark mode, which is what
    tinted the user bubble, the model toggle and the action buttons. Removed. */
-
-@keyframes border-beam {
-  100% {
-    offset-distance: 100%;
-  }
-}
 
 /* brief perimeter glints on the emblem */
 @keyframes mark-glint {
