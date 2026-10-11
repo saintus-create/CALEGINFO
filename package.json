@@ -20,7 +20,9 @@
     "dev:eve": "eve dev",
     "start:eve": "eve start",
     "check:forms": "tsx scripts/check_forms.ts",
-    "check:forms:corpus": "python3 scripts/check_forms.py"
+    "check:forms:corpus": "python3 scripts/check_forms.py",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.78",
@@ -78,7 +80,6 @@
     "@vercel/speed-insights": "2.0.0",
     "ai": "7.0.105",
     "assistant-stream": "^0.3.45",
-    "border-beam": "^1.4.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
@@ -114,12 +115,17 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "10.6.1",
+    "@storybook/addon-docs": "10.6.1",
+    "@storybook/nextjs": "10.6.1",
+    "@storybook/react": "10.6.1",
     "@types/node": "^25.9.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "drizzle-kit": "0.31.10",
     "microsandbox": "^0.5.10",
+    "storybook": "10.6.1",
     "tsx": "^4.23.15",
     "typescript": "7.0.2"
   },
