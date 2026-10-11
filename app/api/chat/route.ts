@@ -15,6 +15,7 @@ import searchBills from "@/agent/tools/search_bills";
 import searchRules from "@/agent/tools/search_rules";
 import searchForms from "@/agent/tools/search_forms";
 import searchCases from "@/agent/tools/search_cases";
+import searchLibrary from "@/agent/tools/search_library";
 import billTextSearch from "@/agent/tools/bill_text_search";
 import billDetail from "@/agent/tools/bill_detail";
 import { alternateModels, alternateApiKey, DEFAULT_MODEL_ID, isBuiltInUnfiltered } from "@/agent/lib/models";
@@ -323,6 +324,7 @@ export async function POST(req: Request) {
     search_rules: wrap(searchRules),
     search_forms: wrap(searchForms),
     search_cases: wrap(searchCases),
+    search_library: wrap(searchLibrary),
     bill_text_search: wrap(billTextSearch),
     bill_detail: wrap(billDetail),
   };
