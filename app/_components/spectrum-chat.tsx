@@ -215,10 +215,10 @@ export function SpectrumChat() {
         {empty ? (
           <div className="grid min-h-full place-items-center px-4 py-8 sm:px-6">
             <AIChatCard
-              title="California Legal Research"
-              subtitle="Search statutes, bills, court rules, forms, and case law"
-              greeting="California law, answered."
-              prompt="Ask a legal question and get an answer grounded in California authority."
+              title=""
+              subtitle=""
+              greeting=""
+              prompt=""
               prompts={SUGGESTIONS.map((item) => item.prompt ?? item.label)}
               placeholder="Ask anything about California law…"
               onSend={(value) => send(value)}
