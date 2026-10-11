@@ -2,9 +2,10 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { ArrowLeft, Headphones, Mic, MicOff, Send, Square, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Headphones, Mic, Send, Square, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
 
 type RecognitionResult = {
   isFinal: boolean;
