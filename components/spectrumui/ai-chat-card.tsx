@@ -74,12 +74,7 @@ export function AIChatCard({
   return (
     <div
       ref={rootRef}
-      className={cn(
-        "flex w-full flex-col rounded-[24px] bg-white",
-        "shadow-[0_0_16.4px_1px_rgba(10,10,10,0.05),0_1px_3px_0_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]",
-        "dark:bg-neutral-950 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_1px_3px_0_rgba(0,0,0,0.5)]",
-        className,
-      )}
+      className={cn("flex w-full flex-col bg-transparent", className)}
     >
       {/* Header: omitted when no title, subtitle, or reset action is provided. */}
       {(title || subtitle || onReset) && (
