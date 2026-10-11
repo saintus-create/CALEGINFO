@@ -1,6 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  BookOpen,
+  Buildings,
+  FileText,
+  Scales,
+  Scroll,
+  type Icon,
+} from "@phosphor-icons/react";
 
 import {
   ChatEmptyState,
@@ -204,18 +212,21 @@ export function SpectrumChat() {
             California Legislative Information
           </span>
           <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
-            {[
-              ["Codes", "/codes"],
-              ["Bills", "/bills"],
-              ["Rules", "/rules"],
-              ["Directory", "/directory"],
-              ["Forms", "/forms"],
-            ].map(([label, href]) => (
+            {(
+              [
+                ["Codes", "/codes", BookOpen],
+                ["Bills", "/bills", Scroll],
+                ["Rules", "/rules", Scales],
+                ["Directory", "/directory", Buildings],
+                ["Forms", "/forms", FileText],
+              ] as Array<[string, string, Icon]>
+            ).map(([label, href, Glyph]) => (
               <a
                 key={href}
                 href={href}
-                className="rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
+                <Glyph aria-hidden className="size-4" weight="regular" />
                 {label}
               </a>
             ))}
