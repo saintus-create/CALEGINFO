@@ -372,7 +372,7 @@
       {
         "sha256": "22d0fcb18289c2753277e657ab81a9735b549486802732886e7df8cc378922b7",
         "key": "bills",
-        "name": "Bills & Measures — 2025-2026 Session",
+        "name": "Bills & Measures \u2014 2025-2026 Session",
         "file": "legislation/BILLS.jsonl.gz",
         "records": 5062,
         "session": "2025-2026",
@@ -454,7 +454,7 @@
       {
         "sha256": "4937be8d84366c3fb321781f5f377b276b5a939d8215527de909cd7ea1e220f0",
         "key": "famcases",
-        "name": "Case Annotations — Family Code & DVPA",
+        "name": "Case Annotations \u2014 Family Code & DVPA",
         "file": "cases/FAM_CASES.json.gz",
         "sections_annotated": 39,
         "other_sections": 4,
@@ -476,6 +476,15 @@
         "retrieved_at": "2026-10-05T10:12:02.397491+00:00",
         "source": "https://selfhelp.courts.ca.gov/json/jcc-forms",
         "official_source": "https://selfhelp.courts.ca.gov/find-forms/all-by-category"
+      },
+      {
+        "key": "wpdigest",
+        "name": "Words and Phrases \u2014 West's California Digest 2d (F\u2013O, Various, Z)",
+        "file": "library/digest-words-and-phrases.txt.gz",
+        "pages": 700,
+        "char_count": 3753900,
+        "source": "West's California Digest 2d \u2014 Words and Phrases (uploaded scan)",
+        "sha256": "e4a5e0552348830c9e712d14827a45fd1f87f57724520c15690462373d8c6b5d"
       }
     ]
   }
