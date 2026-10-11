@@ -18,7 +18,6 @@ import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/stre
 import { StarMark } from "@/app/_components/star-mark";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
 import { SuggestionBanner } from "@/components/spectrumui/blocks/ai-assistants/suggestion-banner";
-import { BeamCard } from "@/components/spectrumui/beam-card";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
 
@@ -262,21 +261,17 @@ export function SpectrumChat() {
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {empty ? (
           <div className="grid min-h-full place-items-center px-4 py-8 sm:px-6">
-            <div className="w-full max-w-[520px]">
-              <BeamCard>
-                <AIChatCard
-                  title=""
-                  subtitle=""
-                  greeting=""
-                  prompt=""
-                  prompts={SUGGESTIONS.map((item) => item.prompt ?? item.label)}
-                  placeholder="Ask anything about California law…"
-                  onSend={(value) => send(value)}
-                  className="min-h-[520px] w-full"
-                  icon={<StarMark className="h-5 w-5" />}
-                />
-              </BeamCard>
-            </div>
+            <AIChatCard
+              title=""
+              subtitle=""
+              greeting=""
+              prompt=""
+              prompts={SUGGESTIONS.map((item) => item.prompt ?? item.label)}
+              placeholder="Ask anything about California law…"
+              onSend={(value) => send(value)}
+              className="min-h-[520px] max-w-[520px]"
+              icon={<StarMark className="h-5 w-5" />}
+            />
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-7 px-4 py-8 sm:px-6">
