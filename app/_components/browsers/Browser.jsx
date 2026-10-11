@@ -1,5 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
-import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, ExternalLink, Database, ShieldCheck, Gavel } from "lucide-react";
+import {
+  CaretRight,
+  CaretDoubleDown,
+  CaretDoubleUp,
+  MagnifyingGlass,
+  ArrowSquareOut,
+  Database,
+  ShieldCheck,
+  Gavel,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -20,7 +29,7 @@ function CaseItem({ c }) {
   return (
     <details className="text-xs mt-0.5">
       <summary className="cursor-pointer select-none font-medium list-none [&::-webkit-details-marker]:hidden flex items-baseline gap-1">
-        <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground transition-transform" />
+        <CaretRight className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground transition-transform" />
         <span>{c.name}{c.year ? " (" + c.year + ")" : ""}{c.cite ? " " + c.cite : ""}</span>
       </summary>
       {c.desc && <div className="pl-4 mt-1 text-muted-foreground leading-relaxed">{c.desc}</div>}
@@ -82,7 +91,7 @@ function UnitBlock({ u, filter }) {
   return (
     <details className="my-2 rounded-lg border" open={!!filter}>
       <summary className="cursor-pointer select-none px-4 py-2.5 text-sm font-semibold flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
-        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform" />
+        <CaretRight className="h-4 w-4 text-muted-foreground transition-transform" />
         {label}
         <span className="ml-auto text-xs font-normal text-muted-foreground">
           {filter ? countMatches(u, filter) + " matches" : u.secs.length + " sections"}
@@ -166,11 +175,11 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
             Family Code. Pick a code to start, or search across every code at once.
           </p>
                     <form onSubmit={runGlobalSearch} className="mt-6 flex gap-2">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search across all California Codes…" className="pl-9 h-11" /></div>
+            <div className="relative flex-1"><MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search across all California Codes…" className="pl-9 h-11" /></div>
             <Button type="submit" variant="default" className="h-11" disabled={globalBusy}>{globalBusy ? "Searching…" : "Search"}</Button>
           </form>
           {globalResults.length > 0 && <div className="mt-4 rounded-xl border divide-y overflow-hidden">{globalResults.map((x, i) => <button key={i} onClick={() => { onCodeChange(x.abbr); setGlobalQuery(""); setGlobalResults([]); }} className="w-full text-left p-3 hover:bg-muted/40 transition-colors"><div className="text-sm font-semibold">{x.r.citation || `${x.abbr} § ${x.r.section}`}</div><div className="text-xs text-muted-foreground mt-1 line-clamp-2">{x.r.text}</div><div className="text-[11px] text-muted-foreground mt-2">{byAbbr[x.abbr]?.name}</div></button>)}</div>}
-          <div className="mt-6 rounded-xl border bg-muted/20 p-4 text-sm flex items-start gap-3"><ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" /><span className="text-muted-foreground">This is a dated research snapshot. Use the official California Legislative Information site for the current operative text.</span></div>
+          <div className="mt-6 rounded-xl border bg-muted/20 p-4 text-sm flex items-start gap-3"><ShieldCheck weight="fill" className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" /><span className="text-muted-foreground">This is a dated research snapshot. Use the official California Legislative Information site for the current operative text.</span></div>
         </div>
       ) : !byAbbr[activeCode] ? (
         <div className="p-6 text-sm text-muted-foreground">Loading code…</div>
@@ -181,17 +190,17 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
           <p className="text-sm text-muted-foreground mt-1 mb-4">
             <b>{byAbbr[activeCode].sections.toLocaleString()} sections</b> · snapshot updated by source: {byAbbr[activeCode].updated}
           </p>
-          <a href="https://leginfo.legislature.ca.gov/" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-4">Verify current text at official LegInfo <ExternalLink className="h-3 w-3" /></a>
+          <a href="https://leginfo.legislature.ca.gov/" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-4">Verify current text at official LegInfo <ArrowSquareOut className="h-3 w-3" /></a>
           {units && (
             <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input value={filter} onChange={(e) => setFilter(e.target.value.toLowerCase().trim())}
                   placeholder="Filter sections in this code…" className="pl-8" />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setAll(true)} className="gap-1.5"><ChevronsUpDown className="h-3.5 w-3.5" /> Expand all</Button>
-                <Button variant="outline" size="sm" onClick={() => setAll(false)} className="gap-1.5"><ChevronsDownUp className="h-3.5 w-3.5" /> Collapse</Button>
+                <Button variant="outline" size="sm" onClick={() => setAll(true)} className="gap-1.5"><CaretDoubleUp className="h-3.5 w-3.5" /> Expand all</Button>
+                <Button variant="outline" size="sm" onClick={() => setAll(false)} className="gap-1.5"><CaretDoubleDown className="h-3.5 w-3.5" /> Collapse</Button>
               </div>
             </div>
           )}

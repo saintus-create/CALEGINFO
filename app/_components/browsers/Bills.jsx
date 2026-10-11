@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, ExternalLink, Landmark, Loader2, Users } from "lucide-react";
+import {
+  MagnifyingGlass,
+  ArrowSquareOut,
+  Bank,
+  CircleNotch,
+  Users,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +59,7 @@ function BillRow({ b }) {
         {b.url && (
           <a href={b.url} target="_blank" rel="noopener"
             className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 ml-auto">
-            Official text <ExternalLink className="h-3 w-3" />
+            Official text <ArrowSquareOut className="h-3 w-3" />
           </a>
         )}
       </div>
@@ -122,7 +128,7 @@ export default function Bills() {
   if (!ready) {
     return (
       <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading the 2025-2026 session bill catalog…
+        <CircleNotch className="h-4 w-4 animate-spin" /> Loading the 2025-2026 session bill catalog…
       </div>
     );
   }
@@ -132,7 +138,7 @@ export default function Bills() {
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="eyebrow"><Landmark className="h-3.5 w-3.5" /> Legislation</div>
+      <div className="eyebrow"><Bank className="h-3.5 w-3.5" /> Legislation</div>
       <h1 className="text-2xl font-bold mt-3 mb-1">Bills &amp; Measures — {meta.session || "2025-2026"} Session</h1>
       <p className="text-sm text-muted-foreground">
         Every measure introduced this session, from the official LegInfo bill index
@@ -142,7 +148,7 @@ export default function Bills() {
 
       <div className="flex flex-col sm:flex-row gap-2 mt-5">
         <form className="relative flex-1" onSubmit={(e) => { e.preventDefault(); setApplied(query.trim()); }}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={query} onChange={(e) => { setQuery(e.target.value); if (!e.target.value) setApplied(""); }}
             placeholder="Search subject, author, or measure number (e.g. “insurance wildfire”, “AB 1”)…" className="pl-9 h-11" />
         </form>

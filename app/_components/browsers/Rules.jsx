@@ -1,5 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, ChevronsUpDown, ChevronsDownUp, Search, ExternalLink, Gavel, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  CaretRight,
+  CaretDoubleUp,
+  CaretDoubleDown,
+  MagnifyingGlass,
+  ArrowSquareOut,
+  Gavel,
+  ArrowLeft,
+  CircleNotch,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
@@ -31,7 +40,7 @@ function ChapterBlock({ g, filter }) {
   return (
     <details className="my-2 rounded-lg border" open={!!filter}>
       <summary className="cursor-pointer select-none px-4 py-2.5 text-sm font-semibold flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
-        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform" />
+        <CaretRight className="h-4 w-4 text-muted-foreground transition-transform" />
         {g.label}
         <span className="ml-auto text-xs font-normal text-muted-foreground">
           {filter ? countRuleMatches(g, filter) + " matches" : g.rules.length + " rules"}
@@ -146,7 +155,7 @@ export default function Rules({ jumpRule }) {
   if (!ready) {
     return (
       <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading the California Rules of Court…
+        <CircleNotch className="h-4 w-4 animate-spin" /> Loading the California Rules of Court…
       </div>
     );
   }
@@ -167,7 +176,7 @@ export default function Rules({ jumpRule }) {
           </p>
           <form onSubmit={runGlobalSearch} className="mt-5 flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)}
                 placeholder="Search all rules (e.g. “continuance”, “service of papers”, “rule 8.1115”)…" className="pl-9 h-11" />
             </div>
@@ -215,17 +224,17 @@ export default function Rules({ jumpRule }) {
           <p className="text-sm text-muted-foreground mt-1 mb-4">
             <b>{activeTitle ? activeTitle.rules.length.toLocaleString() : 0} rules</b>
             {" "}· <a href="https://www.courts.ca.gov/cms/rules/index.cfm" target="_blank" rel="noopener"
-              className="inline-flex items-center gap-1 hover:text-foreground">Verify at official California Courts <ExternalLink className="h-3 w-3" /></a>
+              className="inline-flex items-center gap-1 hover:text-foreground">Verify at official California Courts <ArrowSquareOut className="h-3 w-3" /></a>
           </p>
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input value={filter} onChange={(e) => setFilter(e.target.value.toLowerCase().trim())}
                 placeholder="Filter rules in this title…" className="pl-8" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setAll(true)} className="gap-1.5"><ChevronsUpDown className="h-3.5 w-3.5" /> Expand all</Button>
-              <Button variant="outline" size="sm" onClick={() => setAll(false)} className="gap-1.5"><ChevronsDownUp className="h-3.5 w-3.5" /> Collapse</Button>
+              <Button variant="outline" size="sm" onClick={() => setAll(true)} className="gap-1.5"><CaretDoubleUp className="h-3.5 w-3.5" /> Expand all</Button>
+              <Button variant="outline" size="sm" onClick={() => setAll(false)} className="gap-1.5"><CaretDoubleDown className="h-3.5 w-3.5" /> Collapse</Button>
             </div>
           </div>
           {groups.map((g, i) => <ChapterBlock key={i} g={g} filter={filter} />)}

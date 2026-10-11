@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, ExternalLink, Building2, Loader2, ShieldCheck, BadgeCheck } from "lucide-react";
+import {
+  MagnifyingGlass,
+  ArrowSquareOut,
+  Buildings,
+  CircleNotch,
+  ShieldCheck,
+  SealCheck,
+} from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
 
@@ -17,7 +24,7 @@ function AgencyRow({ a }) {
       <summary className={"px-3.5 py-2.5 flex items-center gap-2 text-sm " + (detail ? "cursor-pointer hover:bg-muted/40" : "cursor-default")}
         onClick={(e) => { if (!detail) e.preventDefault(); }}>
         <span className="font-medium">{a.name}</span>
-        {a.post && <BadgeCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" aria-label="POST certified" />}
+        {a.post && <SealCheck weight="fill" className="h-3.5 w-3.5 text-emerald-600 shrink-0" aria-label="POST certified" />}
         <span className="ml-auto flex items-center gap-2 text-[11px] text-muted-foreground whitespace-nowrap">
           {a.county && a.county !== "Unknown" ? a.county + " County" : ""}
           <span className="rounded-full bg-muted px-2 py-0.5">{a.type || "Agency"}</span>
@@ -32,7 +39,7 @@ function AgencyRow({ a }) {
                 <div key={i} className="rounded-md border p-2 mb-1">
                   <div className="font-medium text-foreground">{c.vendor}{c.amount != null ? " — " + money(c.amount) : ""}{c.year ? " (" + c.year + ")" : ""}</div>
                   {c.purpose && <div className="text-muted-foreground mt-0.5">{c.purpose}</div>}
-                  {c.citation && <a href={c.citation} target="_blank" rel="noopener" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1">Source <ExternalLink className="h-3 w-3" /></a>}
+                  {c.citation && <a href={c.citation} target="_blank" rel="noopener" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1">Source <ArrowSquareOut className="h-3 w-3" /></a>}
                 </div>
               ))}
             </div>
@@ -44,7 +51,7 @@ function AgencyRow({ a }) {
                 <div key={i} className="rounded-md border p-2 mb-1">
                   <div className="font-medium text-foreground">{s.case || s.name || "Settlement"}{s.amount != null ? " — " + money(s.amount) : ""}{s.year ? " (" + s.year + ")" : ""}</div>
                   {(s.purpose || s.description) && <div className="text-muted-foreground mt-0.5">{s.purpose || s.description}</div>}
-                  {s.citation && <a href={s.citation} target="_blank" rel="noopener" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1">Source <ExternalLink className="h-3 w-3" /></a>}
+                  {s.citation && <a href={s.citation} target="_blank" rel="noopener" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1">Source <ArrowSquareOut className="h-3 w-3" /></a>}
                 </div>
               ))}
             </div>
@@ -55,7 +62,7 @@ function AgencyRow({ a }) {
               {a.funding.map((f, i) => (
                 <div key={i} className="rounded-md border p-2 mb-1">
                   <div className="font-medium text-foreground">{f.program || f.source || "Funding"}{f.amount != null ? " — " + money(f.amount) : ""}{f.year ? " (" + f.year + ")" : ""}</div>
-                  {f.citation && <a href={f.citation} target="_blank" rel="noopener" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1">Source <ExternalLink className="h-3 w-3" /></a>}
+                  {f.citation && <a href={f.citation} target="_blank" rel="noopener" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1">Source <ArrowSquareOut className="h-3 w-3" /></a>}
                 </div>
               ))}
             </div>
@@ -108,7 +115,7 @@ export default function Directory() {
   if (!ready || !dir) {
     return (
       <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading the agency directory…
+        <CircleNotch className="h-4 w-4 animate-spin" /> Loading the agency directory…
       </div>
     );
   }
@@ -123,7 +130,7 @@ export default function Directory() {
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="eyebrow"><Building2 className="h-3.5 w-3.5" /> Public institutions</div>
+      <div className="eyebrow"><Buildings className="h-3.5 w-3.5" /> Public institutions</div>
       <h1 className="text-2xl font-bold mt-3 mb-1">Agency &amp; Public-Records Directory</h1>
       <p className="text-sm text-muted-foreground">
         {dir.agencies.length.toLocaleString()} California state and local agencies
@@ -139,7 +146,7 @@ export default function Directory() {
 
       {sub !== "records" && (
         <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)}
             placeholder={sub === "agencies" ? "Search agencies by name, type, or county…" : "Search contracts by city, vendor, or subject…"}
             className="pl-9 h-11" />
@@ -161,7 +168,7 @@ export default function Directory() {
       {sub === "records" && (
         <div className="mt-4 space-y-4">
           <div className="rounded-xl border bg-muted/20 p-4 text-sm flex items-start gap-3">
-            <ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" />
+            <ShieldCheck weight="fill" className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" />
             <span className="text-muted-foreground">
               Research dossier on {rich.length} law-enforcement agencies with public-records findings —
               vendor contracts, settlements, and funding — plus the {dir.vendors.length} vendors behind them.
@@ -208,7 +215,7 @@ export default function Directory() {
                 {c.body && <span>{c.body}</span>}
                 {c.url && (
                   <a href={c.url} target="_blank" rel="noopener" className="ml-auto inline-flex items-center gap-1 hover:text-foreground">
-                    Legistar record <ExternalLink className="h-3 w-3" />
+                    Legistar record <ArrowSquareOut className="h-3 w-3" />
                   </a>
                 )}
               </div>

@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Search,
-  ExternalLink,
-  Loader2,
+  MagnifyingGlass,
+  ArrowSquareOut,
+  CircleNotch,
   FileText,
   Download,
-  CheckCircle2,
-  Languages,
+  CheckCircle,
+  Translate,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -38,7 +38,7 @@ function FormRow({ f, onCategory }) {
         <span className="font-mono text-[13px] font-semibold tracking-tight">{f.number}</span>
         {f.mandatory ? (
           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
-            <CheckCircle2 className="h-2.5 w-2.5" /> Mandatory
+            <CheckCircle weight="fill" className="h-2.5 w-2.5" /> Mandatory
           </span>
         ) : (
           <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
@@ -84,13 +84,13 @@ function FormRow({ f, onCategory }) {
             target="_blank"
             rel="noopener"
           >
-            Form info <ExternalLink className="h-3 w-3" />
+            Form info <ArrowSquareOut className="h-3 w-3" />
           </a>
         )}
         {languages.length > 0 && (
           <details className="inline-block">
             <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md border border-foreground/15 px-2 py-1 font-medium text-foreground transition-colors hover:border-foreground/35 hover:bg-muted [&::-webkit-details-marker]:hidden">
-              <Languages className="h-3 w-3" /> {languages.length} translation{languages.length > 1 ? "s" : ""}
+              <Translate className="h-3 w-3" /> {languages.length} translation{languages.length > 1 ? "s" : ""}
             </summary>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {languages.map((l) => (
@@ -176,7 +176,7 @@ export default function Forms({ jumpForm }) {
   if (!ready) {
     return (
       <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading the Judicial Council forms catalog…
+        <CircleNotch className="h-4 w-4 animate-spin" /> Loading the Judicial Council forms catalog…
       </div>
     );
   }
@@ -198,7 +198,7 @@ export default function Forms({ jumpForm }) {
       <div className="mt-4 flex flex-col gap-2">
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9 h-11"
               onChange={(e) => {
@@ -345,7 +345,7 @@ export default function Forms({ jumpForm }) {
           target="_blank"
           rel="noopener"
         >
-          Verify at California Courts <ExternalLink className="h-3 w-3" />
+          Verify at California Courts <ArrowSquareOut className="h-3 w-3" />
         </a>
       </p>
     </div>

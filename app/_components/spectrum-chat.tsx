@@ -281,7 +281,6 @@ export function SpectrumChat() {
                         followUps={t.followUps}
                         onFollowUp={(p) => send(p.prompt ?? p.label)}
                         variant="Sources"
-                        className="max-w-none [&_p]:whitespace-pre-wrap"
                       />
                       {!t.streaming && (
                         <MessageActions
