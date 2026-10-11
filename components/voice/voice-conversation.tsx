@@ -51,7 +51,20 @@ function speechFriendlyText(value: string) {
 }
 
 export function VoiceConversation() {
-  const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  useEffect(() => {
+    const readModel = () => setSelectedModelId(window.localStorage.getItem("law-model-id"));
+    readModel();
+    window.addEventListener("law-model-change", readModel);
+    return () => window.removeEventListener("law-model-change", readModel);
+  }, []);
+  const transport = useMemo(
+    () => new DefaultChatTransport({
+      api: "/api/chat",
+      body: selectedModelId ? { model: selectedModelId } : {},
+    }),
+    [selectedModelId],
+  );
   const { messages, sendMessage, status, error, stop } = useChat({ transport });
   const [draft, setDraft] = useState("");
   const [listening, setListening] = useState(false);
