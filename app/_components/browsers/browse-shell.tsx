@@ -1,28 +1,12 @@
 "use client";
 
-import {
-  BookOpen,
-  Buildings,
-  FileText,
-  Info,
-  Scales,
-  Scroll,
-  type Icon,
-} from "@phosphor-icons/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { LIBRARY_TABS } from "@/app/_components/library-routes";
+import { MobileDockNav } from "@/app/_components/mobile-dock-nav";
 import { StarMark } from "@/app/_components/star-mark";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
-
-const TABS: Array<{ href: string; label: string; icon: Icon }> = [
-  { href: "/codes", label: "Codes", icon: BookOpen },
-  { href: "/bills", label: "Bills", icon: Scroll },
-  { href: "/rules", label: "Rules of Court", icon: Scales },
-  { href: "/forms", label: "Forms", icon: FileText },
-  { href: "/directory", label: "Directory", icon: Buildings },
-  { href: "/method", label: "Method", icon: Info },
-];
 
 export function BrowseShell({ active, children }: { active: string; children: ReactNode }) {
   return (
@@ -32,7 +16,7 @@ export function BrowseShell({ active, children }: { active: string; children: Re
           <StarMark className="size-5" />
         </Link>
         <nav className="flex items-center gap-1" aria-label="Research library">
-          {TABS.map((t) => {
+          {LIBRARY_TABS.map((t) => {
             const selected = active === t.href;
             const Glyph = t.icon;
             return (
@@ -58,6 +42,7 @@ export function BrowseShell({ active, children }: { active: string; children: Re
         <ThemeToggle className="ml-auto" />
       </header>
       <div className="min-h-0 flex-1">{children}</div>
+      <MobileDockNav active={active} />
     </div>
   );
 }

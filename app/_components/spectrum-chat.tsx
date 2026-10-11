@@ -1,20 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  BookOpen,
-  Buildings,
-  FileText,
-  Info,
-  Scales,
-  Scroll,
-  type Icon,
-} from "@phosphor-icons/react";
 
 import { AIChatCard } from "@/components/spectrumui/ai-chat-card";
 import { MessageActions } from "@/components/spectrumui/blocks/ai-assistants/message-actions";
 import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/prompt-composer";
 import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/streaming-text";
+import { LIBRARY_TABS } from "@/app/_components/library-routes";
+import { MobileDockNav } from "@/app/_components/mobile-dock-nav";
 import { StarMark } from "@/app/_components/star-mark";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
 import { SuggestionBanner } from "@/components/spectrumui/blocks/ai-assistants/suggestion-banner";
@@ -235,16 +228,7 @@ export function SpectrumChat() {
           <StarMark className="size-5" />
         </a>
         <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
-          {(
-            [
-              ["Codes", "/codes", BookOpen],
-              ["Bills", "/bills", Scroll],
-              ["Rules", "/rules", Scales],
-              ["Directory", "/directory", Buildings],
-              ["Forms", "/forms", FileText],
-              ["Method", "/method", Info],
-            ] as Array<[string, string, Icon]>
-          ).map(([label, href, Glyph]) => (
+          {LIBRARY_TABS.map(({ label, href, icon: Glyph }) => (
             <a
               key={href}
               href={href}
@@ -257,6 +241,7 @@ export function SpectrumChat() {
         </nav>
         <ThemeToggle />
       </header>
+      <MobileDockNav />
 
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {empty ? (
