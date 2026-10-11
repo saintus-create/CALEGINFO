@@ -1,13 +1,15 @@
 /**
  * Exercises the Judicial Council forms scorer (agent/lib/search.ts) against the
  * packed corpus: form-number lookups must land exactly, and topical queries
- * must surface the expected form family in the top results.
+ * must surface the expected form family in the top results. Also validates the
+ * editorial `synonyms` the packer carries over from the portal's
+ * `field_synonyms` — skipped when the corpus predates that field.
  *
  *   npm run check:forms
  */
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
-import { formNumsIn, scoreForms } from "../agent/lib/search";
+import { formNumsIn, formSynonyms, scoreForms } from "../agent/lib/search";
 
 const forms: Array<Record<string, unknown>> = gunzipSync(
   readFileSync("public/corpus/forms/FORMS.jsonl.gz"),
@@ -47,12 +49,42 @@ function main() {
     else failures.push(`${JSON.stringify(queries)} -> ${hits.join(", ")} (missing ${expected})`);
   }
 
+  // Editorial synonyms: the portal only populates field_synonyms on some series
+  // (the restraining-order families), so a corpus packed before the field was
+  // carried over legitimately has none — skip rather than fail.
+  const withSyn = forms.filter((f) => formSynonyms(f).length);
+  let synOk = true;
+  const synProblems: string[] = [];
+  if (withSyn.length) {
+    for (const f of withSyn) {
+      if (!formSynonyms(f).every((s) => s && s === s.toLowerCase())) {
+        synOk = false;
+        synProblems.push(`${String(f.number)}: synonyms not lowercase ${JSON.stringify(f.synonyms)}`);
+      }
+    }
+    // A query phrased with synonym wording must still surface its own family.
+    const probe = withSyn[0];
+    const phrase = formSynonyms(probe)[0];
+    const series = String(probe.series || "");
+    const hits = scoreForms([phrase], forms, 5);
+    if (!hits.some((h) => String(h.number).startsWith(series))) {
+      synOk = false;
+      synProblems.push(`"${phrase}" -> ${hits.map((h) => h.number).join(", ")} (no ${series} form)`);
+    }
+  }
+  if (synProblems.length) console.log(synProblems.map((p) => `  SYN ${p}`).join("\n"));
+
   console.log(`${forms.length} forms loaded`);
   console.log(`${numbersOk ? "PASS" : "FAIL"} form numbers parsed: ${numbers.join(", ")}`);
   console.log(`${passed}/${CASES.length} query expectations in top 5`);
+  console.log(
+    withSyn.length
+      ? `${synOk ? "PASS" : "FAIL"} synonyms on ${withSyn.length} forms`
+      : "SKIP synonyms — corpus predates field_synonyms (repack via scripts/fetch_forms.py)",
+  );
   if (failures.length) console.log(failures.map((f) => `  MISS ${f}`).join("\n"));
 
-  if (!numbersOk || passed < CASES.length) process.exitCode = 1;
+  if (!numbersOk || passed < CASES.length || !synOk) process.exitCode = 1;
 }
 
 main();

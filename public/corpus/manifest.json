@@ -464,7 +464,7 @@
         "annotations": 103
       },
       {
-        "sha256": "9d7d9f05639873c450ede6e5799463b30b556a54f1ecaf321f611523234e3a57",
+        "sha256": "e35736aca3ecc6af1673198c7f5232e753ff6ba218c8e185cde22bcac54db350",
         "key": "forms",
         "name": "Judicial Council Forms (statewide)",
         "file": "forms/FORMS.jsonl.gz",
@@ -473,9 +473,21 @@
         "categories": 102,
         "prefixes": 64,
         "series": 58,
-        "retrieved_at": "2026-10-05T10:12:02.397491+00:00",
+        "synonyms": 115,
+        "retrieved_at": "2026-10-10T06:18:18.585253+00:00",
         "source": "https://selfhelp.courts.ca.gov/json/jcc-forms",
         "official_source": "https://selfhelp.courts.ca.gov/find-forms/all-by-category"
+      },
+      {
+        "sha256": "0f9abc2683c9800bfeb2933b3604a6702e3bd37a035766b19a7869d8adcab2b9",
+        "key": "courts",
+        "name": "Superior Court Directory (58 counties)",
+        "file": "courts/COURTS.json.gz",
+        "courts": 58,
+        "local_forms_verified": 7,
+        "retrieved_at": "2026-10-10",
+        "source": "https://www4.courts.ca.gov/6168.htm",
+        "official_source": "https://www4.courts.ca.gov/superiorcourts.htm"
       }
     ]
   }

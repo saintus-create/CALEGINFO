@@ -7,8 +7,9 @@ complete statewide Judicial Council forms catalog as JSON —
 (Drupal view "jcc_forms_search_json_api", REST export display.)
 
 Each record carries the form number, title, plain-language description, the
-topic category, the mandatory-use flag, the effective/revision date(s), the
-official PDF URL, the form-information page, and translation URLs.
+topic category, the portal's editorial synonyms, the mandatory-use flag, the
+effective/revision date(s), the official PDF URL, the form-information page,
+and translation URLs.
 
 Outputs:
   public/corpus/forms/FORMS.jsonl.gz   gzip'd JSONL, one form per line
@@ -98,6 +99,25 @@ def clean(text: object) -> str:
     return " ".join(str(text or "").split())
 
 
+def parse_synonyms(raw: object) -> list[str]:
+    """'workplace violence, workplace violence prevention' -> ['workplace violence', ...]
+
+    The portal carries editorial topic labels in `field_synonyms` — the words a
+    filer actually types when the official title uses different ones. Kept
+    lowercased and de-duplicated (source order preserved) because both search
+    scorers match them case-insensitively.
+    """
+    text = clean(raw)
+    if not text:
+        return []
+    out: list[str] = []
+    for part in re.split(r"[,;|]", text):
+        term = " ".join(part.split()).lower()
+        if term and term not in out:
+            out.append(term)
+    return out
+
+
 def series_of(number: str, prefix: str) -> str:
     """Form family used for grouping: 'FL-1XX' -> 'FL', 'CP10' -> 'CP'.
 
@@ -130,18 +150,29 @@ def normalize(rec: dict) -> dict | None:
 
     mandatory = str(rec.get("field_mandatory") or "").strip().lower() in {"true", "1", "yes"}
 
+    prefix = clean(rec.get("form_prefix")).upper()
+    series = series_of(number, prefix)
+    # The portal sometimes lists a form's own series as a synonym — all eight RT
+    # retail-crime records carry just "rt". Both scorers build query terms with
+    # termsOf(), which drops tokens of two characters or fewer, so such a term
+    # can never match anything and is pure dead weight in the gz. Terms that are
+    # merely redundant with the title or category are kept: deciding that is the
+    # scorer's job, and the portal's editorial labels are the source of truth.
+    synonyms = [s for s in parse_synonyms(rec.get("field_synonyms")) if len(s) > 2]
+
     out = {
         "number": number,
         "title": title,
         "mandatory": mandatory,
-        "series": series_of(number, clean(rec.get("form_prefix")).upper()),
+        "series": series,
     }
     optional = {
         "category": clean(rec.get("form_category")) or clean(rec.get("form_prefix_category")),
-        "prefix": clean(rec.get("form_prefix")).upper(),
+        "prefix": prefix,
         "effective": effective,
         "effective_dates": raw_dates,
         "description": clean(rec.get("description")),
+        "synonyms": synonyms,
         "pdf_url": clean(rec.get("url")),
         "info_url": clean(rec.get("alias")),
         "languages": sorted(languages.keys()),
@@ -223,6 +254,7 @@ def main() -> int:
         "categories": len(categories),
         "prefixes": len(prefixes),
         "series": len(series),
+        "synonyms": sum(1 for f in forms if f.get("synonyms")),
         "retrieved_at": datetime.now(timezone.utc).isoformat(),
         "source": SOURCE_URL,
         "official_source": OFFICIAL_SOURCE,

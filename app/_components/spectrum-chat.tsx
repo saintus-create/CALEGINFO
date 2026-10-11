@@ -5,11 +5,21 @@ import {
   BookOpen,
   Buildings,
   FileText,
+  List,
   Scales,
   Scroll,
   type Icon,
 } from "@phosphor-icons/react";
 
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/spectrumui/ui/sheet";
 import { AIChatCard } from "@/components/spectrumui/ai-chat-card";
 import { MessageActions } from "@/components/spectrumui/blocks/ai-assistants/message-actions";
 import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/prompt-composer";
@@ -50,6 +60,14 @@ const SUGGESTIONS: SuggestedPrompt[] = [
   { id: "s2", label: "Landlord entry rules", prompt: "When can a landlord enter a rental unit in California?" },
   { id: "s3", label: "Elements of burglary", prompt: "What are the elements of burglary in California?" },
   { id: "s4", label: "At-will employment exceptions", prompt: "What are the exceptions to at-will employment in California?" },
+];
+
+const NAV_ITEMS: Array<[string, string, Icon]> = [
+  ["Codes", "/codes", BookOpen],
+  ["Bills", "/bills", Scroll],
+  ["Rules", "/rules", Scales],
+  ["Directory", "/directory", Buildings],
+  ["Forms", "/forms", FileText],
 ];
 
 /** split the server's trailing AUTHORITIES / FOLLOWUPS blocks out of the answer */
@@ -219,24 +237,55 @@ export function SpectrumChat() {
 
   return (
     <div className="flex h-dvh w-full flex-col bg-background text-foreground">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-5 sm:px-7">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-4 sm:px-7">
         <a href="/" aria-label="California Legislation" className="shrink-0">
           <Wordmark className="text-[13px]" />
         </a>
-        <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
-          {(
-            [
-              ["Codes", "/codes", BookOpen],
-              ["Bills", "/bills", Scroll],
-              ["Rules", "/rules", Scales],
-              ["Directory", "/directory", Buildings],
-              ["Forms", "/forms", FileText],
-            ] as Array<[string, string, Icon]>
-          ).map(([label, href, Glyph]) => (
+
+        <Sheet>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              aria-label="Open navigation menu"
+              className="ml-auto inline-flex size-10 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+            >
+              <List aria-hidden className="size-5" weight="regular" />
+            </button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            className="w-[min(86vw,320px)] px-0 pt-0 sm:max-w-none"
+          >
+            <SheetHeader className="border-b border-border px-5 py-5 text-left">
+              <SheetTitle className="text-base font-semibold tracking-tight">
+                California Legislation
+              </SheetTitle>
+              <SheetDescription className="text-left">
+                Browse California legal materials.
+              </SheetDescription>
+            </SheetHeader>
+            <nav aria-label="Main navigation" className="flex flex-col gap-1 p-3">
+              {NAV_ITEMS.map(([label, href, Glyph]) => (
+                <SheetClose key={href} asChild>
+                  <a
+                    href={href}
+                    className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Glyph aria-hidden className="size-5" weight="regular" />
+                    {label}
+                  </a>
+                </SheetClose>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
+
+        <nav aria-label="Main navigation" className="ml-auto hidden items-center gap-1 text-[13px] md:flex">
+          {NAV_ITEMS.map(([label, href, Glyph]) => (
             <a
               key={href}
               href={href}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Glyph aria-hidden className="size-4" weight="regular" />
               {label}
@@ -247,7 +296,7 @@ export function SpectrumChat() {
 
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {empty ? (
-          <div className="grid min-h-full place-items-center px-4 py-8 sm:px-6">
+          <div className="flex min-h-full items-stretch justify-center px-3 sm:px-6">
             <AIChatCard
               title=""
               subtitle=""
@@ -256,7 +305,7 @@ export function SpectrumChat() {
               prompts={SUGGESTIONS.map((item) => item.prompt ?? item.label)}
               placeholder="Ask anything about California law…"
               onSend={(value) => send(value)}
-              className="min-h-[520px] max-w-[520px]"
+              className="min-h-[calc(100dvh-3.5rem)] max-w-3xl"
             />
           </div>
         ) : (
