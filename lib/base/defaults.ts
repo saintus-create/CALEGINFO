@@ -22,6 +22,13 @@ export type BaseBrandTheme = {
   text: string;
   surface: string;
   accent: string;
+  /** Optional dark palette. Absent means the light values are used in both. */
+  dark?: {
+    background: string;
+    text: string;
+    surface: string;
+    accent: string;
+  };
 };
 
 export type ResolvedBaseConfig = {
@@ -99,5 +106,11 @@ export const defaultBaseConfig: ResolvedBaseConfig = {
     text: "#0a0a0a",
     surface: "#f4f4f5",
     accent: "#4c8dff",
+    dark: {
+      background: "#0a0a0a",
+      text: "#fafafa",
+      surface: "#262626",
+      accent: "#4c8dff",
+    },
   },
 };

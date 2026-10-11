@@ -10,6 +10,7 @@ import {
   defaultBaseConfig,
   type ResolvedBaseConfig,
 } from "@/lib/base/defaults";
+import { useTheme } from "@/lib/base/theme";
 
 const BaseConfigContext = createContext<ResolvedBaseConfig>(defaultBaseConfig);
 
@@ -20,7 +21,13 @@ export function BaseConfigProvider({
   value: ResolvedBaseConfig;
   children: ReactNode;
 }) {
-  const theme = value.brandTheme;
+  // These land as inline custom properties, which outrank any `.dark` rule in
+  // CSS. So the palette has to be chosen here — otherwise dark mode silently
+  // keeps the light values and the page becomes unreadable.
+  const isDark = useTheme() === "dark";
+  const brand = value.brandTheme;
+  const theme = isDark && brand.dark ? { ...brand, ...brand.dark } : brand;
+
   const style = {
     "--background": theme.background,
     "--foreground": theme.text,

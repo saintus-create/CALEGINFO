@@ -13,6 +13,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { StarMark } from "@/app/_components/star-mark";
+import { ThemeToggle } from "@/app/_components/theme-toggle";
 
 const TABS: Array<{ href: string; label: string; icon: Icon }> = [
   { href: "/codes", label: "Codes", icon: BookOpen },
@@ -54,6 +55,7 @@ export function BrowseShell({ active, children }: { active: string; children: Re
             );
           })}
         </nav>
+        <ThemeToggle className="ml-auto" />
       </header>
       <div className="min-h-0 flex-1">{children}</div>
     </div>

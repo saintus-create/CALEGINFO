@@ -16,6 +16,7 @@ import { MessageActions } from "@/components/spectrumui/blocks/ai-assistants/mes
 import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/prompt-composer";
 import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/streaming-text";
 import { StarMark } from "@/app/_components/star-mark";
+import { ThemeToggle } from "@/app/_components/theme-toggle";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
 
@@ -245,6 +246,7 @@ export function SpectrumChat() {
             </a>
           ))}
         </nav>
+        <ThemeToggle />
       </header>
 
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
