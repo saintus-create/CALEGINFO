@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 /**
  * The site mark: a single red star.
  *
@@ -11,7 +13,7 @@ export function StarMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 100 100"
-      className={className}
+      className={cn("text-[#c8102e]", className)}
       fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden

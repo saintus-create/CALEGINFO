@@ -14,7 +14,6 @@ import { AIChatCard } from "@/components/spectrumui/ai-chat-card";
 import { MessageActions } from "@/components/spectrumui/blocks/ai-assistants/message-actions";
 import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/prompt-composer";
 import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/streaming-text";
-import { Wordmark } from "@/app/_components/wordmark";
 import { StarMark } from "@/app/_components/star-mark";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
@@ -221,9 +220,8 @@ export function SpectrumChat() {
   return (
     <div className="flex h-dvh w-full flex-col bg-background text-foreground">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-5 sm:px-7">
-        <a href="/" aria-label="California Legislation" className="flex shrink-0 items-center gap-2">
-          <StarMark className="size-4 text-[#c8102e]" />
-          <Wordmark className="text-[13px]" />
+        <a href="/" aria-label="California Legislation" className="flex shrink-0 items-center">
+          <StarMark className="size-5" />
         </a>
         <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
           {(
@@ -259,6 +257,7 @@ export function SpectrumChat() {
               placeholder="Ask anything about California law…"
               onSend={(value) => send(value)}
               className="min-h-[520px] max-w-[520px]"
+              icon={<StarMark className="h-5 w-5" />}
             />
           </div>
         ) : (
