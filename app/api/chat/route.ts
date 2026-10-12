@@ -267,6 +267,55 @@ function validateSynthesis(text: string, record: Awaited<ReturnType<typeof resea
   return { ok: true, reason: "" };
 }
 
+/** Wrap a finished string in the same UI message stream the client expects. */
+function textStreamResponse(finalText: string) {
+  const stream = new ReadableStream<StreamPart>({
+    start(controller) {
+      const id = "law-" + Math.random().toString(36).slice(2, 10);
+      controller.enqueue({ type: "text-start", id });
+      controller.enqueue({ type: "text-delta", id, delta: finalText });
+      controller.enqueue({ type: "text-end", id });
+      controller.enqueue({ type: "finish", finishReason: "stop" });
+      controller.close();
+    },
+  });
+  const uiStream = createUIMessageStream({ execute: ({ writer }) => writer.merge(stream as any) });
+  return createUIMessageStreamResponse({ stream: uiStream });
+}
+
+/**
+ * Answer without a language model: present the highest-ranked sections the
+ * corpus returned, with their text and citations, and say plainly that this is
+ * retrieval rather than synthesis.
+ */
+function retrievalOnlyAnswer(
+  question: string,
+  record: Awaited<ReturnType<typeof research.execute>> | null,
+): string {
+  const sources = (record?.sources || []).slice(0, 6);
+  if (!sources.length) {
+    return (
+      "No matching California authority was found in the corpus for that question. " +
+      "No language model is configured, so the answer cannot be synthesised — try different " +
+      "terms, or browse the Codes directly at /codes."
+    );
+  }
+  const body = sources
+    .map((s, i) => {
+      const heading = s.title && s.title !== s.citation ? `${s.citation} — ${s.title}` : s.citation;
+      const passage = String(s.relevant_passage || "").trim().slice(0, 420);
+      return `**${i + 1}. ${heading}**\n${passage}`;
+    })
+    .join("\n\n");
+  const authorities = sources.map((s, i) => `[${i + 1}] ${s.citation}`).join("\n");
+  return (
+    "Here are the California authorities the corpus ranks highest for that question. " +
+    "No language model is configured, so this is the retrieval result itself — the sections " +
+    "and their text, cited — rather than a synthesised answer.\n\n" +
+    `${body}\n\nAUTHORITIES:\n${authorities}`
+  );
+}
+
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
@@ -288,11 +337,16 @@ export async function POST(req: Request) {
     });
     return createUIMessageStreamResponse({ stream: uiStream });
   }
-  if (
-    !KEY &&
-    !alternateModels().some((a) => alternateApiKey(a))
-  )
-    return new Response("Research service is not configured.", { status: 503 });
+  if (!KEY && !alternateModels().some((a) => alternateApiKey(a))) {
+    // No model configured. The corpus search is local and deterministic — it
+    // never touches a model — so rather than failing, answer with the
+    // authorities it retrieved, cited. The client renders this through the same
+    // AUTHORITIES block it uses for synthesised answers.
+    const record = await research
+      .execute({ question }, undefined as never)
+      .catch(() => null);
+    return textStreamResponse(retrievalOnlyAnswer(question, record));
+  }
 
   const sourceMap: SourceMap = new Map();
   const sourceUrls = new Map<string, string>();
