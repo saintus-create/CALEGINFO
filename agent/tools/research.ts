@@ -4,6 +4,7 @@ import searchBills from "./search_bills";
 import searchRules from "./search_rules";
 import searchForms from "./search_forms";
 import searchCases from "./search_cases";
+import { runResearchAgents } from "../lib/agents";
 
 /**
  * The research engine creates an evidence ledger before answer generation.
@@ -15,7 +16,16 @@ export const researchInputSchema = z.object({
   question: z.string().min(2),
 });
 
-type AuthorityType = "statute" | "case" | "rule" | "bill" | "form";
+type AuthorityType =
+  | "statute"
+  | "case"
+  | "rule"
+  | "bill"
+  | "form"
+  // Words and Phrases (West's California Digest 2d): a finding aid that reports
+  // how courts construed a term. It is not authority itself, which is why it
+  // carries its own type rather than posing as a case.
+  | "words_and_phrases";
 type ResearchMode = "direct" | "analytical" | "deep";
 type VerificationState = "retrieved" | "needs_followup" | "unverified";
 type RelationshipType =
@@ -37,7 +47,7 @@ type ResearchSource = {
   status: string | null;
   jurisdiction: string;
   temporal_fit: "current" | "historical" | "unknown";
-  binding_weight: "constitutional" | "statute" | "supreme_court" | "court_of_appeal" | "rule" | "form" | "legislative_material";
+  binding_weight: "constitutional" | "statute" | "supreme_court" | "court_of_appeal" | "rule" | "form" | "legislative_material" | "secondary";
   relevant_passage: string;
   supported_proposition: string;
   relevance_reason: string;
@@ -466,7 +476,9 @@ function sourceFrom(
           ? "rule"
           : authority === "form"
             ? "form"
-            : "court_of_appeal";
+            : authority === "words_and_phrases"
+              ? "secondary"
+              : "court_of_appeal";
   const role: ResearchSource["authority_role"] =
     authority === "statute"
       ? "primary"
@@ -595,13 +607,19 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
     rule: 4,
     form: 3,
     bill: 4,
+    words_and_phrases: 3,
   };
   const rebuildPropositions = () => {
     propositions.splice(0, propositions.length, ...sources.map((s, i): Proposition => ({
       proposition_id: `p${i + 1}`,
       source_ids: [s.source_id],
       statement: s.supported_proposition,
-      support_type: s.authority_type === "case" ? "case_statement" : s.authority_type === "bill" ? "legislative_record" : "direct_text",
+      support_type:
+        s.authority_type === "case" || s.authority_type === "words_and_phrases"
+          ? "case_statement"
+          : s.authority_type === "bill"
+            ? "legislative_record"
+            : "direct_text",
       status: s.verification === "retrieved" ? "supported" : "needs_verification",
     })));
   };
@@ -649,6 +667,23 @@ export async function buildResearchRecord(question: string): Promise<ResearchRec
       }),
     );
   };
+
+  // Agentic retrieval. Two agents run concurrently and choose their own tools
+  // and queries within a step budget, which is how a source that the
+  // hand-written plan never named (Words and Phrases) becomes reachable. Their
+  // sources join this record and face the same gate as everything else. If the
+  // agent pass fails, nothing changes: the deterministic planner below still
+  // runs exactly as it did before.
+  try {
+    const agentResults = await runResearchAgents(question);
+    for (const result of agentResults) {
+      for (const source of result.sources) {
+        addSources([source.raw], source.authority as AuthorityType);
+      }
+    }
+  } catch (error) {
+    console.error("[research] agent pass failed; falling back to the planner alone", error);
+  }
 
   await runInitialAuthorityBatches();
   rebuildPropositions();
