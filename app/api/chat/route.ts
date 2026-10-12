@@ -476,7 +476,8 @@ The server will validate your completed answer before sending it to the user. An
           // providers with small balances (OpenRouter prepay) accept the call
           maxOutputTokens: 6144,
         }),
-    onError: (error) =>
+    onError: (error) => {
+      providerError = error;
       console.error(
         "[api/chat]",
         error,
@@ -487,9 +488,17 @@ The server will validate your completed answer before sending it to the user. An
         "| lastCause:",
         (error as { lastError?: { cause?: { message?: string } } })?.lastError?.cause
           ?.message,
-      ),
+      );
+    },
     messages: modelMessages,
   });
+
+  // A provider failure (out of credits, rate limit, bad key) leaves the answer
+  // empty. Without this the gate reports it as an unverifiable-answer problem,
+  // which blames the research for what is actually an account problem — the app
+  // told users "I wasn't able to verify this answer against the sources" when the
+  // provider had simply refused the call. Say what actually happened instead.
+  let providerError: unknown = null;
 
   let result = generate();
   let answer = "";
@@ -498,11 +507,37 @@ The server will validate your completed answer before sending it to the user. An
   if (process.env.DEBUG_ANSWER) console.log('[debug] raw answer:\n' + answer.slice(0, 3000));
   let validation = validateSynthesis(answer, record, question);
 
+  const providerFailed = !answer.trim() && !!providerError;
+  if (providerFailed) {
+    // The provider's own words live at different depths depending on whether the
+    // failure came from the call, its cause, or the last retry — collect all of
+    // them so a quota failure is recognised as one.
+    const detail = [
+      (providerError as { responseBody?: string })?.responseBody,
+      (providerError as { cause?: { responseBody?: string } })?.cause?.responseBody,
+      (providerError as { lastError?: { responseBody?: string } })?.lastError?.responseBody,
+      (providerError as { lastError?: { cause?: { responseBody?: string } } })?.lastError?.cause
+        ?.responseBody,
+      (providerError as Error)?.message,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const quota = /insufficient_quota|no credits|quota/i.test(detail);
+    console.error("[api/chat] provider failure (not an evidence failure):", detail.slice(0, 300));
+    answer = quota
+      ? "The model provider refused this request because the account has no credits available. " +
+        "That is an account issue, not a research result — nothing was retrieved and nothing was held back. " +
+        "Top up the provider account and ask again."
+      : "The model provider could not complete this request. That is an infrastructure failure, not a research " +
+        "result — nothing was held back for evidentiary reasons. Please try again.";
+  }
+
   // Up to two bounded repair passes. The gate is strict by design, so give the
-  // model a targeted second chance rather than serving nothing at all.
+  // model a targeted second chance rather than serving nothing at all. Skipped
+  // entirely when the provider itself failed: there is nothing to repair.
   for (
     let attempt = 0;
-    !validation.ok && attempt < 2 && !/^(simple|short|greeting)$/i.test(record.mode);
+    !providerFailed && !validation.ok && attempt < 2 && !/^(simple|short|greeting)$/i.test(record.mode);
     attempt++
   ) {
     result = generate(`
@@ -517,7 +552,7 @@ Produce a replacement answer, not commentary about the failure. Every paragraph 
     validation = validateSynthesis(answer, record, question);
   }
 
-  if (!validation.ok) {
+  if (!providerFailed && !validation.ok) {
     console.error("[api/chat] evidence gate rejected answer", validation.reason);
     answer =
       "I wasn't able to verify this answer against the sources I retrieved, so I'm holding it back rather than risk an unsupported statement. " +
