@@ -161,16 +161,42 @@ const CITED_RE = /\[\s*([a-z]{1,2}\d{1,3})\s*\]/gi;
 const CITED_ONE_RE = /\[\s*[a-z]{1,2}\d{1,3}\s*\]/i;
 
 function researchBlock(record: Awaited<ReturnType<typeof research.execute>>): string {
-  const propositionLines = record.propositions.map((p) => {
+  // The model's context window is 32k tokens. Serialising every proposition with
+  // its full 1,200-char passage blew past it (~100 sources = ~32k tokens alone),
+  // and the provider rejected the whole request — which surfaced to the user as a
+  // held-back or empty answer. Budget the block instead of trusting the record's
+  // size: passages are trimmed, and once the budget is spent the remaining
+  // propositions are summarised rather than silently dropped.
+  const PASSAGE_CHARS = 500;
+  const BLOCK_CHAR_BUDGET = 60000; // ~15k tokens, leaving room for the 6k output
+  let used = 0;
+  let omitted = 0;
+  const propositionLines: string[] = [];
+
+  for (const p of record.propositions) {
     const source = (record.sources || []).find((s) => p.source_ids.includes(s.source_id));
-    if (!source) return `${p.proposition_id} [source: ${p.source_ids.join(", ")}] status=${p.status}: ${p.statement}`;
-    return [
-      `${p.proposition_id} [source: ${source.marker}] status=${p.status} type=${source.authority_type}`,
-      `citation=${source.citation}; title=${source.title}; date=${source.date ?? "unknown"}; status=${source.status ?? "unknown"}`,
-      `verification=${source.verification}; jurisdiction=${source.jurisdiction}; passage=${source.relevant_passage}`,
-      `statement=${p.statement}`,
-    ].join(" | ");
-  });
+    const line = source
+      ? [
+          `${p.proposition_id} [source: ${source.marker}] status=${p.status} type=${source.authority_type}`,
+          `citation=${source.citation}; title=${source.title}; date=${source.date ?? "unknown"}; status=${source.status ?? "unknown"}`,
+          `verification=${source.verification}; jurisdiction=${source.jurisdiction}; passage=${String(source.relevant_passage || "").slice(0, PASSAGE_CHARS)}`,
+          `statement=${p.statement}`,
+        ].join(" | ")
+      : `${p.proposition_id} [source: ${p.source_ids.join(", ")}] status=${p.status}: ${p.statement}`;
+
+    if (used + line.length > BLOCK_CHAR_BUDGET) {
+      omitted += 1;
+      continue;
+    }
+    used += line.length;
+    propositionLines.push(line);
+  }
+
+  if (omitted) {
+    propositionLines.push(
+      `(${omitted} further propositions were retrieved but omitted here for length. Cite only the ids above.)`,
+    );
+  }
 
   const chronologyLines = record.chronology.map((c) =>
     `${c.event_id} ${c.date ?? "unknown"} ${c.event}: ${c.description} (source ${c.source_id})`,

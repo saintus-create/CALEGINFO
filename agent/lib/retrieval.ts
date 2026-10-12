@@ -110,6 +110,28 @@ const CODE_WORD_TO_ABBR: Record<string, string> = {
   utilities: "PUC", unemployment: "UIC",
 };
 
+// Everyday words vs the words the statutes actually use.
+//
+// Pen. Code 802(a) answers a "misdemeanor" limitations question without ever
+// saying "misdemeanor" — it says "an offense not punishable by ... imprisonment
+// in the state prison". A keyword search for the user's word therefore cannot
+// reach the section that answers the question, and a neighbouring provision (the
+// felony rule in 801, which does say "imprisonment in the state prison") wins on
+// term overlap. Measured: that produced a confident, cited, wrong answer —
+// "three years" for a misdemeanor. These map the everyday term to the statutory
+// phrasing so the right section is reachable.
+const LEGAL_EQUIVALENTS: Array<[RegExp, string[]]> = [
+  [
+    /\bmisdemeanou?rs?\b/i,
+    ["not punishable by imprisonment in the state prison", "imprisonment in the county jail"],
+  ],
+  [/\bfelon(?:y|ies)\b/i, ["punishable by imprisonment in the state prison"]],
+  [/\bstatute of limitations\b/i, ["shall be commenced within", "commenced within"]],
+  [/\b(?:elements?|requirements?|prima facie)\b/i, ["every person who", "is guilty of"]],
+  [/\bdeadline\b/i, ["shall be filed within", "no later than"]],
+  [/\bnotice\b/i, ["written notice", "reasonable notice"]],
+];
+
 export function interpretQuery(
   question: string,
   opts: { codes?: string[]; mode?: "hybrid" | "keyword" } = {},
@@ -154,10 +176,14 @@ export function interpretQuery(
     new Set((raw.match(/(?:§|section)\s*(\d+[\w.-]*)/gi) || []).map((s) => s.replace(/.*?(\d)/, "$1"))),
   );
 
+  // Statutory phrasings lead: they are the highest-value signal for the section
+  // that actually answers the question, so they must survive the slice below.
+  const equivalents = LEGAL_EQUIVALENTS.filter(([re]) => re.test(lower)).flatMap(([, extra]) => extra);
+
   return {
     raw,
     terms,
-    phrases: Array.from(new Set(phrases)).slice(0, 12),
+    phrases: Array.from(new Set([...equivalents, ...phrases])).slice(0, 14),
     intent,
     codeHints: Array.from(hinted),
     sectionRefs,
