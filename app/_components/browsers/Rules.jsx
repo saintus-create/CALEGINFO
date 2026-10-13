@@ -19,9 +19,9 @@ function RuleBlock({ r, filter }) {
   return (
     <div id={"rule-" + String(r.rule).replace(/[^A-Za-z0-9._-]/g, "_")}
       className="my-4 scroll-mt-20 rounded px-1 -mx-1 transition-colors">
-      <span className="font-semibold text-sm">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</span>
-      <div className="text-sm whitespace-pre-wrap mt-1">{(r.text || "").trim()}</div>
-      {r.history && <div className="text-xs italic text-muted-foreground mt-1">{r.history}</div>}
+      <span className="font-semibold text-body">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</span>
+      <div className="text-body whitespace-pre-wrap mt-1">{(r.text || "").trim()}</div>
+      {r.history && <div className="text-meta italic text-muted-foreground mt-1">{r.history}</div>}
     </div>
   );
 }
@@ -39,10 +39,10 @@ function ChapterBlock({ g, filter }) {
   if (filter && countRuleMatches(g, filter) === 0) return null;
   return (
     <details className="my-2 rounded-lg border" open={!!filter}>
-      <summary className="cursor-pointer select-none px-4 py-2.5 text-sm font-semibold flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+      <summary className="cursor-pointer select-none px-4 py-3 font-semibold text-body flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
         <CaretRight className="h-4 w-4 text-muted-foreground transition-transform" />
         {g.label}
-        <span className="ml-auto text-xs font-normal text-muted-foreground">
+        <span className="ml-auto text-meta font-normal text-muted-foreground">
           {filter ? countRuleMatches(g, filter) + " matches" : g.rules.length + " rules"}
         </span>
       </summary>
@@ -150,11 +150,11 @@ export default function Rules({ jumpRule }) {
   };
 
   if (failed) {
-    return <div className="p-6 text-sm text-muted-foreground">Rules data could not be loaded. Refresh the page to try again.</div>;
+    return <div className="p-6 text-body text-muted-foreground">Rules data could not be loaded. Refresh the page to try again.</div>;
   }
   if (!ready) {
     return (
-      <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="p-6 flex items-center gap-2 text-body text-muted-foreground">
         <CircleNotch className="h-4 w-4 animate-spin" /> Loading the California Rules of Court…
       </div>
     );
@@ -165,12 +165,12 @@ export default function Rules({ jumpRule }) {
   const activeTitle = titles.find((x) => x.number === titleNum);
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto" ref={boxRef}>
+    <div className="flex flex-col" ref={boxRef}>
       {titleNum == null ? (
         <div>
-          <div className="eyebrow"><Gavel className="h-3.5 w-3.5" /> Judicial Council</div>
-          <h1 className="text-2xl font-bold mt-3 mb-2">California Rules of Court</h1>
-          <p className="text-muted-foreground text-sm">
+          <div className="eyebrow"><Gavel className="size-4" /> Judicial Council</div>
+          <h1 className="text-title-xl font-bold mt-3 mb-2">California Rules of Court</h1>
+          <p className="text-muted-foreground text-body">
             <b>{Number(total).toLocaleString()} rules</b> across {titles.length} titles — the procedural rules that govern
             California's trial and appellate courts, searchable in full. Pick a title, or search every rule.
           </p>
@@ -187,9 +187,9 @@ export default function Rules({ jumpRule }) {
               {globalResults.map((r, i) => (
                 <button key={i} onClick={() => { setGlobalResults([]); setGlobalQuery(""); setFilter(""); setFocus({ rule: r.rule, n: Date.now() }); }}
                   className="w-full text-left p-3 hover:bg-muted/40 transition-colors">
-                  <div className="text-sm font-semibold">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</div>
-                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{r.text}</div>
-                  <div className="text-[11px] text-muted-foreground mt-1.5">{r.title_name}{r.chapter ? " · " + r.chapter : ""}</div>
+                  <div className="font-semibold text-body">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</div>
+                  <div className="text-meta text-muted-foreground mt-1 line-clamp-2">{r.text}</div>
+                  <div className="text-meta text-muted-foreground mt-2">{r.title_name}{r.chapter ? " · " + r.chapter : ""}</div>
                 </button>
               ))}
             </div>
@@ -199,46 +199,46 @@ export default function Rules({ jumpRule }) {
               <button key={t.number} onClick={() => t.rules.length && setTitleNum(t.number)}
                 disabled={!t.rules.length}
                 className="metric-card text-left disabled:opacity-50 hover:border-foreground/30 transition-colors">
-                <div className="text-sm font-semibold">{t.name || "Title " + t.number}</div>
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="font-semibold text-body">{t.name || "Title " + t.number}</div>
+                <div className="text-meta text-muted-foreground mt-1">
                   {t.rules.length ? t.rules.length.toLocaleString() + " rules" : "Reserved — no rules"}
                 </div>
               </button>
             ))}
           </div>
-          <p className="mt-6 text-xs text-muted-foreground">
+          <p className="mt-6 text-meta text-muted-foreground">
             Dated snapshot — current official text at{" "}
             <a className="underline hover:text-foreground" href="https://www.courts.ca.gov/cms/rules/index.cfm" target="_blank" rel="noopener">courts.ca.gov</a>.
           </p>
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+          <div className="flex items-center gap-2 text-meta text-muted-foreground mb-2">
             <button className="hover:text-foreground inline-flex items-center gap-1" onClick={() => { setTitleNum(null); setFilter(""); }}>
               <ArrowLeft className="h-3 w-3" /> Rules of Court
             </button>
             <span>/</span>
             <span>{activeTitle ? activeTitle.name : "Title " + titleNum}</span>
           </div>
-          <h1 className="text-2xl font-bold">{activeTitle ? activeTitle.name : "Title " + titleNum}</h1>
-          <p className="text-sm text-muted-foreground mt-1 mb-4">
+          <h1 className="text-title-xl font-bold">{activeTitle ? activeTitle.name : "Title " + titleNum}</h1>
+          <p className="text-body text-muted-foreground mt-1 mb-4">
             <b>{activeTitle ? activeTitle.rules.length.toLocaleString() : 0} rules</b>
             {" "}· <a href="https://www.courts.ca.gov/cms/rules/index.cfm" target="_blank" rel="noopener"
               className="inline-flex items-center gap-1 hover:text-foreground">Verify at official California Courts <ArrowSquareOut className="h-3 w-3" /></a>
           </p>
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <div className="relative flex-1">
-              <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input value={filter} onChange={(e) => setFilter(e.target.value.toLowerCase().trim())}
-                placeholder="Filter rules in this title…" className="pl-8" />
+                placeholder="Filter rules in this title…" className="pl-9" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setAll(true)} className="gap-1.5"><CaretDoubleUp className="h-3.5 w-3.5" /> Expand all</Button>
-              <Button variant="outline" size="sm" onClick={() => setAll(false)} className="gap-1.5"><CaretDoubleDown className="h-3.5 w-3.5" /> Collapse</Button>
+              <Button variant="outline" size="sm" onClick={() => setAll(true)} className="gap-2"><CaretDoubleUp className="size-4" /> Expand all</Button>
+              <Button variant="outline" size="sm" onClick={() => setAll(false)} className="gap-2"><CaretDoubleDown className="size-4" /> Collapse</Button>
             </div>
           </div>
           {groups.map((g, i) => <ChapterBlock key={i} g={g} filter={filter} />)}
-          <p className="mt-6 text-xs text-muted-foreground">Dated snapshot — current official text at courts.ca.gov.</p>
+          <p className="mt-6 text-meta text-muted-foreground">Dated snapshot — current official text at courts.ca.gov.</p>
         </>
       )}
     </div>

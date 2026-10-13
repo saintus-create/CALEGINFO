@@ -6,10 +6,9 @@ import { ChatEmptyState } from "@/components/spectrumui/blocks/ai-assistants/cha
 import { MessageActions } from "@/components/spectrumui/blocks/ai-assistants/message-actions";
 import { PromptComposer } from "@/components/spectrumui/blocks/ai-assistants/prompt-composer";
 import { StreamingText } from "@/components/spectrumui/blocks/ai-assistants/streaming-text";
-import { LIBRARY_TABS } from "@/app/_components/library-routes";
 import { MobileDockNav } from "@/app/_components/mobile-dock-nav";
-import { StarMark } from "@/app/_components/star-mark";
-import { ThemeToggle } from "@/app/_components/theme-toggle";
+import { SiteHeader } from "@/app/_components/site-header";
+import { PageColumn, PageGrid } from "@/components/layout/page-grid";
 import { SuggestionBanner } from "@/components/spectrumui/blocks/ai-assistants/suggestion-banner";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
@@ -223,59 +222,48 @@ export function SpectrumChat() {
 
   return (
     <div className="flex h-dvh w-full flex-col bg-background text-foreground">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-5 sm:px-7">
-        <a href="/" aria-label="California Legislation" className="flex shrink-0 items-center">
-          <StarMark className="size-5" />
-        </a>
-        <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
-          {LIBRARY_TABS.map(({ label, href, icon: Glyph }) => (
-            <a
-              key={href}
-              href={href}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Glyph aria-hidden className="size-4" weight="regular" />
-              {label}
-            </a>
-          ))}
-        </nav>
-        <ThemeToggle />
-      </header>
+      <SiteHeader />
       <MobileDockNav />
 
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {empty ? (
-          <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6">
-            <ChatEmptyState
-              title="Ask anything about California law"
-              subtitle="Every answer is cited to the statute, rule or case it comes from."
-              prompts={SUGGESTIONS}
-              onSelectPrompt={(item) => send(item.prompt ?? item.label)}
-              variant="Centered"
-            />
-            <PromptComposer
-              placeholder="Ask anything about California law…"
-              models={models.map((m) => ({
-                id: m.id,
-                name: m.name,
-                disabled: m.available === false,
-              }))}
-              defaultModelId={models[0]?.id}
-              onSend={(value: string) => send(value)}
-              isGenerating={busy}
-            />
-          </div>
+          <PageGrid className="min-h-full content-center gap-y-8 py-8">
+            <PageColumn className="col-content measure">
+              <ChatEmptyState
+                title="Ask anything about California law"
+                subtitle="Every answer is cited to the statute, rule or case it comes from."
+                prompts={SUGGESTIONS}
+                onSelectPrompt={(item) => send(item.prompt ?? item.label)}
+                variant="Centered"
+                className="mx-auto max-w-none"
+              />
+            </PageColumn>
+            <PageColumn className="col-content measure">
+              <PromptComposer
+                placeholder="Ask anything about California law…"
+                models={models.map((m) => ({
+                  id: m.id,
+                  name: m.name,
+                  disabled: m.available === false,
+                }))}
+                defaultModelId={models[0]?.id}
+                onSend={(value: string) => send(value)}
+                isGenerating={busy}
+                className="max-w-none"
+              />
+            </PageColumn>
+          </PageGrid>
         ) : (
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-7 px-4 py-8 sm:px-6">
+          <PageGrid className="gap-y-7 py-6 lg:py-8">
             {turns.map((t) =>
               t.role === "user" ? (
-                <div key={t.id} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-[18px] bg-muted px-4 py-2.5 text-[15px] leading-6">
+                <PageColumn key={t.id} className="col-content measure flex justify-end">
+                  <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-3 text-body">
                     {t.content}
                   </div>
-                </div>
+                </PageColumn>
               ) : (
-                <div key={t.id} className="flex flex-col gap-3">
+                <PageColumn key={t.id} className="col-content measure flex flex-col gap-3">
                   {t.streaming && !t.content ? (
                     <ThinkingDots label="Researching California law" />
                   ) : (
@@ -287,6 +275,7 @@ export function SpectrumChat() {
                         followUps={t.followUps}
                         onFollowUp={(p) => send(p.prompt ?? p.label)}
                         variant="Sources"
+                        className="max-w-none"
                       />
                       {!t.streaming && (
                         <MessageActions
@@ -309,38 +298,41 @@ export function SpectrumChat() {
                       )}
                     </>
                   )}
-                </div>
+                </PageColumn>
               ),
             )}
 
             {notice && (
-              <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground">
+              <PageColumn className="col-content measure rounded-xl border border-border bg-muted/40 px-3 py-2 text-caption text-muted-foreground">
                 {notice}
-              </div>
+              </PageColumn>
             )}
-          </div>
+          </PageGrid>
         )}
       </main>
 
       {!empty && (
-        <div className="shrink-0 border-t border-border/60 bg-background px-4 py-3">
-          <div className="mx-auto w-full max-w-3xl">
-            <PromptComposer
-              placeholder="Ask anything about California law…"
-              models={models.map((m) => ({
-                id: m.id,
-                name: m.name,
-                disabled: m.available === false,
-              }))}
-              defaultModelId={models[0]?.id}
-              onSend={(value: string) => send(value)}
-              isGenerating={busy}
-            />
-          </div>
+        <div className="shrink-0 border-t border-border/60 bg-background">
+          <PageGrid className="py-3">
+            <PageColumn className="col-content measure">
+              <PromptComposer
+                placeholder="Ask anything about California law…"
+                models={models.map((m) => ({
+                  id: m.id,
+                  name: m.name,
+                  disabled: m.available === false,
+                }))}
+                defaultModelId={models[0]?.id}
+                onSend={(value: string) => send(value)}
+                isGenerating={busy}
+                className="max-w-none"
+              />
+            </PageColumn>
+          </PageGrid>
         </div>
       )}
       {notice && empty && (
-        <div role="alert" className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-border bg-background px-4 py-3 text-sm shadow-lg">
+        <div role="alert" className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,var(--grid-measure))] -translate-x-1/2 rounded-xl border border-border bg-background px-4 py-3 text-body shadow-lg">
           {notice}
         </div>
       )}

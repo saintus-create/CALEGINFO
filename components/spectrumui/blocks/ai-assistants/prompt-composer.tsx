@@ -70,17 +70,17 @@ export function PromptComposer({
       )}
     >
       {attachments.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5 px-3 pt-3">
+        <ul className="flex flex-wrap gap-2 px-3 pt-3">
           {attachments.map((attachment) => (
             <li
               key={attachment.id}
-              className="flex items-center gap-1.5 rounded-lg border border-black/[0.07] bg-black/[0.02] py-1 pl-2 pr-1 dark:border-white/[0.08] dark:bg-white/[0.04]"
+              className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-black/[0.02] py-1 pl-2 pr-1 dark:border-white/[0.08] dark:bg-white/[0.04]"
             >
               <Paperclip className="size-3 text-neutral-400 dark:text-neutral-500" />
-              <span className="max-w-[140px] truncate text-[11.5px] font-medium text-neutral-700 dark:text-neutral-300">
+              <span className="max-w-[140px] truncate text-meta font-medium text-neutral-700 dark:text-neutral-300">
                 {attachment.name}
               </span>
-              <span className="font-mono text-[10px] tabular-nums text-neutral-400 dark:text-neutral-600">
+              <span className="font-mono text-meta tabular-nums text-neutral-400 dark:text-neutral-600">
                 {formatSize(attachment.size)}
               </span>
               <button
@@ -96,7 +96,7 @@ export function PromptComposer({
         </ul>
       )}
 
-      <div className="px-3.5 pt-3">
+      <div className="px-4 pt-3">
         <textarea
           ref={textarea}
           value={value}
@@ -115,11 +115,11 @@ export function PromptComposer({
               submit();
             }
           }}
-          className="max-h-[132px] w-full resize-none bg-transparent text-[13.5px] leading-[1.6] text-neutral-900 outline-hidden placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+          className="max-h-[132px] w-full resize-none bg-transparent text-body text-neutral-900 outline-hidden placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
         />
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5 pt-1.5">
+      <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-2">
         <div className="flex min-w-0 items-center gap-1">
           {!minimal && (
             <button
@@ -128,7 +128,7 @@ export function PromptComposer({
               onClick={onAttach}
               className="grid size-7 shrink-0 place-items-center rounded-lg text-neutral-400 transition-[color,background-color,transform] duration-150 hover:bg-black/[0.04] hover:text-neutral-700 active:scale-[0.94] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:text-neutral-500 dark:hover:bg-white/[0.06] dark:hover:text-neutral-200"
             >
-              <Paperclip className="size-3.5" />
+              <Paperclip className="size-4" />
             </button>
           )}
 
@@ -139,7 +139,7 @@ export function PromptComposer({
                 aria-haspopup="listbox"
                 aria-expanded={pickerOpen}
                 onClick={() => setPickerOpen((open) => !open)}
-                className="flex min-w-0 items-center gap-1 rounded-lg px-2 py-1 font-mono text-[11px] text-neutral-500 transition-[color,background-color,transform] duration-150 hover:bg-black/[0.04] hover:text-neutral-800 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-200"
+                className="flex min-w-0 items-center gap-1 rounded-lg px-2 py-1 font-mono text-meta text-neutral-500 transition-[color,background-color,transform] duration-150 hover:bg-black/[0.04] hover:text-neutral-800 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-200"
               >
                 <span className="truncate">{activeModel?.name ?? 'Model'}</span>
                 <ChevronDown
@@ -154,7 +154,7 @@ export function PromptComposer({
                 <ul
                   role="listbox"
                   aria-label="Model"
-                  className="absolute bottom-full left-0 z-10 mb-1.5 w-56 rounded-xl border border-black/[0.08] bg-white p-1 shadow-lg dark:border-white/[0.1] dark:bg-neutral-900"
+                  className="absolute bottom-full left-0 z-10 mb-2 w-56 rounded-xl border border-black/[0.08] bg-white p-1 shadow-lg dark:border-white/[0.1] dark:bg-neutral-900"
                 >
                   {models.map((model) => {
                     const selected = model.id === modelId;
@@ -170,7 +170,7 @@ export function PromptComposer({
                             setPickerOpen(false);
                           }}
                           className={cn(
-                            'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors duration-150',
+                            'flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors duration-150',
                             'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400',
                             model.disabled
                               ? 'cursor-not-allowed opacity-40'
@@ -178,11 +178,11 @@ export function PromptComposer({
                           )}
                         >
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[12.5px] font-medium text-neutral-800 dark:text-neutral-200">
+                            <span className="block truncate text-caption font-medium text-neutral-800 dark:text-neutral-200">
                               {model.name}
                             </span>
                             {model.description && (
-                              <span className="block truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                              <span className="block truncate text-meta text-neutral-400 dark:text-neutral-500">
                                 {model.description}
                               </span>
                             )}
@@ -192,7 +192,7 @@ export function PromptComposer({
                               {model.badge}
                             </span>
                           )}
-                          {selected && <Check className="size-3.5 shrink-0 text-neutral-600 dark:text-neutral-300" />}
+                          {selected && <Check className="size-4 shrink-0 text-neutral-600 dark:text-neutral-300" />}
                         </button>
                       </li>
                     );
@@ -207,7 +207,7 @@ export function PromptComposer({
           {!minimal && (
             <span
               className={cn(
-                'font-mono text-[10.5px] tabular-nums transition-colors duration-150',
+                'font-mono text-meta tabular-nums transition-colors duration-150',
                 value.length > maxLength * 0.9
                   ? 'text-amber-600 dark:text-amber-400'
                   : 'text-neutral-300 dark:text-neutral-600',
@@ -224,16 +224,16 @@ export function PromptComposer({
             disabled={!isGenerating && !canSend}
             className="grid size-7 place-items-center rounded-full bg-neutral-900 text-white transition-[transform,opacity] duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.92] disabled:opacity-30 dark:bg-neutral-100 dark:text-neutral-900"
           >
-            <span className="relative grid size-3.5 place-items-center">
+            <span className="relative grid size-4 place-items-center">
               <ArrowUp
                 className={cn(
-                  'absolute size-3.5 transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+                  'absolute size-4 transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
                   isGenerating ? 'opacity-0 blur-[2px]' : 'opacity-100 blur-0',
                 )}
               />
               <Square
                 className={cn(
-                  'absolute size-2.5 fill-current transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+                  'absolute size-3 fill-current transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
                   isGenerating ? 'opacity-100 blur-0' : 'opacity-0 blur-[2px]',
                 )}
               />

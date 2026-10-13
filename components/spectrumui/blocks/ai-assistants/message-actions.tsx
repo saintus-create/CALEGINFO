@@ -63,24 +63,24 @@ export function MessageActions({
       role="toolbar"
       aria-label="Message actions"
       className={cn(
-        'flex w-fit items-center gap-0.5 text-neutral-400 dark:text-neutral-500',
+        'flex w-fit items-center gap-1 text-neutral-400 dark:text-neutral-500',
         'opacity-100 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/message:opacity-100 [@media(hover:hover)]:focus-within:opacity-100',
         variant === 'Pill' &&
-          'rounded-full border border-black/[0.07] bg-white p-0.5 shadow-xs dark:border-white/[0.08] dark:bg-neutral-900',
+          'rounded-full border border-black/[0.07] bg-white p-1 shadow-xs dark:border-white/[0.08] dark:bg-neutral-900',
         className,
       )}
     >
       <ActionButton label={copied ? 'Copied' : 'Copy message'} onClick={copy}>
-        <span className="relative grid size-3.5 place-items-center">
+        <span className="relative grid size-4 place-items-center">
           <Copy
             className={cn(
-              'absolute size-3.5 transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+              'absolute size-4 transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
               copied ? 'opacity-0 blur-[2px]' : 'opacity-100 blur-0',
             )}
           />
           <Check
             className={cn(
-              'absolute size-3.5 text-emerald-600 transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] dark:text-emerald-400',
+              'absolute size-4 text-emerald-600 transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] dark:text-emerald-400',
               copied ? 'opacity-100 blur-0' : 'opacity-0 blur-[2px]',
             )}
           />
@@ -90,7 +90,7 @@ export function MessageActions({
       <ActionButton label="Regenerate" onClick={regenerate}>
         <RefreshCw
           className={cn(
-            'size-3.5 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]',
+            'size-4 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]',
             spinning && 'rotate-180',
           )}
         />
@@ -103,7 +103,7 @@ export function MessageActions({
       >
         <ThumbsUp
           className={cn(
-            'size-3.5 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+            'size-4 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
             feedback === 'positive' && 'scale-110 fill-current text-neutral-800 dark:text-neutral-100',
           )}
         />
@@ -116,7 +116,7 @@ export function MessageActions({
       >
         <ThumbsDown
           className={cn(
-            'size-3.5 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+            'size-4 transition-[transform,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
             feedback === 'negative' && 'scale-110 fill-current text-neutral-800 dark:text-neutral-100',
           )}
         />
@@ -124,7 +124,7 @@ export function MessageActions({
 
       {onBranch && (
         <ActionButton label="Branch from here" onClick={onBranch}>
-          <GitBranch className="size-3.5" />
+          <GitBranch className="size-4" />
         </ActionButton>
       )}
     </div>

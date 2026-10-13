@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 
 import "./globals.css";
+import { GridGuides } from "@/components/layout/grid-guides";
 import { THEME_BOOT_SCRIPT } from "@/lib/base/theme-key";
 
 // Space Grotesk (SIL OFL 1.1) is self-hosted in app/fonts so builds and previews
@@ -41,7 +42,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* sets the theme before first paint, so there is no light flash */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
-      <body className={`${grotesk.variable} ${groteskMono.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${grotesk.variable} ${groteskMono.variable} font-sans antialiased`}>
+        {children}
+        {/* the 12-column overlay: shift+G, or ?grid=1 */}
+        <GridGuides />
+      </body>
     </html>
   );
 }

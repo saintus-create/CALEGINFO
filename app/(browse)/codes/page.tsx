@@ -3,8 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import Browser from "@/app/_components/browsers/Browser";
+
 import { BrowseShell } from "@/app/_components/browsers/browse-shell";
+import Browser from "@/app/_components/browsers/Browser";
 import { TreeNav } from "@/components/spectrumui/tree-nav";
 import { codes, loadCorpus } from "@/lib/engine";
 
@@ -41,33 +42,31 @@ function CodesBrowser() {
   }, [params]);
 
   return (
-    <BrowseShell active="/codes">
-      <div className="flex h-full">
-        <div className="hidden w-64 shrink-0 border-r border-border md:block">
-          <div className="h-full overflow-y-auto p-3">
-            <TreeNav
-              items={codes.map((c) => ({
-                label: c.name,
-                href: `/codes?code=${c.abbr}`,
-                badge: c.sections.toLocaleString(),
-              }))}
-              activeHref={activeCode ? `/codes?code=${activeCode}` : undefined}
-              linkComponent={Link}
-              followHover
-            />
-          </div>
-        </div>
-        <div className="min-w-0 flex-1 overflow-y-auto">
-          <Browser
-            activeCode={activeCode}
-            jumpSection={jumpSection}
-            onCodeChange={(a: string | null) => {
-              setActiveCode(a);
-              setJumpSection(null);
-            }}
-          />
-        </div>
-      </div>
+    <BrowseShell
+      active="/codes"
+      // The rail is a grid item, not a fixed-width sidebar: columns 1–3 of the
+      // page grid from lg up (see `col-rail` in globals.css).
+      rail={
+        <TreeNav
+          items={codes.map((c) => ({
+            label: c.name,
+            href: `/codes?code=${c.abbr}`,
+            badge: c.sections.toLocaleString(),
+          }))}
+          activeHref={activeCode ? `/codes?code=${activeCode}` : undefined}
+          linkComponent={Link}
+          followHover
+        />
+      }
+    >
+      <Browser
+        activeCode={activeCode}
+        jumpSection={jumpSection}
+        onCodeChange={(a: string | null) => {
+          setActiveCode(a);
+          setJumpSection(null);
+        }}
+      />
     </BrowseShell>
   );
 }

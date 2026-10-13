@@ -53,7 +53,7 @@ export function ThinkingDots({
         </span>
       )}
 
-      <span className="text-[12.5px]">{label}</span>
+      <span className="text-caption">{label}</span>
     </div>
   );
 }
