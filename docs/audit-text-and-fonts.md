@@ -240,6 +240,16 @@ dead path so the two cannot drift further.
 
 ## Reproducing the checks
 
+`scripts/check_classes.py` (`npm run check:classes`) walks the live markup,
+extracts every class token and fails if the built stylesheet has no rule for it —
+the check that would have caught both `.eyebrow` and `metric-card`. It exits 1
+when something is missing, so it can gate a build:
+
+```bash
+npm run dev &                    # or let the script boot its own dev server
+python3 scripts/check_classes.py # 528 tokens, "every class has a rule", exit 0
+```
+
 ```bash
 npm run dev                      # fetch /codes and grep the CSS chunk for .eyebrow
 node check.mts                   # literal \uXXXX sequences in the runtime prompt (expect 0)

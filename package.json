@@ -21,6 +21,7 @@
     "start:eve": "eve start",
     "check:forms": "tsx scripts/check_forms.ts",
     "check:forms:corpus": "python3 scripts/check_forms.py",
+    "check:classes": "python3 scripts/check_classes.py",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
