@@ -32,21 +32,21 @@ export function ChatEmptyState({
   return (
     <div
       className={cn(
-        'w-full max-w-[520px]',
+        'w-full max-w-[68ch]',
         centered && 'flex flex-col items-center text-center',
         className,
       )}
     >
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
 
-      <div className="grid size-9 place-items-center rounded-xl border border-black/[0.07] bg-black/[0.02] dark:border-white/[0.08] dark:bg-white/[0.04]">
-        <Sparkles className="size-4 text-neutral-500 dark:text-neutral-400" />
+      <div className="grid size-10 place-items-center rounded-xl border border-border bg-muted/40">
+        <Sparkles className="size-[18px] text-muted-foreground" />
       </div>
 
-      <h3 className="mt-4 text-[16px] font-semibold tracking-[-0.2px] text-neutral-900 dark:text-neutral-50">
+      <h3 className="mt-5 max-w-[24ch] text-balance text-display font-bold text-foreground">
         {title}
       </h3>
-      <p className="mt-1.5 text-[13px] leading-[1.6] text-neutral-500 dark:text-neutral-400">
+      <p className="mt-3 max-w-[48ch] text-lede text-muted-foreground">
         {subtitle}
       </p>
 
@@ -64,12 +64,12 @@ export function ChatEmptyState({
               onClick={() => onSelectPrompt?.(prompt)}
               style={{ animationDelay: `${Math.min(index, 5) * 50}ms` }}
               className={cn(
-                'rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[12.5px] text-neutral-600',
-                'transition-[color,border-color,transform] duration-150 active:scale-[0.96]',
-                'hover:border-black/[0.16] hover:bg-black/[0.02] hover:text-neutral-900',
-                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400',
+                'rounded-full border border-border bg-background px-3 py-1.5 text-label text-muted-foreground',
+                'transition-[color,border-color,background-color,transform] duration-150 active:scale-[0.96]',
+                'hover:border-foreground/25 hover:bg-muted/50 hover:text-foreground',
+                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50',
                 'motion-safe:animate-[su-msg-in_240ms_cubic-bezier(0.23,1,0.32,1)_both]',
-                'dark:border-white/[0.1] dark:bg-white/[0.03] dark:text-neutral-300 dark:hover:border-white/[0.2] dark:hover:bg-white/[0.06] dark:hover:text-neutral-50',
+                'dark:bg-card dark:hover:bg-accent',
               )}
             >
               {prompt.label}

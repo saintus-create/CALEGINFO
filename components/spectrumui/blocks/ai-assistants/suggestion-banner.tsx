@@ -53,7 +53,7 @@ export function SuggestionBanner({
       <div
         role="status"
         className={cn(
-          'flex w-fit items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[12.5px] font-medium text-emerald-700 motion-safe:animate-[su-msg-in_240ms_cubic-bezier(0.23,1,0.32,1)_both] dark:text-emerald-400',
+          'flex w-fit items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-label font-medium text-emerald-700 motion-safe:animate-[su-msg-in_240ms_cubic-bezier(0.23,1,0.32,1)_both] dark:text-emerald-400',
           className,
         )}
       >
@@ -76,11 +76,11 @@ export function SuggestionBanner({
       <Sparkles className="mt-0.5 size-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" />
 
       <div className="min-w-0 flex-1">
-        <p className="text-[12.5px] font-medium leading-snug text-neutral-900 dark:text-neutral-100">
+        <p className="text-label font-medium text-neutral-900 dark:text-neutral-100">
           {suggestion}
         </p>
         {detail && (
-          <p className="mt-0.5 text-[11.5px] leading-[1.55] text-neutral-500 dark:text-neutral-400">
+          <p className="mt-0.5 text-micro font-normal tracking-normal text-neutral-500 dark:text-neutral-400">
             {detail}
           </p>
         )}
@@ -98,7 +98,7 @@ export function SuggestionBanner({
         <button
           type="button"
           onClick={apply}
-          className="rounded-lg bg-neutral-900 px-2.5 py-1.5 text-[12px] font-medium text-white transition-transform duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:bg-neutral-100 dark:text-neutral-900"
+          className="rounded-lg bg-neutral-900 px-2.5 py-1.5 text-label font-medium text-white transition-transform duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:bg-neutral-100 dark:text-neutral-900"
         >
           {applyLabel}
         </button>

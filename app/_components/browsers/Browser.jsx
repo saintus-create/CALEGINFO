@@ -28,12 +28,12 @@ function useExtrasReady() {
 
 function CaseItem({ c }) {
   return (
-    <details className="text-xs mt-0.5">
-      <summary className="cursor-pointer select-none font-medium list-none [&::-webkit-details-marker]:hidden flex items-baseline gap-1">
+    <details className="mt-1 text-meta">
+      <summary className="flex cursor-pointer select-none list-none items-baseline gap-1.5 font-medium [&::-webkit-details-marker]:hidden">
         <CaretRight className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground transition-transform" />
-        <span>{c.name}{c.year ? " (" + c.year + ")" : ""}{c.cite ? " " + c.cite : ""}</span>
+        <span>{displayText(c.name)}{c.year ? " (" + c.year + ")" : ""}{c.cite ? " " + displayText(c.cite) : ""}</span>
       </summary>
-      {c.desc && <div className="pl-4 mt-1 text-muted-foreground leading-relaxed">{c.desc}</div>}
+      {c.desc && <div className="mt-1 max-w-[66ch] ps-4 text-muted-foreground">{displayText(c.desc)}</div>}
     </details>
   );
 }
@@ -47,13 +47,13 @@ function CaseNotes({ section }) {
   if (!exact.length && !ranged.length) return null;
   return (
     <div className="mt-2 rounded-lg border border-emerald-700/25 bg-emerald-50/60 dark:bg-emerald-950/25 p-2.5">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1 mb-1">
-        <Gavel className="h-3 w-3" /> Key cases on this section
+      <div className="mb-1.5 flex items-center gap-1.5 text-micro font-medium uppercase text-emerald-700 dark:text-emerald-400">
+        <Gavel className="h-3.5 w-3.5" /> Key cases on this section
       </div>
       {exact.map((c, i) => <CaseItem key={i} c={c} />)}
       {ranged.length > 0 && (
         <div className="mt-1.5">
-          <div className="text-[10px] text-muted-foreground">Also cited across §§ {d.range.key}:</div>
+          <div className="mt-1 text-micro font-medium uppercase text-muted-foreground">Also cited across §§ <span className="tabular-nums">{d.range.key}</span>:</div>
           {ranged.map((c, i) => <CaseItem key={i} c={c} />)}
         </div>
       )}
@@ -68,10 +68,10 @@ function SectionBlock({ s, abbr, filter }) {
   if (filter && !hay.includes(filter)) return null;
   return (
     <div id={"s-" + String(s.section).replace(/[^A-Za-z0-9._-]/g, "_")} className="my-4 scroll-mt-20 rounded px-1 -mx-1 transition-colors">
-      <span className="font-semibold text-sm">{cite}</span>
-      {s.repealed && <span className="ml-2 text-sm font-semibold text-orange-600 dark:text-orange-400">(Repealed)</span>}
-      <div className="text-sm whitespace-pre-wrap mt-1">{body.trim()}</div>
-      {s.history && <div className="text-xs italic text-muted-foreground mt-1">{displayText(s.history)}</div>}
+      <span className="text-body font-medium tabular-nums text-foreground">{cite}</span>
+      {s.repealed && <span className="ms-2 rounded bg-orange-500/10 px-1.5 py-0.5 align-[0.1em] text-micro font-medium uppercase text-orange-700 dark:text-orange-400">Repealed</span>}
+      <div className="mt-1.5 max-w-[70ch] text-body whitespace-pre-wrap text-foreground/90">{body.trim()}</div>
+      {s.history && <div className="mt-1.5 max-w-[70ch] text-meta italic text-muted-foreground">{displayText(s.history)}</div>}
       {abbr === "FAM" && !s.repealed && <CaseNotes section={s.section} />}
     </div>
   );
@@ -92,10 +92,10 @@ function UnitBlock({ u, filter }) {
   const label = u.kind.charAt(0).toUpperCase() + u.kind.slice(1) + " " + (u.number || "") + (u.title ? ". " + u.title : "");
   return (
     <details className="my-2 rounded-lg border" open={!!filter}>
-      <summary className="cursor-pointer select-none px-4 py-2.5 text-sm font-semibold flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
-        <CaretRight className="h-4 w-4 text-muted-foreground transition-transform" />
+      <summary className="flex cursor-pointer select-none list-none items-center gap-2 px-4 py-2.5 text-body font-medium [&::-webkit-details-marker]:hidden">
+        <CaretRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" />
         {label}
-        <span className="ml-auto text-xs font-normal text-muted-foreground">
+        <span className="ms-auto text-meta font-normal tabular-nums text-muted-foreground">
           {filter ? countMatches(u, filter) + " matches" : u.secs.length + " sections"}
         </span>
       </summary>
@@ -171,8 +171,8 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
       {!activeCode ? (
         <div>
           <div className="eyebrow"><Database className="h-3.5 w-3.5" /> Primary law library</div>
-          <h1 className="text-2xl font-bold mb-2 mt-3">Browse Codes</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="text-title font-bold mt-3 mb-2 text-balance">Browse Codes</h1>
+          <p className="max-w-[58ch] text-body text-muted-foreground/90">
             The complete California Codes — every section, readable in place, with curated case notes on the
             Family Code. Pick a code to start, or search across every code at once.
           </p>
@@ -180,19 +180,21 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
             <div className="relative flex-1"><MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search across all California Codes…" className="pl-9 h-11" /></div>
             <Button type="submit" variant="default" className="h-11" disabled={globalBusy}>{globalBusy ? "Searching…" : "Search"}</Button>
           </form>
-          {globalResults.length > 0 && <div className="mt-4 rounded-xl border divide-y overflow-hidden">{globalResults.map((x, i) => <button key={i} onClick={() => { onCodeChange(x.abbr); setGlobalQuery(""); setGlobalResults([]); }} className="w-full text-left p-3 hover:bg-muted/40 transition-colors"><div className="text-sm font-semibold">{x.r.citation || `${x.abbr} § ${x.r.section}`}</div><div className="text-xs text-muted-foreground mt-1 line-clamp-2">{displayText(x.r.text)}</div><div className="text-[11px] text-muted-foreground mt-2">{byAbbr[x.abbr]?.name}</div></button>)}</div>}
-          <div className="mt-6 rounded-xl border bg-muted/20 p-4 text-sm flex items-start gap-3"><ShieldCheck weight="fill" className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" /><span className="text-muted-foreground">This is a dated research snapshot. Use the official California Legislative Information site for the current operative text.</span></div>
+          {globalResults.length > 0 && <div className="mt-4 rounded-xl border divide-y overflow-hidden">{globalResults.map((x, i) => <button key={i} onClick={() => { onCodeChange(x.abbr); setGlobalQuery(""); setGlobalResults([]); }} className="w-full text-left p-3 hover:bg-muted/40 transition-colors"><div className="text-micro font-medium uppercase text-muted-foreground/80">{byAbbr[x.abbr]?.name}</div><div className="text-body font-medium tabular-nums mt-1">{x.r.citation || `${x.abbr} § ${x.r.section}`}</div><div className="text-meta text-muted-foreground mt-1 line-clamp-2">{displayText(x.r.text)}</div></button>)}</div>}
+          <div className="mt-6 rounded-xl border bg-muted/20 p-4 text-sm flex items-start gap-3"><ShieldCheck weight="fill" className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" /><span className="text-body text-muted-foreground">This is a dated research snapshot. Use the official California Legislative Information site for the current operative text.</span></div>
         </div>
       ) : !byAbbr[activeCode] ? (
-        <div className="p-6 text-sm text-muted-foreground">Loading code…</div>
+        <div className="p-6 text-body text-muted-foreground">Loading code…</div>
       ) : (
         <>
-          <div className="text-xs text-muted-foreground mb-2">Codes / {byAbbr[activeCode].name}</div>
-          <h1 className="text-2xl font-bold">{byAbbr[activeCode].name}</h1>
-          <p className="text-sm text-muted-foreground mt-1 mb-4">
-            <b>{byAbbr[activeCode].sections.toLocaleString()} sections</b> · snapshot updated by source: {byAbbr[activeCode].updated}
+          <div className="text-micro font-medium uppercase text-muted-foreground mb-2">Codes / {byAbbr[activeCode].name}</div>
+          <h1 className="text-title font-bold text-balance">{byAbbr[activeCode].name}</h1>
+          <p className="mt-2 mb-4 text-meta text-muted-foreground">
+            <b className="font-medium tabular-nums text-foreground">{byAbbr[activeCode].sections.toLocaleString()} sections</b>
+            <span className="mx-1.5 text-muted-foreground/50">·</span>
+            snapshot updated by source: <span className="tabular-nums">{byAbbr[activeCode].updated}</span>
           </p>
-          <a href="https://leginfo.legislature.ca.gov/" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-4">Verify current text at official LegInfo <ArrowSquareOut className="h-3 w-3" /></a>
+          <a href="https://leginfo.legislature.ca.gov/" target="_blank" rel="noopener" className="mb-4 inline-flex items-center gap-1.5 text-meta text-muted-foreground underline decoration-border underline-offset-[3px] transition-colors hover:text-foreground hover:decoration-muted-foreground">Verify current text at official LegInfo <ArrowSquareOut className="h-3 w-3" /></a>
           {units && (
             <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <div className="relative flex-1">
@@ -206,9 +208,9 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
               </div>
             </div>
           )}
-          {units === null ? <p className="text-sm text-muted-foreground">Loading…</p> :
+          {units === null ? <p className="text-body text-muted-foreground">Loading…</p> :
             units.map((u, i) => <UnitBlock key={i} u={u} filter={filter} />)}
-          <p className="mt-6 text-xs text-muted-foreground">Dated research snapshot - current official text at leginfo.legislature.ca.gov.</p>
+          <p className="mt-6 text-meta text-muted-foreground">Dated research snapshot — current official text at leginfo.legislature.ca.gov.</p>
         </>
       )}
     </div>

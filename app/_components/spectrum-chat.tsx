@@ -216,7 +216,7 @@ export function SpectrumChat() {
         <a href="/" aria-label="California Legislation" className="flex shrink-0 items-center">
           <StarMark className="size-5" />
         </a>
-        <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
+        <nav className="ml-auto hidden items-center gap-1 text-label sm:flex">
           {LIBRARY_TABS.map(({ label, href, icon: Glyph }) => (
             <a
               key={href}
@@ -261,7 +261,7 @@ export function SpectrumChat() {
                 <div key={t.id} className="flex justify-end">
                   {/* pre-wrap: the composer sends Shift+Enter as a newline, and
                       without this the bubble collapsed it into a space */}
-                  <div className="max-w-[85%] whitespace-pre-wrap rounded-[18px] bg-muted px-4 py-2.5 text-[15px] leading-6 break-words">
+                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-[18px] bg-muted px-4 py-2.5 text-body">
                     {t.content}
                   </div>
                 </div>
@@ -305,7 +305,7 @@ export function SpectrumChat() {
             )}
 
             {notice && (
-              <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground">
+              <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-label text-muted-foreground">
                 {notice}
               </div>
             )}
@@ -331,7 +331,7 @@ export function SpectrumChat() {
         </div>
       )}
       {notice && empty && (
-        <div role="alert" className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-border bg-background px-4 py-3 text-sm shadow-lg">
+        <div role="alert" className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-border bg-background px-4 py-3 text-body shadow-lg">
           {notice}
         </div>
       )}

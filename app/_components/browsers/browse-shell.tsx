@@ -23,7 +23,7 @@ export function BrowseShell({ active, children }: { active: string; children: Re
               <Link
                 aria-current={selected ? "page" : undefined}
                 className={cn(
-                  "flex h-8 items-center gap-2 rounded-md px-2.5 text-sm transition-colors",
+                  "flex h-8 items-center gap-2 rounded-md px-2.5 text-label transition-colors",
                   selected
                     ? "bg-muted font-medium text-foreground"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",

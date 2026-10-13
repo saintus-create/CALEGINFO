@@ -175,16 +175,12 @@ Either way: the OTFs are served as uncompressed `format("opentype")` with
 `display: swap`; subsetting/converting to woff2 would cut roughly a megabyte and
 the fallback-flash on first paint.
 
-### B. Type scale
+### B. Type scale — *done, see Round 2 below*
 
-The live surfaces use 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14,
-15, 16, 17, 20 and 26px, several of them arbitrary (`text-[13.5px]`,
-`text-[12.5px]`, `text-[10.5px]`). Body copy is 13px in the forms browser, 13.5px
-on `/method`, 14px (`text-sm`) in the codes browser and 15px in the chat. Two
-sub-11px sizes are used for `font-mono` labels (`text-[10.5px]`, `text-[9.5px]`)
-and the citation chip digits were 8.5px. A four-step scale (11 / 13 / 15 / and
-one display size) would remove most of them; this audit only raised the sizes
-that were below a comfortable floor in the answer body and the composer.
+The live surfaces used 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14,
+15, 16, 17, 20 and 26px, several arbitrary (`text-[13.5px]`, `text-[12.5px]`,
+`text-[10.5px]`), with body copy at 13px in one browser, 13.5px in another, 14px
+in a third and 15px in the chat. Replaced by a seven-step token scale — Round 2.
 
 ### C. Straight apostrophes inside words
 
@@ -248,4 +244,124 @@ dead path so the two cannot drift further.
 npm run dev                      # fetch /codes and grep the CSS chunk for .eyebrow
 node check.mts                   # literal \uXXXX sequences in the runtime prompt (expect 0)
 npx tsx -e 'import {displayText} from "./lib/display-text"; console.log(displayText("two\u2011year"))'
+
+# round 2: the scale must compile, and no legacy size may survive in the live files
+curl -s localhost:3000/codes | grep -oE '/_next/static/[^"]+\.css' | sort -u | \
+  xargs -I{} curl -s "localhost:3000{}" | grep -oE '\.text-(micro|meta|label|body|lede|title|display)[ {]' | sort -u
+grep -rn 'text-sm\|text-xs\|text-\[1[0-4]' app/_components/browsers app/_components/spectrum-chat.tsx \
+  components/spectrumui/blocks/ai-assistants/{streaming-text,prompt-composer,chat-empty-state,suggestion-banner,thinking-dots}.tsx   # expect no output
 ```
+
+---
+
+# Round 2 — typographic polish: scale, weight, measure, place
+
+Round 1 fixed what was broken. Round 2 sets the type: one scale, real weights,
+one measure per surface, and numbers that line up. Verified against the
+compiled stylesheet (7 scale utilities emitted, every legacy arbitrary size gone
+from the live DOM) and a temporary render harness that exercised the answer
+component with a real multi-block answer (deleted before commit).
+
+## Three weights, not four — `font-semibold` was painting Bold
+
+Monument Grotesk ships 400 / 500 / 700 (plus italics). CSS resolves
+`font-weight: 600` to 700, so **`font-semibold` and `font-bold` were the same
+face**: the product's intended Regular → Medium → Semibold → Bold ladder was
+really Regular → Medium → Bold, with "semibold" and "bold" indistinguishable
+next to each other in a page header. The scale now names the weight it means:
+
+* **Bold 700** — display, page titles, `h3` inside a written answer (the one
+  place a 700 heading is right, because it is competing with 15px body copy);
+* **Medium 500** — eyebrow labels, section/rule citation lines, unit and chapter
+  summaries, nav, form titles, emphasis (`**lead-in**` is now *darker* Medium,
+  not Bold);
+* **Regular 400** — all body copy.
+
+`font-semibold` is gone from every live surface (the eight remaining uses are in
+vendored Spectrum blocks that no route renders).
+
+## The scale (globals.css, `@theme`)
+
+Seven steps, each carrying its own leading and tracking, so a call site states a
+typographic decision rather than a size:
+
+| token | size | leading | tracking | used for |
+| --- | --- | --- | --- | --- |
+| `text-micro` | 11px | 1.35 | 0.07em | eyebrow labels, status pills, chips, "Effective…", vendor tags |
+| `text-meta` | 12px | 1.5 | 0 | metadata, descriptions, captions, footnotes |
+| `text-label` | 13px | 1.5 | 0 | nav, controls, source rows, form numbers, follow-up buttons |
+| `text-body` | 15px | **1.68** | 0 | **statute text, rule text, answers, chat, page ledes** |
+| `text-lede` | 17px | 1.55 | −0.011em | page ledes; `h3` inside an answer |
+| `text-title` | 24px | 1.15 | −0.021em | page titles |
+| `text-display` | 28px | 1.12 | −0.025em | the chat's opening statement — the only display size |
+
+Before → after, by surface:
+
+| surface | before | after |
+| --- | --- | --- |
+| statute body (Codes) | 14px / 1.25 | **15px / 1.68**, measure 70ch |
+| statute citation line | 14px / 700 | 15px / **500**, full contrast |
+| rule body | 14px | 15px / 1.68, measure 70ch |
+| form title / description | 13px / 12px | 15px medium / 13px |
+| page titles (5 pages) | 24px / 700 / tracking 0 | 24px / 700 / **−0.021em**, `text-balance` |
+| page ledes | 13–14px muted | **15px**, `foreground/90`, max-w 58–68ch |
+| chat answer | 13.5px / 1.7, 520px | **15px / 1.68**, 68ch |
+| chat hero | 16px / 600 | **28px / 700 / −0.025em** |
+| composer field | 13.5px | 15px desktop / 16px touch (iOS zoom guard) |
+| authority source rows | 12.5px | 13px with hostname + in-app link |
+| `/method` body | 13.5px | 15px / 68ch, 24px display-restrained title |
+
+Total distinct sizes in the live surfaces: **17 → 8** (11 / 12 / 13 / 15 / 17 /
+24 / 28, plus 16px soft-keyboard guards on text inputs). No arbitrary
+`text-[Npx]` remains outside those two guards.
+
+## Measure and place
+
+* **One column, three widths, aligned.** The answer, the composer and the hero
+  all sit on `68ch`; statute and rule text read at `70ch`; ledes and descriptions
+  cap at `58–72ch` so they stop running the full `max-w-4xl` card width. Before,
+  the composer was a 560px box inside a 768px column while the answer was 520px —
+  three different left/right edges down one screen.
+* **`text-balance` on every title and `text-pretty` on long card copy**, so a
+  24px title no longer leaves one orphaned word on its second line.
+* **Numbers are figures, not letters.** `tabular-nums` on counts, dates,
+  inventory pills (the codes rail badges), SHA hashes, section/rule numbers,
+  citation markers and the model counter — a column of them no longer jitters.
+* **Contrast does the hierarchy on the reading surfaces.** The citation line
+  (`CIV § 1955.5`) sits at full contrast in Medium; the statute body one step
+  back at `foreground/90`; history and annotations in muted italic 12px. The
+  answer uses the same `foreground/90` body so the chat and the browser read
+  alike.
+* **Micro labels are labels, not tiny text.** `.eyebrow` and the section labels
+  now use the 11px token with 0.075em tracking and uppercase, and every uppercase
+  micro label got `tracking-normal` before it where the token's tracking would
+  double up — the audit script that lists `text-micro` without `uppercase` or
+  `tracking-normal` returns nothing.
+* **Rail and chrome.** The codes rail moved off the hard-coded `neutral-*`
+  palette onto `foreground` / `muted-foreground` / `muted` tokens, its count
+  badge became a mono, tabular figure in a muted pill instead of brand blue with
+  a blue tint, and the dock tooltip joined the scale.
+* **Controls.** `Input`, `Textarea`, `Button`, `Select`, `Label` and `Badge`
+  (shared by all five browsers) moved onto the same tokens — 15px fields and
+  buttons at `text-label`, badges as uppercase micro — so the chrome no longer
+  argues with the content it frames.
+
+## Also corrected in this round
+
+* `className="metric-card"` on the Rules title cards: a second undefined class,
+  same failure mode as `.eyebrow` in Round 1. The cards now carry the border,
+  padding and hover state they were missing, with a `Title 1` micro label over
+  the title and a tabular rule count.
+* Citation chips were a fixed 15px square holding up to five characters
+  (`[c123]`), so long markers were clipped; they now grow (`min-w` + padding).
+* Bare URLs in an answer are now links, with trailing sentence punctuation kept
+  out of the href.
+
+## Still open after this round
+
+The vendored Spectrum UI blocks (`components/spectrumui/blocks/**`,
+`components/assistant-ui/**`) still carry their own sizes (8.5–14px), their own
+`neutral-*` palette and 57 straight apostrophes. No route renders them today, so
+they cost nothing at runtime — but if any is ever wired in, it will arrive with
+the old type. Either bring them onto the tokens, or delete the unused half of
+the folder (see Open question D).

@@ -60,30 +60,30 @@ export default function MethodPage() {
     <BrowseShell active="/method">
       <div className="h-full overflow-y-auto">
         <div className="mx-auto max-w-3xl px-5 py-10 sm:px-7">
-          <p className="text-[13px] text-muted-foreground">Method &amp; sources</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+          <p className="text-micro font-medium uppercase text-muted-foreground">Method &amp; sources</p>
+          <h1 className="mt-2.5 max-w-[30ch] text-title font-bold text-balance">
             What this covers, how it answers, and what it cannot do
           </h1>
 
-          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+          <p className="mt-5 max-w-[68ch] text-body text-muted-foreground/90">
             This is a research aid over California&rsquo;s own published legal material. It is
             not a lawyer, it is not legal advice, and it is not a live view of the law. Every
             figure below is read directly from the corpus manifest that ships with the site, so
             these numbers describe the data the answers are actually built from.
           </p>
 
-          <h2 className="mt-9 border-t border-border pt-6 text-sm font-semibold">
+          <h2 className="mt-10 border-t border-border pt-6 text-body font-medium">
             What is in the corpus
           </h2>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 max-w-[68ch] text-body text-muted-foreground/90">
             {codes.length} California Codes and the Constitution — {totalSections.toLocaleString()}{" "}
             sections in total — plus the datasets below. Each carries a content hash, so any
             snapshot can be identified and checked.
           </p>
 
           <div className="mt-4 overflow-hidden rounded-lg border border-border">
-            <table className="w-full text-left text-[13px]">
-              <thead className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
+            <table className="w-full text-left text-label">
+              <thead className="bg-muted/50 text-micro font-medium uppercase text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 font-medium">Dataset</th>
                   <th className="px-3 py-2 font-medium">Records</th>
@@ -96,7 +96,7 @@ export default function MethodPage() {
                   <td className="px-3 py-2">California Codes + Constitution</td>
                   <td className="px-3 py-2 tabular-nums">{totalSections.toLocaleString()} sections</td>
                   <td className="px-3 py-2 text-muted-foreground">{codesAsOf}</td>
-                  <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                  <td className="px-3 py-2 font-mono text-micro font-normal tracking-normal text-muted-foreground">
                     per code
                   </td>
                 </tr>
@@ -121,7 +121,7 @@ export default function MethodPage() {
                       <td className="px-3 py-2 text-muted-foreground">
                         {fmtDate(d.retrieved_at ?? extrasGeneratedAt)}
                       </td>
-                      <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                      <td className="px-3 py-2 font-mono text-micro font-normal tracking-normal tabular-nums text-muted-foreground">
                         {shortHash(d.sha256)}
                       </td>
                     </tr>
@@ -131,43 +131,43 @@ export default function MethodPage() {
             </table>
           </div>
 
-          <h2 className="mt-9 border-t border-border pt-6 text-sm font-semibold">
+          <h2 className="mt-10 border-t border-border pt-6 text-body font-medium">
             How an answer is produced
           </h2>
-          <ol className="mt-3 space-y-3 text-[13.5px] leading-relaxed text-muted-foreground">
+          <ol className="mt-3 max-w-[68ch] space-y-3 text-body text-muted-foreground/90">
             <li>
-              <span className="font-medium text-foreground">1. Retrieval.</span> Your question is
+              <span className="font-medium tabular-nums text-foreground">1. Retrieval.</span> Your question is
               turned into targeted searches over the corpus above. Nothing is fetched from the
               live web, so a retrieval is always something that is actually in this snapshot.
             </li>
             <li>
-              <span className="font-medium text-foreground">2. An evidence ledger.</span> Before
+              <span className="font-medium tabular-nums text-foreground">2. An evidence ledger.</span> Before
               any prose is written, the retrieved sources are assembled into a record:
               propositions, the source behind each one, a chronology, and — explicitly — the
               gaps where nothing was found.
             </li>
             <li>
-              <span className="font-medium text-foreground">3. A validation gate.</span> The
+              <span className="font-medium tabular-nums text-foreground">3. A validation gate.</span> The
               drafted answer is checked against that record. A claim citing something that is not
               in the record, or a substantive paragraph with no citation at all, fails the check
               and is retried. If it still fails, the answer is withheld rather than served.
             </li>
           </ol>
 
-          <h2 className="mt-9 border-t border-border pt-6 text-sm font-semibold">
+          <h2 className="mt-10 border-t border-border pt-6 text-body font-medium">
             What it will not do
           </h2>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 max-w-[68ch] text-body text-muted-foreground/90">
             It will not answer from general knowledge. When the corpus does not contain the
             authority a question needs, the intended behaviour is to say so and name the gap —
             not to produce a confident paragraph. If you see it do otherwise, that is a defect
             worth reporting.
           </p>
 
-          <h2 className="mt-9 border-t border-border pt-6 text-sm font-semibold">
+          <h2 className="mt-10 border-t border-border pt-6 text-body font-medium">
             Known limits
           </h2>
-          <ul className="mt-3 space-y-2 text-[13.5px] leading-relaxed text-muted-foreground">
+          <ul className="mt-3 max-w-[68ch] space-y-2 text-body text-muted-foreground/90">
             <li>
               <span className="font-medium text-foreground">It is a snapshot.</span> Codes are as
               of the state&rsquo;s own last update; bills, rules and forms carry their own
@@ -192,10 +192,10 @@ export default function MethodPage() {
             </li>
           </ul>
 
-          <h2 className="mt-9 border-t border-border pt-6 text-sm font-semibold">
+          <h2 className="mt-10 border-t border-border pt-6 text-body font-medium">
             How to check any of this
           </h2>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 max-w-[68ch] text-body text-muted-foreground/90">
             Every authority an answer cites links to the official source —{" "}
             <a className="underline underline-offset-2" href="https://leginfo.legislature.ca.gov/faces/codes.xhtml" target="_blank" rel="noreferrer">
               leginfo.legislature.ca.gov
@@ -212,7 +212,7 @@ export default function MethodPage() {
             an answer was drawn from.
           </p>
 
-          <p className="mt-8 text-[13px] text-muted-foreground">
+          <p className="mt-10 max-w-[68ch] text-label text-muted-foreground">
             Back to the{" "}
             <Link className="underline underline-offset-2" href="/">
               research assistant

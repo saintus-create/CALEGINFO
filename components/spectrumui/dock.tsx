@@ -147,7 +147,7 @@ export function DockIcon({
             animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
             exit={{ opacity: 0, y: 4, scale: 0.95, x: "-50%" }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 rounded-lg bg-neutral-900 px-2.5 py-1 text-[10px] font-medium text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900 shadow-md border border-neutral-800 dark:border-neutral-200 select-none pointer-events-none whitespace-nowrap"
+            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 rounded-lg bg-neutral-900 px-2.5 py-1 text-micro font-medium tracking-normal text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900 shadow-md border border-neutral-800 dark:border-neutral-200 select-none pointer-events-none whitespace-nowrap"
             role="tooltip"
           >
             {label}

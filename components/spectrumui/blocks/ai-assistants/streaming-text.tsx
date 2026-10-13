@@ -56,7 +56,7 @@ function Caret() {
 
 function CitationChip({ marker }: { marker: string }) {
   return (
-    <sup className="ml-0.5 inline-grid size-[15px] place-items-center rounded bg-black/[0.07] align-super font-mono text-[9.5px] font-semibold text-neutral-600 dark:bg-white/[0.1] dark:text-neutral-300">
+    <sup className="ms-0.5 inline-flex h-[15px] min-w-[15px] items-center justify-center rounded bg-black/[0.07] px-1 align-super font-mono text-[10px] font-medium leading-none tabular-nums text-neutral-600 dark:bg-white/[0.1] dark:text-neutral-300">
       {marker}
     </sup>
   );
@@ -68,7 +68,7 @@ function Inline({ text, caret }: { text: string; caret?: boolean }) {
       {tokenizeInline(text).map((token, index) => {
         if (token.type === 'strong') {
           return (
-            <strong key={index} className="font-semibold text-neutral-900 dark:text-neutral-50">
+            <strong key={index} className="font-medium text-neutral-900 dark:text-neutral-50">
               {token.value}
             </strong>
           );
@@ -77,7 +77,7 @@ function Inline({ text, caret }: { text: string; caret?: boolean }) {
           return (
             <code
               key={index}
-              className="rounded bg-black/[0.05] px-1 py-px font-mono text-[0.88em] text-neutral-800 dark:bg-white/[0.08] dark:text-neutral-200"
+              className="rounded bg-black/[0.05] px-1 py-px font-mono text-[0.88em] tracking-normal text-neutral-800 dark:bg-white/[0.08] dark:text-neutral-200"
             >
               {token.value}
             </code>
@@ -109,13 +109,13 @@ function CitationRow({ citation }: { citation: Citation }) {
 
   const body = (
     <>
-      <span className="grid size-[16px] shrink-0 translate-y-0.5 place-items-center rounded bg-black/[0.06] font-mono text-[9.5px] font-semibold text-neutral-600 dark:bg-white/[0.08] dark:text-neutral-300">
+      <span className="mt-px grid h-[16px] min-w-[16px] shrink-0 place-items-center rounded bg-black/[0.06] px-1 font-mono text-[10px] font-medium tabular-nums text-neutral-600 dark:bg-white/[0.08] dark:text-neutral-300">
         {citation.index}
       </span>
       <span className="min-w-0">
         <span className="font-medium text-neutral-800 dark:text-neutral-200">{citation.title}</span>
         {link && (
-          <span className="ml-1.5 font-mono text-[10.5px] text-neutral-400 dark:text-neutral-600">
+          <span className="ms-1.5 whitespace-nowrap font-mono text-micro font-normal text-neutral-400 dark:text-neutral-600">
             {link.label}
           </span>
         )}
@@ -150,12 +150,12 @@ export function StreamingText({
   const caretOnLastBlock = streaming && blocks.length > 0;
 
   return (
-    <div className={cn('w-full max-w-[68ch] text-[15px]', className)}>
+    <div className={cn('w-full max-w-[68ch] text-body', className)}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
 
       <div
         aria-hidden={streaming || undefined}
-        className="space-y-3.5 leading-[1.7] text-neutral-700 dark:text-neutral-300"
+        className="space-y-3.5 text-foreground/90"
       >
         {blocks.length === 0 && streaming && (
           <p>
@@ -171,8 +171,8 @@ export function StreamingText({
               <h3
                 key={index}
                 className={cn(
-                  'font-semibold text-neutral-900 dark:text-neutral-50',
-                  block.level <= 2 ? 'text-[17px] leading-snug' : 'text-[15px] leading-snug',
+                  'text-balance font-bold text-neutral-900 dark:text-neutral-50',
+                  block.level <= 2 ? 'text-lede' : 'text-body',
                 )}
               >
                 <Inline text={block.text} caret={caret} />
@@ -212,7 +212,7 @@ export function StreamingText({
           {variant === 'Sources' ? (
             <ul className="space-y-1.5">
               {citations.map((citation) => (
-                <li key={citation.id} className="text-[13px] leading-[1.55]">
+                <li key={citation.id} className="text-label">
                   <CitationRow citation={citation} />
                 </li>
               ))}
@@ -223,13 +223,13 @@ export function StreamingText({
                 {citations.slice(0, 3).map((citation) => (
                   <span
                     key={citation.id}
-                    className="grid size-4 place-items-center rounded-full border border-white bg-neutral-200 font-mono text-[8px] font-semibold text-neutral-600 dark:border-[#0B0B0D] dark:bg-neutral-700 dark:text-neutral-200"
+                    className="grid size-4 place-items-center rounded-full border border-white bg-neutral-200 font-mono text-[9px] font-medium tabular-nums text-neutral-600 dark:border-[#0B0B0D] dark:bg-neutral-700 dark:text-neutral-200"
                   >
                     {citation.index}
                   </span>
                 ))}
               </span>
-              <span className="font-mono text-[11px] text-neutral-400 dark:text-neutral-500">
+              <span className="font-mono text-micro font-normal tabular-nums text-neutral-400 dark:text-neutral-500">
                 {citations.length} source{citations.length === 1 ? '' : 's'}
               </span>
             </div>
@@ -239,7 +239,7 @@ export function StreamingText({
 
       {!streaming && followUps.length > 0 && (
         <div className="mt-4">
-          <p className="mb-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.07em] text-neutral-400 dark:text-neutral-600">
+          <p className="mb-1.5 font-mono text-micro font-medium uppercase text-neutral-400 dark:text-neutral-600">
             Follow-ups
           </p>
           <ul>
@@ -252,7 +252,7 @@ export function StreamingText({
                 <button
                   type="button"
                   onClick={() => onFollowUp?.(prompt)}
-                  className="group flex w-full items-center gap-2 border-b border-black/[0.05] py-2 text-left text-[13px] text-neutral-600 transition-[color,transform] duration-150 last:border-b-0 hover:text-neutral-900 active:scale-[0.99] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.06] dark:text-neutral-400 dark:hover:text-neutral-100"
+                  className="group flex w-full items-center gap-2 border-b border-black/[0.05] py-2 text-left text-label text-neutral-600 transition-[color,transform] duration-150 last:border-b-0 hover:text-neutral-900 active:scale-[0.99] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-white/[0.06] dark:text-neutral-400 dark:hover:text-neutral-100"
                 >
                   <CornerDownLeft className="size-3 text-neutral-300 transition-[color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-x-0.5 group-hover:text-neutral-500 dark:text-neutral-600 dark:group-hover:text-neutral-400" />
                   {prompt.label}

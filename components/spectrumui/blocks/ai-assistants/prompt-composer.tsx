@@ -65,7 +65,7 @@ export function PromptComposer({
         submit();
       }}
       className={cn(
-        'w-full max-w-[560px] rounded-2xl border border-black/[0.08] bg-white shadow-xs transition-[border-color,box-shadow] duration-150 focus-within:border-black/[0.18] focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.03)] dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:focus-within:border-white/[0.24] dark:focus-within:shadow-[0_0_0_3px_rgba(255,255,255,0.04)]',
+        'w-full max-w-[68ch] rounded-2xl border border-black/[0.08] bg-white shadow-xs transition-[border-color,box-shadow] duration-150 focus-within:border-black/[0.18] focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.03)] dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:focus-within:border-white/[0.24] dark:focus-within:shadow-[0_0_0_3px_rgba(255,255,255,0.04)]',
         className,
       )}
     >
@@ -77,10 +77,10 @@ export function PromptComposer({
               className="flex items-center gap-1.5 rounded-lg border border-black/[0.07] bg-black/[0.02] py-1 pl-2 pr-1 dark:border-white/[0.08] dark:bg-white/[0.04]"
             >
               <Paperclip className="size-3 text-neutral-400 dark:text-neutral-500" />
-              <span className="max-w-[140px] truncate text-[11.5px] font-medium text-neutral-700 dark:text-neutral-300">
+              <span className="max-w-[160px] truncate text-meta font-medium text-neutral-700 dark:text-neutral-300">
                 {attachment.name}
               </span>
-              <span className="font-mono text-[10px] tabular-nums text-neutral-400 dark:text-neutral-600">
+              <span className="font-mono text-micro font-normal tracking-normal tabular-nums text-neutral-400 dark:text-neutral-600">
                 {formatSize(attachment.size)}
               </span>
               <button
@@ -117,7 +117,7 @@ export function PromptComposer({
           }}
           // 16px keeps iOS Safari from zooming the whole page when the field
           // takes focus; only pointer devices get the smaller design size
-          className="max-h-[132px] w-full resize-none bg-transparent text-[16px] leading-[1.6] text-neutral-900 outline-hidden placeholder:text-neutral-400 [@media(pointer:fine)]:text-[13.5px] dark:text-neutral-100 dark:placeholder:text-neutral-500"
+          className="max-h-[132px] w-full resize-none bg-transparent text-[16px] leading-[1.6] text-neutral-900 outline-hidden placeholder:text-neutral-400 [@media(pointer:fine)]:text-[15px] dark:text-neutral-100 dark:placeholder:text-neutral-500"
         />
       </div>
 
@@ -141,7 +141,7 @@ export function PromptComposer({
                 aria-haspopup="listbox"
                 aria-expanded={pickerOpen}
                 onClick={() => setPickerOpen((open) => !open)}
-                className="flex min-w-0 items-center gap-1 rounded-lg px-2 py-1 font-mono text-[11px] text-neutral-500 transition-[color,background-color,transform] duration-150 hover:bg-black/[0.04] hover:text-neutral-800 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-200"
+                className="flex min-w-0 items-center gap-1 rounded-lg px-2 py-1 font-mono text-micro font-normal tracking-normal text-neutral-500 transition-[color,background-color,transform] duration-150 hover:bg-black/[0.04] hover:text-neutral-800 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-200"
               >
                 <span className="truncate">{activeModel?.name ?? 'Model'}</span>
                 <ChevronDown
@@ -180,17 +180,17 @@ export function PromptComposer({
                           )}
                         >
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[12.5px] font-medium text-neutral-800 dark:text-neutral-200">
+                            <span className="block truncate text-label font-medium text-neutral-800 dark:text-neutral-200">
                               {model.name}
                             </span>
                             {model.description && (
-                              <span className="block truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                              <span className="block truncate text-micro font-normal tracking-normal text-neutral-400 dark:text-neutral-500">
                                 {model.description}
                               </span>
                             )}
                           </span>
                           {model.badge && !selected && (
-                            <span className="shrink-0 rounded bg-black/[0.05] px-1 py-0.5 font-mono text-[9px] uppercase tracking-wide text-neutral-500 dark:bg-white/[0.08] dark:text-neutral-400">
+                            <span className="shrink-0 rounded bg-black/[0.05] px-1 py-0.5 font-mono text-micro font-normal uppercase text-neutral-500 dark:bg-white/[0.08] dark:text-neutral-400">
                               {model.badge}
                             </span>
                           )}
@@ -209,7 +209,7 @@ export function PromptComposer({
           {!minimal && (
             <span
               className={cn(
-                'font-mono text-[10.5px] tabular-nums transition-colors duration-150',
+                'font-mono text-micro font-normal tracking-normal tabular-nums transition-colors duration-150',
                 value.length > maxLength * 0.9
                   ? 'text-amber-600 dark:text-amber-400'
                   : 'text-neutral-300 dark:text-neutral-600',

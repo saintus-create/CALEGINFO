@@ -21,9 +21,9 @@ function RuleBlock({ r, filter }) {
   return (
     <div id={"rule-" + String(r.rule).replace(/[^A-Za-z0-9._-]/g, "_")}
       className="my-4 scroll-mt-20 rounded px-1 -mx-1 transition-colors">
-      <span className="font-semibold text-sm">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</span>
-      <div className="text-sm whitespace-pre-wrap mt-1">{body.trim()}</div>
-      {r.history && <div className="text-xs italic text-muted-foreground mt-1">{displayText(r.history)}</div>}
+      <span className="text-body font-medium tabular-nums text-foreground">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</span>
+      <div className="mt-1.5 max-w-[70ch] text-body whitespace-pre-wrap text-foreground/90">{body.trim()}</div>
+      {r.history && <div className="mt-1.5 max-w-[70ch] text-meta italic text-muted-foreground">{displayText(r.history)}</div>}
     </div>
   );
 }
@@ -41,10 +41,10 @@ function ChapterBlock({ g, filter }) {
   if (filter && countRuleMatches(g, filter) === 0) return null;
   return (
     <details className="my-2 rounded-lg border" open={!!filter}>
-      <summary className="cursor-pointer select-none px-4 py-2.5 text-sm font-semibold flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
-        <CaretRight className="h-4 w-4 text-muted-foreground transition-transform" />
+      <summary className="flex cursor-pointer select-none list-none items-center gap-2 px-4 py-2.5 text-body font-medium [&::-webkit-details-marker]:hidden">
+        <CaretRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" />
         {g.label}
-        <span className="ml-auto text-xs font-normal text-muted-foreground">
+        <span className="ms-auto text-meta font-normal tabular-nums text-muted-foreground">
           {filter ? countRuleMatches(g, filter) + " matches" : g.rules.length + " rules"}
         </span>
       </summary>
@@ -152,11 +152,11 @@ export default function Rules({ jumpRule }) {
   };
 
   if (failed) {
-    return <div className="p-6 text-sm text-muted-foreground">Rules data could not be loaded. Refresh the page to try again.</div>;
+    return <div className="p-6 text-body text-muted-foreground">Rules data could not be loaded. Refresh the page to try again.</div>;
   }
   if (!ready) {
     return (
-      <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 p-6 text-body text-muted-foreground">
         <CircleNotch className="h-4 w-4 animate-spin" /> Loading the California Rules of Court…
       </div>
     );
@@ -171,10 +171,11 @@ export default function Rules({ jumpRule }) {
       {titleNum == null ? (
         <div>
           <div className="eyebrow"><Gavel className="h-3.5 w-3.5" /> Judicial Council</div>
-          <h1 className="text-2xl font-bold mt-3 mb-2">California Rules of Court</h1>
-          <p className="text-muted-foreground text-sm">
-            <b>{Number(total).toLocaleString()} rules</b> across {titles.length} titles — the procedural rules that govern
-            California's trial and appellate courts, searchable in full. Pick a title, or search every rule.
+          <h1 className="text-title font-bold mt-3 mb-2 text-balance">California Rules of Court</h1>
+          <p className="max-w-[58ch] text-body text-muted-foreground/90">
+            <b className="font-medium tabular-nums text-foreground">{Number(total).toLocaleString()} rules</b> across{" "}
+            <span className="tabular-nums">{titles.length}</span> titles — the procedural rules that govern
+            California&rsquo;s trial and appellate courts, searchable in full. Pick a title, or search every rule.
           </p>
           <form onSubmit={runGlobalSearch} className="mt-5 flex gap-2">
             <div className="relative flex-1">
@@ -189,9 +190,9 @@ export default function Rules({ jumpRule }) {
               {globalResults.map((r, i) => (
                 <button key={i} onClick={() => { setGlobalResults([]); setGlobalQuery(""); setFilter(""); setFocus({ rule: r.rule, n: Date.now() }); }}
                   className="w-full text-left p-3 hover:bg-muted/40 transition-colors">
-                  <div className="text-sm font-semibold">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</div>
-                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{displayText(r.text)}</div>
-                  <div className="text-[11px] text-muted-foreground mt-1.5">{r.title_name}{r.chapter ? " · " + r.chapter : ""}</div>
+                  <div className="text-micro font-medium uppercase text-muted-foreground/80">{r.title_name}{r.chapter ? " · " + r.chapter : ""}</div>
+                  <div className="mt-1 text-body font-medium tabular-nums">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</div>
+                  <div className="mt-1 text-meta text-muted-foreground line-clamp-2">{displayText(r.text)}</div>
                 </button>
               ))}
             </div>
@@ -200,33 +201,35 @@ export default function Rules({ jumpRule }) {
             {titles.map((t) => (
               <button key={t.number} onClick={() => t.rules.length && setTitleNum(t.number)}
                 disabled={!t.rules.length}
-                className="metric-card text-left disabled:opacity-50 hover:border-foreground/30 transition-colors">
-                <div className="text-sm font-semibold">{t.name || "Title " + t.number}</div>
-                <div className="text-xs text-muted-foreground mt-1">
+                className="flex flex-col rounded-xl border border-border p-4 text-left transition-colors hover:border-foreground/25 hover:bg-muted/40 disabled:cursor-default disabled:opacity-45 disabled:hover:border-border disabled:hover:bg-transparent">
+                <span className="text-micro font-medium uppercase text-muted-foreground">Title <span className="tabular-nums">{t.number}</span></span>
+                <span className="mt-1.5 text-body font-medium text-balance">{t.name || "Title " + t.number}</span>
+                <span className="mt-1 text-meta text-muted-foreground tabular-nums">
                   {t.rules.length ? t.rules.length.toLocaleString() + " rules" : "Reserved — no rules"}
-                </div>
+                </span>
               </button>
             ))}
           </div>
-          <p className="mt-6 text-xs text-muted-foreground">
+          <p className="mt-6 text-meta text-muted-foreground">
             Dated snapshot — current official text at{" "}
             <a className="underline hover:text-foreground" href="https://www.courts.ca.gov/cms/rules/index.cfm" target="_blank" rel="noopener">courts.ca.gov</a>.
           </p>
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-            <button className="hover:text-foreground inline-flex items-center gap-1" onClick={() => { setTitleNum(null); setFilter(""); }}>
+          <div className="mb-2 flex items-center gap-2 text-micro font-medium uppercase text-muted-foreground">
+            <button className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground" onClick={() => { setTitleNum(null); setFilter(""); }}>
               <ArrowLeft className="h-3 w-3" /> Rules of Court
             </button>
-            <span>/</span>
-            <span>{activeTitle ? activeTitle.name : "Title " + titleNum}</span>
+            <span className="text-muted-foreground/50">/</span>
+            <span className="truncate font-normal tracking-normal normal-case">{activeTitle ? activeTitle.name : "Title " + titleNum}</span>
           </div>
-          <h1 className="text-2xl font-bold">{activeTitle ? activeTitle.name : "Title " + titleNum}</h1>
-          <p className="text-sm text-muted-foreground mt-1 mb-4">
-            <b>{activeTitle ? activeTitle.rules.length.toLocaleString() : 0} rules</b>
-            {" "}· <a href="https://www.courts.ca.gov/cms/rules/index.cfm" target="_blank" rel="noopener"
-              className="inline-flex items-center gap-1 hover:text-foreground">Verify at official California Courts <ArrowSquareOut className="h-3 w-3" /></a>
+          <h1 className="text-title font-bold text-balance">{activeTitle ? activeTitle.name : "Title " + titleNum}</h1>
+          <p className="mt-2 mb-4 text-meta text-muted-foreground">
+            <b className="font-medium tabular-nums text-foreground">{activeTitle ? activeTitle.rules.length.toLocaleString() : 0} rules</b>
+            <span className="mx-1.5 text-muted-foreground/50">·</span>
+            <a href="https://www.courts.ca.gov/cms/rules/index.cfm" target="_blank" rel="noopener"
+              className="inline-flex items-center gap-1 underline decoration-border underline-offset-[3px] transition-colors hover:text-foreground hover:decoration-muted-foreground">Verify at official California Courts <ArrowSquareOut className="h-3 w-3" /></a>
           </p>
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <div className="relative flex-1">
@@ -240,7 +243,7 @@ export default function Rules({ jumpRule }) {
             </div>
           </div>
           {groups.map((g, i) => <ChapterBlock key={i} g={g} filter={filter} />)}
-          <p className="mt-6 text-xs text-muted-foreground">Dated snapshot — current official text at courts.ca.gov.</p>
+          <p className="mt-6 text-meta text-muted-foreground">Dated snapshot — current official text at courts.ca.gov.</p>
         </>
       )}
     </div>

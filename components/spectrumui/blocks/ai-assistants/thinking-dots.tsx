@@ -25,7 +25,7 @@ export function ThinkingDots({
       role="status"
       aria-label={label}
       className={cn(
-        'flex w-fit items-center gap-2.5 text-neutral-500 dark:text-neutral-400',
+        'flex w-fit items-center gap-2.5 text-label text-muted-foreground',
         className,
       )}
     >
@@ -53,7 +53,7 @@ export function ThinkingDots({
         </span>
       )}
 
-      <span className="text-[12.5px]">{label}</span>
+      <span>{label}</span>
     </div>
   );
 }

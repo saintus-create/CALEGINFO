@@ -25,7 +25,7 @@ const GROUP_STYLE = {
 
 function GroupBadge({ group }) {
   return (
-    <span className={"inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap " +
+    <span className={"inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-micro font-medium uppercase " +
       (GROUP_STYLE[group] || "bg-muted text-muted-foreground")}>
       {group || "—"}
     </span>
@@ -36,30 +36,30 @@ function BillRow({ b }) {
   return (
     <div className="p-3.5 hover:bg-muted/40 transition-colors">
       <div className="flex items-start gap-2 flex-wrap">
-        <span className="font-semibold text-sm">{b.measure}</span>
+        <span className="text-body font-medium tabular-nums">{b.measure}</span>
         <GroupBadge group={b.group} />
-        {b.special && <Badge variant="outline" className="text-[10px] px-1.5 py-0">special session</Badge>}
-        {b.fam && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-pink-300 text-pink-700 dark:border-pink-800 dark:text-pink-400">family law</Badge>}
-        <span className="text-[11px] text-muted-foreground ml-auto inline-flex items-center gap-1 whitespace-nowrap">
+        {b.special && <Badge variant="outline" className="px-1.5 py-0 text-micro font-medium uppercase tracking-[0.04em]">special session</Badge>}
+        {b.fam && <Badge variant="outline" className="border-pink-300 px-1.5 py-0 text-micro font-medium uppercase tracking-[0.04em] text-pink-700 dark:border-pink-800 dark:text-pink-400">family law</Badge>}
+        <span className="ms-auto inline-flex items-center gap-1 whitespace-nowrap text-micro font-normal tracking-normal text-muted-foreground">
           {b.type}
           {b.chamber && !(b.type || "").toLowerCase().includes(b.chamber.toLowerCase())
             ? ` · ${b.chamber}`
             : ""}
         </span>
       </div>
-      {b.subject && <div className="text-[13px] mt-1.5 leading-relaxed">{displayText(b.subject)}</div>}
+      {b.subject && <div className="mt-2 max-w-[80ch] text-body text-pretty">{displayText(b.subject)}</div>}
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         {b.author && (
-          <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-            <Users className="h-3 w-3" /> {b.author}
+          <span className="inline-flex items-center gap-1 text-meta text-muted-foreground">
+            <Users className="h-3 w-3" /> {displayText(b.author)}
           </span>
         )}
         {(b.terms || []).slice(0, 5).map((t) => (
-          <span key={t} className="text-[10px] rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{t}</span>
+          <span key={t} className="rounded-full bg-muted px-2 py-0.5 text-micro font-normal tracking-normal text-muted-foreground">{t}</span>
         ))}
         {b.url && (
           <a href={b.url} target="_blank" rel="noopener"
-            className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 ml-auto">
+            className="ms-auto inline-flex items-center gap-1 text-meta text-muted-foreground underline decoration-border underline-offset-[3px] transition-colors hover:text-foreground hover:decoration-muted-foreground">
             Official text <ArrowSquareOut className="h-3 w-3" />
           </a>
         )}
@@ -124,11 +124,11 @@ export default function Bills() {
   useEffect(() => { setShown(100); }, [applied, chamber, group, famOnly]);
 
   if (failed) {
-    return <div className="p-6 text-sm text-muted-foreground">Bill data could not be loaded. Refresh the page to try again.</div>;
+    return <div className="p-6 text-body text-muted-foreground">Bill data could not be loaded. Refresh the page to try again.</div>;
   }
   if (!ready) {
     return (
-      <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 p-6 text-body text-muted-foreground">
         <CircleNotch className="h-4 w-4 animate-spin" /> Loading the 2025-2026 session bill catalog…
       </div>
     );
@@ -140,11 +140,11 @@ export default function Bills() {
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <div className="eyebrow"><Bank className="h-3.5 w-3.5" /> Legislation</div>
-      <h1 className="text-2xl font-bold mt-3 mb-1">Bills &amp; Measures — {meta.session || "2025-2026"} Session</h1>
-      <p className="text-sm text-muted-foreground">
+      <h1 className="text-title font-bold mt-3 mb-2 text-balance">Bills &amp; Measures — {meta.session || "2025-2026"} Session</h1>
+      <p className="max-w-[64ch] text-body text-muted-foreground/90">
         Every measure introduced this session, from the official LegInfo bill index
-        {meta.retrieved_at ? <> · snapshot {String(meta.retrieved_at).slice(0, 10)}</> : null}.
-        {" "}Status tells you where each measure stands — <b>Chaptered</b> means it became law.
+        {meta.retrieved_at ? <> · snapshot <span className="tabular-nums">{String(meta.retrieved_at).slice(0, 10)}</span></> : null}.
+        {" "}Status tells you where each measure stands — <b className="font-medium text-foreground">Chaptered</b> means it became law.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-2 mt-5">
@@ -171,11 +171,11 @@ export default function Bills() {
       </div>
       <div className="flex items-center gap-2 mt-3">
         <Switch id="fam-only" checked={famOnly} onCheckedChange={setFamOnly} />
-        <Label htmlFor="fam-only" className="text-xs text-muted-foreground cursor-pointer">
-          Family-law related only ({stats.fam.toLocaleString()})
+        <Label htmlFor="fam-only" className="cursor-pointer text-meta text-muted-foreground">
+          Family-law related only (<span className="tabular-nums">{stats.fam.toLocaleString()}</span>)
         </Label>
         {applied && (
-          <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => { setQuery(""); setApplied(""); }}>
+          <Button variant="ghost" size="sm" className="ms-auto h-7 text-meta" onClick={() => { setQuery(""); setApplied(""); }}>
             Clear search
           </Button>
         )}
@@ -184,7 +184,7 @@ export default function Bills() {
       <div className="mt-4 rounded-xl border divide-y overflow-hidden">
         {visible.map((b, i) => <BillRow key={b.measure + i} b={b} />)}
         {filtered.length === 0 && (
-          <div className="p-6 text-sm text-muted-foreground text-center">
+          <div className="p-6 text-center text-body text-muted-foreground">
             No measures match. Try fewer keywords — the index covers subjects, authors, and measure numbers.
           </div>
         )}
@@ -196,9 +196,9 @@ export default function Bills() {
           </Button>
         </div>
       )}
-      <p className="mt-4 text-xs text-muted-foreground">
+      <p className="mt-4 text-meta text-muted-foreground">
         Dated snapshot of the official index — verify status and text at{" "}
-        <a className="underline hover:text-foreground" target="_blank" rel="noopener"
+        <a className="underline decoration-border underline-offset-[3px] transition-colors hover:text-foreground hover:decoration-muted-foreground" target="_blank" rel="noopener"
           href="https://leginfo.legislature.ca.gov/faces/billSearchClient.xhtml?session_year=20252026">leginfo.legislature.ca.gov</a>.
       </p>
     </div>

@@ -195,18 +195,18 @@ export function TreeNav({
               onFocus={() => enter(index)}
               onBlur={leave}
               className={cn(
-                'flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] leading-5 antialiased transition-colors duration-150 ease-out',
+                'flex h-8 items-center gap-2 rounded-lg px-3 text-label font-medium transition-colors duration-150 ease-out',
                 // Before the first measurement the pill has no position yet, so
                 // the active row paints its own background for that one frame.
                 isActive && !measured && 'bg-black/4 dark:bg-white/6',
                 isActive
-                  ? 'font-medium text-neutral-900 dark:text-neutral-100'
-                  : 'font-normal text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100',
+                  ? 'text-foreground'
+                  : 'font-normal text-muted-foreground hover:text-foreground',
               )}
             >
               <span className="truncate">{item.label}</span>
               {item.badge && (
-                <span className="inline-flex h-[18px] shrink-0 items-center rounded-[6px] bg-[#2b7fff]/8 px-[5px] text-xs font-medium leading-none text-[#1447e6] dark:bg-[#2b7fff]/[0.14] dark:text-blue-400">
+                <span className="inline-flex h-[18px] shrink-0 items-center rounded-md bg-muted px-1.5 font-mono text-[0.6875rem] font-normal leading-none tabular-nums text-muted-foreground">
                   {item.badge}
                 </span>
               )}

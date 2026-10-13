@@ -36,19 +36,19 @@ function FormRow({ f, onCategory }) {
   return (
     <div className="p-3.5 hover:bg-muted/40 transition-colors">
       <div className="flex items-start gap-2 flex-wrap">
-        <span className="font-mono text-[13px] font-semibold tracking-tight">{f.number}</span>
+        <span className="font-mono text-label font-medium tabular-nums">{f.number}</span>
         {f.mandatory ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-micro font-medium uppercase text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300">
             <CheckCircle weight="fill" className="h-2.5 w-2.5" /> Mandatory
           </span>
         ) : (
-          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-            Optional use
+          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-micro font-medium uppercase text-muted-foreground">
+            Optional
           </span>
         )}
         {f.category && (
           <button
-            className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+            className="inline-flex items-center rounded-full border px-2 py-0.5 text-micro font-normal tracking-normal text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
             onClick={() => onCategory(f.category)}
             type="button"
           >
@@ -56,18 +56,18 @@ function FormRow({ f, onCategory }) {
           </button>
         )}
         {f.effective && (
-          <span className="ml-auto whitespace-nowrap text-[11px] text-muted-foreground">
+          <span className="ms-auto whitespace-nowrap text-micro font-normal tracking-normal tabular-nums text-muted-foreground">
             Effective {f.effective}
           </span>
         )}
       </div>
 
-      <div className="mt-1.5 text-[13px] font-medium leading-snug">{displayText(f.title)}</div>
+      <div className="mt-1.5 max-w-[72ch] text-body font-medium text-pretty">{displayText(f.title)}</div>
       {f.description && (
-        <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{displayText(f.description)}</div>
+        <div className="mt-1 max-w-[72ch] text-label text-muted-foreground">{displayText(f.description)}</div>
       )}
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px]">
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-micro font-normal tracking-normal">
         {f.pdf_url && (
           <a
             className="inline-flex items-center gap-1 rounded-md border border-foreground/15 px-2 py-1 font-medium text-foreground transition-colors hover:border-foreground/35 hover:bg-muted"
@@ -91,12 +91,12 @@ function FormRow({ f, onCategory }) {
         {languages.length > 0 && (
           <details className="inline-block">
             <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md border border-foreground/15 px-2 py-1 font-medium text-foreground transition-colors hover:border-foreground/35 hover:bg-muted [&::-webkit-details-marker]:hidden">
-              <Translate className="h-3 w-3" /> {languages.length} translation{languages.length > 1 ? "s" : ""}
+              <Translate className="h-3 w-3" /> <span className="tabular-nums">{languages.length}</span> translation{languages.length > 1 ? "s" : ""}
             </summary>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {languages.map((l) => (
                 <a
-                  className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+                  className="rounded-full bg-muted px-2 py-0.5 text-micro font-normal tracking-normal text-muted-foreground hover:text-foreground"
                   href={f.language_urls[l]}
                   key={l}
                   target="_blank"
@@ -172,11 +172,11 @@ export default function Forms({ jumpForm }) {
   }, [ready, query, category, series, mandatoryOnly]);
 
   if (failed) {
-    return <div className="p-6 text-sm text-muted-foreground">Forms data could not be loaded. Refresh the page to try again.</div>;
+    return <div className="p-6 text-body text-muted-foreground">Forms data could not be loaded. Refresh the page to try again.</div>;
   }
   if (!ready) {
     return (
-      <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 p-6 text-body text-muted-foreground">
         <CircleNotch className="h-4 w-4 animate-spin" /> Loading the Judicial Council forms catalog…
       </div>
     );
@@ -189,11 +189,11 @@ export default function Forms({ jumpForm }) {
       <div className="eyebrow">
         <FileText className="h-3.5 w-3.5" /> Judicial Council
       </div>
-      <h1 className="text-2xl font-bold mt-3 mb-1">California Court Forms</h1>
-      <p className="text-sm text-muted-foreground">
-        <b>{Number(total).toLocaleString()} statewide Judicial Council forms</b> — every official court form, with form
-        numbers, plain-language descriptions, mandatory-use flags, effective dates, fillable PDFs, and translations.
-        {mandatoryCount ? <> {Number(mandatoryCount).toLocaleString()} are mandatory for all courts.</> : null}
+      <h1 className="text-title font-bold mt-3 mb-1 text-balance">California Court Forms</h1>
+      <p className="max-w-[62ch] text-body text-muted-foreground/90">
+        <b className="font-medium tabular-nums text-foreground">{Number(total).toLocaleString()} statewide Judicial Council forms</b> — every official court
+        form, with form numbers, plain-language descriptions, mandatory-use flags, effective dates, fillable PDFs, and
+        translations.{mandatoryCount ? <> <span className="tabular-nums">{Number(mandatoryCount).toLocaleString()}</span> are mandatory for all courts.</> : null}
       </p>
 
       <div className="mt-4 flex flex-col gap-2">
@@ -263,18 +263,18 @@ export default function Forms({ jumpForm }) {
           </Select>
           <div className="flex items-center gap-2 sm:ml-auto">
             <Switch checked={mandatoryOnly} id="mandatory-only" onCheckedChange={(v) => { setMandatoryOnly(v); setShown(60); }} />
-            <Label className="text-xs text-muted-foreground" htmlFor="mandatory-only">
+            <Label className="text-micro font-medium uppercase text-muted-foreground" htmlFor="mandatory-only">
               Mandatory forms only
             </Label>
           </div>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="mt-3 flex items-center gap-2 text-meta text-muted-foreground">
         <span>
           {filtered ? (
             <>
-              <b className="text-foreground">{results.length.toLocaleString()}</b> form
+              <b className="font-medium tabular-nums text-foreground">{results.length.toLocaleString()}</b> form
               {results.length === 1 ? "" : "s"} match
             </>
           ) : (
@@ -302,7 +302,7 @@ export default function Forms({ jumpForm }) {
         <div className="mt-4 flex flex-wrap gap-1.5">
           {categories.slice(0, 14).map(([c, n]) => (
             <button
-              className="rounded-full border px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+              className="rounded-full border px-2.5 py-1 text-micro font-normal tracking-normal text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
               key={c}
               onClick={() => {
                 setCategory(c);
@@ -310,7 +310,7 @@ export default function Forms({ jumpForm }) {
               }}
               type="button"
             >
-              {c} <span className="opacity-60">{n}</span>
+              {c} <span className="tabular-nums opacity-55">{n}</span>
             </button>
           ))}
         </div>
@@ -323,13 +323,13 @@ export default function Forms({ jumpForm }) {
           </div>
         ))}
         {results.length === 0 && (
-          <div className="p-6 text-center text-sm text-muted-foreground">
+          <div className="p-6 text-center text-body text-muted-foreground">
             No forms match “{query}”. Try a form number (FL-100, DV-110) or a broader topic word.
           </div>
         )}
         {results.length > shown && (
           <button
-            className="w-full border-t p-2.5 text-xs text-muted-foreground hover:bg-muted/40"
+            className="w-full border-t p-2.5 text-meta tabular-nums text-muted-foreground hover:bg-muted/40"
             onClick={() => setShown(shown + 120)}
             type="button"
           >
@@ -338,7 +338,7 @@ export default function Forms({ jumpForm }) {
         )}
       </div>
 
-      <p className="mt-6 text-xs text-muted-foreground">
+      <p className="mt-6 max-w-[80ch] text-meta text-muted-foreground">
         Statewide Judicial Council forms only — superior courts publish additional local forms.{" "}
         <a
           className="inline-flex items-center gap-1 underline hover:text-foreground"
