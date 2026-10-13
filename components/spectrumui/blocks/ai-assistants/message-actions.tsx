@@ -1,7 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, GitBranch, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react';
+import {
+  Check,
+  Copy,
+  GitBranch,
+  LoaderCircle,
+  RefreshCw,
+  Square,
+  ThumbsDown,
+  ThumbsUp,
+  Volume2,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { MessageFeedback } from './types';
 
@@ -16,6 +26,19 @@ export interface MessageActionsProps {
   onBranch?: () => void;
   variant?: MessageActionsVariant;
   className?: string;
+  /**
+   * Read-aloud controls. Omit (or pass `false`) to hide them; the app owns the
+   * speech engine so only one answer can be playing at a time.
+   */
+  speech?: SpeechControls | false;
+}
+
+export interface SpeechControls {
+  /** True while this message is the one being read. */
+  speaking?: boolean;
+  /** True while the audio for this message is still being fetched. */
+  loading?: boolean;
+  onToggle?: () => void;
 }
 
 export function MessageActions({
@@ -27,6 +50,7 @@ export function MessageActions({
   onBranch,
   variant = 'Ghost',
   className,
+  speech = false,
 }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [spinning, setSpinning] = useState(false);
@@ -86,6 +110,37 @@ export function MessageActions({
           />
         </span>
       </ActionButton>
+
+      {speech && (
+        <ActionButton
+          label={speech.speaking ? 'Stop reading' : 'Read aloud'}
+          pressed={speech.speaking}
+          onClick={speech.onToggle}
+        >
+          <span className="relative grid size-3.5 place-items-center">
+            <Volume2
+              className={cn(
+                'absolute size-3.5 transition-[opacity,filter,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+                speech.speaking || speech.loading
+                  ? 'scale-90 opacity-0 blur-[2px]'
+                  : 'opacity-100 blur-0',
+              )}
+            />
+            <Square
+              className={cn(
+                'absolute size-2.5 fill-current text-rose-600 transition-[opacity,filter] duration-200 dark:text-rose-400',
+                speech.speaking ? 'animate-pulse opacity-100 blur-0' : 'opacity-0 blur-[2px]',
+              )}
+            />
+            <LoaderCircle
+              className={cn(
+                'absolute size-3.5 animate-spin transition-opacity duration-200',
+                speech.loading && !speech.speaking ? 'opacity-100' : 'opacity-0',
+              )}
+            />
+          </span>
+        </ActionButton>
+      )}
 
       <ActionButton label="Regenerate" onClick={regenerate}>
         <RefreshCw

@@ -1,11 +1,24 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { ArrowUp, Check, ChevronDown, Paperclip, Square, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUp, Check, ChevronDown, LoaderCircle, Mic, Paperclip, Square, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { appendTranscript } from '@/lib/voice/text';
+import { useDictation } from '@/lib/voice/use-dictation';
 import type { Attachment, ModelOption } from './types';
 
 export type PromptComposerVariant = 'Default' | 'Minimal';
+
+/** Passing `false` (or a minimal variant) hides the microphone entirely. */
+export interface DictationConfig {
+  /** BCP-47 tag for the on-device recogniser; the server uses its own config. */
+  language?: string;
+  /** Auto-stop after this much silence, in milliseconds. */
+  silenceMs?: number;
+  /** Surfaces "switched to on-device dictation" and "heard nothing" messages. */
+  onNotice?: (message: string) => void;
+  onError?: (message: string) => void;
+}
 
 export interface PromptComposerProps {
   placeholder?: string;
@@ -20,6 +33,12 @@ export interface PromptComposerProps {
   maxLength?: number;
   variant?: PromptComposerVariant;
   className?: string;
+  dictation?: DictationConfig | false;
+}
+
+function formatDuration(ms: number) {
+  const total = Math.floor(ms / 1000);
+  return `0:${String(total).padStart(2, '0')}`;
 }
 
 function formatSize(bytes: number) {
@@ -41,21 +60,55 @@ export function PromptComposer({
   maxLength = 2000,
   variant = 'Default',
   className,
+  dictation = false,
 }: PromptComposerProps) {
   const [value, setValue] = useState('');
   const [modelId, setModelId] = useState(defaultModelId ?? models[0]?.id);
   const [pickerOpen, setPickerOpen] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
+  // Text the box already held when the current dictation started; transcripts
+  // are appended to it rather than replacing it.
+  const dictationBase = useRef('');
+
+  const dictationConfig = dictation === false ? undefined : dictation;
+
+  const voice = useDictation({
+    language: dictationConfig?.language,
+    silenceMs: dictationConfig?.silenceMs,
+    onTranscript: (text, meta) => {
+      const next = appendTranscript(dictationBase.current, text);
+      setValue(next);
+      if (meta.final) dictationBase.current = next;
+    },
+    onError: (message) => dictationConfig?.onError?.(message),
+    onNotice: (message) => dictationConfig?.onNotice?.(message),
+  });
 
   const activeModel = models.find((model) => model.id === modelId);
   const canSend = value.trim().length > 0 && !isGenerating;
   const minimal = variant === 'Minimal';
+  const showDictation = Boolean(dictationConfig) && !minimal && voice.supported;
+  const listening = voice.state === 'recording';
+  const transcribing = voice.state === 'transcribing';
+
+  useEffect(() => {
+    const element = textarea.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${Math.min(element.scrollHeight, 132)}px`;
+  }, [value]);
 
   function submit() {
     if (!canSend) return;
     onSend?.(value.trim(), modelId);
     setValue('');
+    dictationBase.current = '';
     if (textarea.current) textarea.current.style.height = 'auto';
+  }
+
+  function toggleDictation() {
+    if (voice.state === 'idle' || voice.state === 'error') dictationBase.current = value;
+    voice.toggle();
   }
 
   return (
@@ -102,7 +155,7 @@ export function PromptComposer({
           value={value}
           rows={minimal ? 1 : 2}
           maxLength={maxLength}
-          placeholder={placeholder}
+          placeholder={listening ? 'Listening…' : transcribing ? 'Transcribing…' : placeholder}
           aria-label="Prompt"
           onChange={(event) => {
             setValue(event.target.value);
@@ -113,6 +166,12 @@ export function PromptComposer({
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
               submit();
+              return;
+            }
+            if (event.key === 'Escape' && listening) {
+              event.preventDefault();
+              voice.cancel();
+              dictationBase.current = value;
             }
           }}
           className="max-h-[132px] w-full resize-none bg-transparent text-[13.5px] leading-[1.6] text-neutral-900 outline-hidden placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
@@ -204,6 +263,26 @@ export function PromptComposer({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {showDictation && (
+            <>
+              {(listening || transcribing) && (
+                <span
+                  aria-hidden
+                  className="font-mono text-[10.5px] tabular-nums text-rose-600 transition-colors duration-150 dark:text-rose-400"
+                >
+                  {transcribing ? 'Transcribing…' : `● ${formatDuration(voice.elapsedMs)}`}
+                </span>
+              )}
+              <span role="status" aria-live="polite" className="sr-only">
+                {listening
+                  ? 'Recording your question'
+                  : transcribing
+                    ? 'Transcribing your recording'
+                    : ''}
+              </span>
+            </>
+          )}
+
           {!minimal && (
             <span
               className={cn(
@@ -215,6 +294,56 @@ export function PromptComposer({
             >
               {value.length}/{maxLength}
             </span>
+          )}
+
+          {showDictation && (
+            <button
+              type="button"
+              onClick={toggleDictation}
+              aria-label={
+                transcribing
+                  ? 'Transcribing your recording'
+                  : listening
+                    ? 'Stop recording and insert the transcript'
+                    : 'Start voice input'
+              }
+              aria-pressed={listening}
+              title={
+                transcribing
+                  ? 'Transcribing…'
+                  : listening
+                    ? 'Stop and insert'
+                    : 'Voice input'
+              }
+              disabled={transcribing}
+              className={cn(
+                'grid size-7 shrink-0 place-items-center rounded-full transition-[color,background-color,transform] duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 active:scale-[0.92]',
+                listening
+                  ? 'bg-rose-500/12 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400'
+                  : 'text-neutral-400 hover:bg-black/[0.04] hover:text-neutral-700 disabled:opacity-60 dark:text-neutral-500 dark:hover:bg-white/[0.06] dark:hover:text-neutral-200',
+              )}
+            >
+              <span className="relative grid size-3.5 place-items-center">
+                <Mic
+                  className={cn(
+                    'absolute size-3.5 transition-[opacity,filter,transform] duration-200',
+                    listening || transcribing ? 'scale-90 opacity-0 blur-[2px]' : 'opacity-100 blur-0',
+                  )}
+                />
+                <Square
+                  className={cn(
+                    'absolute size-2.5 fill-current transition-[opacity,filter] duration-200',
+                    listening ? 'animate-pulse opacity-100 blur-0' : 'opacity-0 blur-[2px]',
+                  )}
+                />
+                <LoaderCircle
+                  className={cn(
+                    'absolute size-3.5 animate-spin transition-opacity duration-200',
+                    transcribing ? 'opacity-100' : 'opacity-0',
+                  )}
+                />
+              </span>
+            </button>
           )}
 
           <button
