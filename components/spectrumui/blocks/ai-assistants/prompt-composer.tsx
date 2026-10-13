@@ -115,7 +115,9 @@ export function PromptComposer({
               submit();
             }
           }}
-          className="max-h-[132px] w-full resize-none bg-transparent text-[13.5px] leading-[1.6] text-neutral-900 outline-hidden placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+          // 16px keeps iOS Safari from zooming the whole page when the field
+          // takes focus; only pointer devices get the smaller design size
+          className="max-h-[132px] w-full resize-none bg-transparent text-[16px] leading-[1.6] text-neutral-900 outline-hidden placeholder:text-neutral-400 [@media(pointer:fine)]:text-[13.5px] dark:text-neutral-100 dark:placeholder:text-neutral-500"
         />
       </div>
 

@@ -13,6 +13,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
+import { displayText } from "@/lib/display-text";
 
 const GROUP_STYLE = {
   Chaptered: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900",
@@ -46,7 +47,7 @@ function BillRow({ b }) {
             : ""}
         </span>
       </div>
-      {b.subject && <div className="text-[13px] mt-1.5 leading-relaxed">{b.subject}</div>}
+      {b.subject && <div className="text-[13px] mt-1.5 leading-relaxed">{displayText(b.subject)}</div>}
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         {b.author && (
           <span className="text-xs text-muted-foreground inline-flex items-center gap-1">

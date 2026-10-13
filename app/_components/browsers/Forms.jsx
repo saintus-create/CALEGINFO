@@ -14,6 +14,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { loadExtras, extras, extraMeta, formSeries, rankForms } from "@/lib/engine";
+import { displayText } from "@/lib/display-text";
 
 const LANGUAGE_LABELS = {
   spanish: "Spanish",
@@ -61,9 +62,9 @@ function FormRow({ f, onCategory }) {
         )}
       </div>
 
-      <div className="mt-1.5 text-[13px] font-medium leading-snug">{f.title}</div>
+      <div className="mt-1.5 text-[13px] font-medium leading-snug">{displayText(f.title)}</div>
       {f.description && (
-        <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.description}</div>
+        <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{displayText(f.description)}</div>
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px]">

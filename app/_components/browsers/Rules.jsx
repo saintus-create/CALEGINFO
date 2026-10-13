@@ -12,16 +12,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
+import { displayText } from "@/lib/display-text";
 
 function RuleBlock({ r, filter }) {
-  const hay = (r.rule + " " + (r.rule_title || "") + " " + (r.text || "")).toLowerCase();
+  const body = displayText(r.text);
+  const hay = (r.rule + " " + (r.rule_title || "") + " " + body).toLowerCase();
   if (filter && !hay.includes(filter)) return null;
   return (
     <div id={"rule-" + String(r.rule).replace(/[^A-Za-z0-9._-]/g, "_")}
       className="my-4 scroll-mt-20 rounded px-1 -mx-1 transition-colors">
       <span className="font-semibold text-sm">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</span>
-      <div className="text-sm whitespace-pre-wrap mt-1">{(r.text || "").trim()}</div>
-      {r.history && <div className="text-xs italic text-muted-foreground mt-1">{r.history}</div>}
+      <div className="text-sm whitespace-pre-wrap mt-1">{body.trim()}</div>
+      {r.history && <div className="text-xs italic text-muted-foreground mt-1">{displayText(r.history)}</div>}
     </div>
   );
 }
@@ -29,7 +31,7 @@ function RuleBlock({ r, filter }) {
 function countRuleMatches(group, filter) {
   let n = 0;
   for (const r of group.rules) {
-    const hay = (r.rule + " " + (r.rule_title || "") + " " + (r.text || "")).toLowerCase();
+    const hay = (r.rule + " " + (r.rule_title || "") + " " + displayText(r.text)).toLowerCase();
     if (hay.includes(filter)) n++;
   }
   return n;
@@ -188,7 +190,7 @@ export default function Rules({ jumpRule }) {
                 <button key={i} onClick={() => { setGlobalResults([]); setGlobalQuery(""); setFilter(""); setFocus({ rule: r.rule, n: Date.now() }); }}
                   className="w-full text-left p-3 hover:bg-muted/40 transition-colors">
                   <div className="text-sm font-semibold">Rule {r.rule}{r.rule_title ? ". " + r.rule_title : ""}</div>
-                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{r.text}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{displayText(r.text)}</div>
                   <div className="text-[11px] text-muted-foreground mt-1.5">{r.title_name}{r.chapter ? " · " + r.chapter : ""}</div>
                 </button>
               ))}

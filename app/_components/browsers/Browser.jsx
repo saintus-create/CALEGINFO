@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { loadCorpus, loadExtras, corpusReady, extras, codes, byAbbr, buildUnits, searchSections, famCasesFor, corpusStats } from "@/lib/engine";
+import { displayText } from "@/lib/display-text";
 
 // re-render when the extras (case annotations) finish loading in the background
 function useExtrasReady() {
@@ -61,15 +62,16 @@ function CaseNotes({ section }) {
 }
 
 function SectionBlock({ s, abbr, filter }) {
-  const cite = s.citation || (abbr + " \u00A7 " + s.section);
-  const hay = (cite + " " + (s.text || "")).toLowerCase();
+  const cite = displayText(s.citation) || (abbr + " \u00A7 " + displayText(s.section));
+  const body = displayText(s.text);
+  const hay = (cite + " " + body).toLowerCase();
   if (filter && !hay.includes(filter)) return null;
   return (
     <div id={"s-" + String(s.section).replace(/[^A-Za-z0-9._-]/g, "_")} className="my-4 scroll-mt-20 rounded px-1 -mx-1 transition-colors">
       <span className="font-semibold text-sm">{cite}</span>
       {s.repealed && <span className="ml-2 text-sm font-semibold text-orange-600 dark:text-orange-400">(Repealed)</span>}
-      <div className="text-sm whitespace-pre-wrap mt-1">{(s.text || "").trim()}</div>
-      {s.history && <div className="text-xs italic text-muted-foreground mt-1">{s.history}</div>}
+      <div className="text-sm whitespace-pre-wrap mt-1">{body.trim()}</div>
+      {s.history && <div className="text-xs italic text-muted-foreground mt-1">{displayText(s.history)}</div>}
       {abbr === "FAM" && !s.repealed && <CaseNotes section={s.section} />}
     </div>
   );
@@ -78,8 +80,8 @@ function SectionBlock({ s, abbr, filter }) {
 function countMatches(u, filter) {
   let n = 0;
   for (const s of u.secs) {
-    const cite = s.citation || (u.abbr + " \u00A7 " + s.section);
-    if ((cite + " " + (s.text || "")).toLowerCase().includes(filter)) n++;
+    const cite = displayText(s.citation) || (u.abbr + " \u00A7 " + displayText(s.section));
+    if ((cite + " " + displayText(s.text)).toLowerCase().includes(filter)) n++;
   }
   for (const c of u.children) n += countMatches(c, filter);
   return n;
@@ -178,7 +180,7 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
             <div className="relative flex-1"><MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search across all California Codes…" className="pl-9 h-11" /></div>
             <Button type="submit" variant="default" className="h-11" disabled={globalBusy}>{globalBusy ? "Searching…" : "Search"}</Button>
           </form>
-          {globalResults.length > 0 && <div className="mt-4 rounded-xl border divide-y overflow-hidden">{globalResults.map((x, i) => <button key={i} onClick={() => { onCodeChange(x.abbr); setGlobalQuery(""); setGlobalResults([]); }} className="w-full text-left p-3 hover:bg-muted/40 transition-colors"><div className="text-sm font-semibold">{x.r.citation || `${x.abbr} § ${x.r.section}`}</div><div className="text-xs text-muted-foreground mt-1 line-clamp-2">{x.r.text}</div><div className="text-[11px] text-muted-foreground mt-2">{byAbbr[x.abbr]?.name}</div></button>)}</div>}
+          {globalResults.length > 0 && <div className="mt-4 rounded-xl border divide-y overflow-hidden">{globalResults.map((x, i) => <button key={i} onClick={() => { onCodeChange(x.abbr); setGlobalQuery(""); setGlobalResults([]); }} className="w-full text-left p-3 hover:bg-muted/40 transition-colors"><div className="text-sm font-semibold">{x.r.citation || `${x.abbr} § ${x.r.section}`}</div><div className="text-xs text-muted-foreground mt-1 line-clamp-2">{displayText(x.r.text)}</div><div className="text-[11px] text-muted-foreground mt-2">{byAbbr[x.abbr]?.name}</div></button>)}</div>}
           <div className="mt-6 rounded-xl border bg-muted/20 p-4 text-sm flex items-start gap-3"><ShieldCheck weight="fill" className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" /><span className="text-muted-foreground">This is a dated research snapshot. Use the official California Legislative Information site for the current operative text.</span></div>
         </div>
       ) : !byAbbr[activeCode] ? (

@@ -24,22 +24,6 @@ function gapDisclosed(text: string) {
   );
 }
 
-/** StreamingText calls new URL(url).hostname, so a relative deep-link (or a
- *  bare fragment) would throw and break the answer. Resolve against the
- *  origin, falling back to the official source. */
-function absoluteUrl(raw?: string): string {
-  const base =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "https://leginfo.legislature.ca.gov";
-  if (!raw) return base + "/";
-  try {
-    return new URL(raw, base).href;
-  } catch {
-    return base + "/";
-  }
-}
-
 interface Turn {
   id: string;
   role: Role;
@@ -87,7 +71,12 @@ function splitAnswer(raw: string) {
         label = m[2].trim();
       }
       const index = parseInt(marker.replace(/\D/g, ""), 10) || citations.length + 1;
-      citations.push({ id: marker, index, url: absoluteUrl(url), title: label || marker });
+      // Deep-links stay exactly as the server wrote them: relative links point
+      // back into the library (/codes?code=PEN&section=459), absolute ones at
+      // the official source. Resolving them against window.location.origin here
+      // is what used to print this app's own hostname as the source of every
+      // statute in the answer.
+      citations.push({ id: marker, index, url: (url || "").trim(), title: label || marker });
     }
   }
 
@@ -270,7 +259,9 @@ export function SpectrumChat() {
             {turns.map((t) =>
               t.role === "user" ? (
                 <div key={t.id} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-[18px] bg-muted px-4 py-2.5 text-[15px] leading-6">
+                  {/* pre-wrap: the composer sends Shift+Enter as a newline, and
+                      without this the bubble collapsed it into a space */}
+                  <div className="max-w-[85%] whitespace-pre-wrap rounded-[18px] bg-muted px-4 py-2.5 text-[15px] leading-6 break-words">
                     {t.content}
                   </div>
                 </div>

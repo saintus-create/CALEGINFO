@@ -42,8 +42,6 @@
 }
 
 :root {
-  /* brand blue for the light theme */
-  --color-primary: oklch(0.52 0.19 262);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -102,9 +100,29 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* Palette is neutral by design (zero chroma). A previous override forced
-   --color-primary to a blue (oklch(0.7 0.12 262)) in dark mode, which is what
-   tinted the user bubble, the model toggle and the action buttons. Removed. */
+/* Palette is neutral by design (zero chroma). Every `primary` surface resolves
+   through --primary (near-black on light, near-white on dark) because the theme
+   block above is `@theme inline`; a stray `--color-primary` brand blue used to
+   sit in `:root` and paint any utility that read the raw token. Removed. */
+
+/* The small uppercase label that sits above each page title in the browsers.
+   All five browsers asked for `className="eyebrow"`, but the rule was never
+   written, so those labels rendered as plain body text. */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground, #8f8f8f);
+}
+
+.eyebrow svg {
+  flex-shrink: 0;
+}
 
 /* brief perimeter glints on the emblem */
 @keyframes mark-glint {
@@ -329,11 +347,13 @@
 }
 
 /* conversation view: typography + disclaimer */
+/* Headings inherit the brand grotesk like the rest of the interface; the serif
+   stack that used to live here was the only serif in the product and none of
+   those families were ever loaded. */
 .aui-md h1,
 .aui-md h2,
 .aui-md h3,
 .aui-md h4 {
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
   letter-spacing: -0.01em;
   font-weight: 600;
 }

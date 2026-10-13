@@ -4,8 +4,14 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { THEME_BOOT_SCRIPT } from "@/lib/base/theme-key";
 
-// Space Grotesk (SIL OFL 1.1) is self-hosted in app/fonts so builds and previews
-// work without a network round-trip to Google Fonts.
+// The product face is Monument Grotesk (Dinamo), self-hosted from app/fonts so
+// builds and previews work without a network round-trip. The family ships three
+// weights — Regular 400, Medium 500, Bold 700 — so there is no 600 and
+// `font-semibold` resolves to Bold; there is no 300 either, so `font-light`
+// resolves to Regular. (app/fonts also carries Space Grotesk under the SIL OFL
+// and its licence text; nothing loads it.) The embedded Monument Grotesk licence
+// excludes redistributing the files or storing them on publicly available
+// servers — see docs/audit-text-and-fonts.md before shipping this publicly.
 const grotesk = localFont({
   src: [
     { path: "./fonts/MonumentGrotesk-Regular.otf", weight: "400", style: "normal" },

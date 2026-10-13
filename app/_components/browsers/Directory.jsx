@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
+import { displayText } from "@/lib/display-text";
 
 function money(n) {
   if (n == null) return "";
@@ -38,7 +39,7 @@ function AgencyRow({ a }) {
               {a.contracts.map((c, i) => (
                 <div key={i} className="rounded-md border p-2 mb-1">
                   <div className="font-medium text-foreground">{c.vendor}{c.amount != null ? " — " + money(c.amount) : ""}{c.year ? " (" + c.year + ")" : ""}</div>
-                  {c.purpose && <div className="text-muted-foreground mt-0.5">{c.purpose}</div>}
+                  {c.purpose && <div className="text-muted-foreground mt-0.5">{displayText(c.purpose)}</div>}
                   {c.citation && <a href={c.citation} target="_blank" rel="noopener" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1">Source <ArrowSquareOut className="h-3 w-3" /></a>}
                 </div>
               ))}
@@ -50,7 +51,7 @@ function AgencyRow({ a }) {
               {a.settlements.map((s, i) => (
                 <div key={i} className="rounded-md border p-2 mb-1">
                   <div className="font-medium text-foreground">{s.case || s.name || "Settlement"}{s.amount != null ? " — " + money(s.amount) : ""}{s.year ? " (" + s.year + ")" : ""}</div>
-                  {(s.purpose || s.description) && <div className="text-muted-foreground mt-0.5">{s.purpose || s.description}</div>}
+                  {(s.purpose || s.description) && <div className="text-muted-foreground mt-0.5">{displayText(s.purpose || s.description)}</div>}
                   {s.citation && <a href={s.citation} target="_blank" rel="noopener" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mt-1">Source <ArrowSquareOut className="h-3 w-3" /></a>}
                 </div>
               ))}
@@ -210,7 +211,7 @@ export default function Directory() {
                 <span className={"rounded-full border px-2 py-0.5 " + (c.status === "Passed" ? "border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400" : "text-muted-foreground")}>{c.status}</span>
                 <span className="ml-auto text-muted-foreground whitespace-nowrap">{c.date}{c.file ? " · " + c.file : ""}</span>
               </div>
-              <div className="text-[13px] mt-1.5 line-clamp-3">{c.subject}</div>
+              <div className="text-[13px] mt-1.5 line-clamp-3">{displayText(c.subject)}</div>
               <div className="flex items-center gap-2 mt-1.5 text-[11px] text-muted-foreground">
                 {c.body && <span>{c.body}</span>}
                 {c.url && (
