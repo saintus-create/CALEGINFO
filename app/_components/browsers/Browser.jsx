@@ -171,7 +171,7 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
       </div>
       {!activeCode ? (
         <div>
-          <div className="eyebrow"><Database className="h-3.5 w-3.5" /> Primary law library</div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground"><Database className="h-3.5 w-3.5" /> Primary law library</div>
           <h1 className="text-2xl font-bold mb-2 mt-3">Browse Codes</h1>
           <p className="text-muted-foreground text-sm">
             The complete California Codes — every section, readable in place, with curated case notes on the

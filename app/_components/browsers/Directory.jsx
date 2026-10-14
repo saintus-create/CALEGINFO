@@ -8,6 +8,7 @@ import {
   SealCheck,
 } from "@phosphor-icons/react";
 import { Input } from "@/components/spectrumui/ui/input";
+import { BeamSearch } from "@/components/spectrumui/beam-search";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
 
 function money(n) {
@@ -130,7 +131,7 @@ export default function Directory() {
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="eyebrow"><Buildings className="h-3.5 w-3.5" /> Public institutions</div>
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground"><Buildings className="h-3.5 w-3.5" /> Public institutions</div>
       <h1 className="text-2xl font-bold mt-3 mb-1">Agency &amp; Public-Records Directory</h1>
       <p className="text-sm text-muted-foreground">
         {dir.agencies.length.toLocaleString()} California state and local agencies
@@ -145,11 +146,9 @@ export default function Directory() {
       </div>
 
       {sub !== "records" && (
-        <div className="relative mt-4">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder={sub === "agencies" ? "Search agencies by name, type, or county…" : "Search contracts by city, vendor, or subject…"}
-            className="pl-9 h-11" />
+        <div className="mt-4">
+          <BeamSearch value={q} onChange={setQ}
+            placeholder={sub === "agencies" ? "Search agencies by name, type, or county…" : "Search contracts by city, vendor, or subject…"} />
         </div>
       )}
 

@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { Button } from "@/components/spectrumui/ui/button";
 import { Input } from "@/components/spectrumui/ui/input";
+import { BeamSearch } from "@/components/spectrumui/beam-search";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
 
 function RuleBlock({ r, filter }) {
@@ -168,19 +169,16 @@ export default function Rules({ jumpRule }) {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto" ref={boxRef}>
       {titleNum == null ? (
         <div>
-          <div className="eyebrow"><Gavel className="h-3.5 w-3.5" /> Judicial Council</div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground"><Gavel className="h-3.5 w-3.5" /> Judicial Council</div>
           <h1 className="text-2xl font-bold mt-3 mb-2">California Rules of Court</h1>
           <p className="text-muted-foreground text-sm">
             <b>{Number(total).toLocaleString()} rules</b> across {titles.length} titles — the procedural rules that govern
             California's trial and appellate courts, searchable in full. Pick a title, or search every rule.
           </p>
-          <form onSubmit={runGlobalSearch} className="mt-5 flex gap-2">
-            <div className="relative flex-1">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)}
-                placeholder="Search all rules (e.g. “continuance”, “service of papers”, “rule 8.1115”)…" className="pl-9 h-11" />
-            </div>
-            <Button type="submit" variant="default" className="h-11">Search</Button>
+          <form onSubmit={runGlobalSearch} className="mt-5">
+            <BeamSearch value={globalQuery} onChange={setGlobalQuery}
+              onSubmit={() => runGlobalSearch({ preventDefault() {} })}
+              placeholder="Search all rules (e.g. “continuance”, “service of papers”, “rule 8.1115”)…" />
           </form>
           {globalResults.length > 0 && (
             <div className="mt-4 rounded-xl border divide-y overflow-hidden">

@@ -10,6 +10,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { Input } from "@/components/spectrumui/ui/input";
+import { BeamSearch } from "@/components/spectrumui/beam-search";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/spectrumui/ui/select";
 import { Switch } from "@/components/spectrumui/ui/switch";
 import { Label } from "@/components/spectrumui/ui/label";
@@ -185,7 +186,7 @@ export default function Forms({ jumpForm }) {
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="eyebrow">
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         <FileText className="h-3.5 w-3.5" /> Judicial Council
       </div>
       <h1 className="text-2xl font-bold mt-3 mb-1">California Court Forms</h1>
@@ -197,47 +198,10 @@ export default function Forms({ jumpForm }) {
 
       <div className="mt-4 flex flex-col gap-2">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative flex-1">
-            <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9 h-11"
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setShown(60);
-              }}
-              placeholder="Search forms by number or topic (e.g. “FL-100”, “restraining order”, “eviction”)…"
-              value={query}
-            />
-            {query && (
-              <button
-                aria-label="Clear search"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => setQuery("")}
-                type="button"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+          <div className="flex-1">
+            <BeamSearch value={query} onChange={(v) => { setQuery(v); setShown(60); }}
+              placeholder="Search forms by number or topic (e.g. “FL-100”, “restraining order”, “eviction”)…" />
           </div>
-          <Select
-            onValueChange={(v) => {
-              setSeries(v);
-              setShown(60);
-            }}
-            value={series}
-          >
-            <SelectTrigger className="h-11 w-full sm:w-44">
-              <SelectValue placeholder="All form series" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All form series</SelectItem>
-              {prefixes.map(([p, n]) => (
-                <SelectItem key={p} value={p}>
-                  {p} ({n})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

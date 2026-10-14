@@ -8,6 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import { Button } from "@/components/spectrumui/ui/button";
 import { Input } from "@/components/spectrumui/ui/input";
+import { BeamSearch } from "@/components/spectrumui/beam-search";
 import { Badge } from "@/components/spectrumui/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/spectrumui/ui/select";
 import { Switch } from "@/components/spectrumui/ui/switch";
@@ -138,7 +139,7 @@ export default function Bills() {
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="eyebrow"><Bank className="h-3.5 w-3.5" /> Legislation</div>
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground"><Bank className="h-3.5 w-3.5" /> Legislation</div>
       <h1 className="text-2xl font-bold mt-3 mb-1">Bills &amp; Measures — {meta.session || "2025-2026"} Session</h1>
       <p className="text-sm text-muted-foreground">
         Every measure introduced this session, from the official LegInfo bill index
@@ -147,10 +148,10 @@ export default function Bills() {
       </p>
 
       <div className="flex flex-col sm:flex-row gap-2 mt-5">
-        <form className="relative flex-1" onSubmit={(e) => { e.preventDefault(); setApplied(query.trim()); }}>
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={query} onChange={(e) => { setQuery(e.target.value); if (!e.target.value) setApplied(""); }}
-            placeholder="Search subject, author, or measure number (e.g. “insurance wildfire”, “AB 1”)…" className="pl-9 h-11" />
+        <form className="flex-1" onSubmit={(e) => { e.preventDefault(); setApplied(query.trim()); }}>
+          <BeamSearch value={query} onChange={(v) => { setQuery(v); if (!v) setApplied(""); }}
+            onSubmit={() => setApplied(query.trim())}
+            placeholder="Search subject, author, or measure number (e.g. “insurance wildfire”, “AB 1”)…" />
         </form>
         <Select value={chamber} onValueChange={setChamber}>
           <SelectTrigger className="sm:w-36 h-11"><SelectValue /></SelectTrigger>
