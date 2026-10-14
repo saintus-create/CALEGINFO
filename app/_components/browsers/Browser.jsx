@@ -9,9 +9,9 @@ import {
   ShieldCheck,
   Gavel,
 } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/spectrumui/ui/button";
+import { Input } from "@/components/spectrumui/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/spectrumui/ui/select";
 import { BeamSearch } from "@/components/spectrumui/beam-search";
 import { Alert, AlertDescription } from "@/components/spectrumui/ui/alert";
 import { Card, CardContent } from "@/components/spectrumui/ui/card";

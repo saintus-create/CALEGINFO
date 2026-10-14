@@ -9,10 +9,10 @@ import {
   Translate,
   X,
 } from "@phosphor-icons/react";
-import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/spectrumui/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/spectrumui/ui/select";
+import { Switch } from "@/components/spectrumui/ui/switch";
+import { Label } from "@/components/spectrumui/ui/label";
 import { loadExtras, extras, extraMeta, formSeries, rankForms } from "@/lib/engine";
 
 const LANGUAGE_LABELS = {

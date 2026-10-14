@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   SealCheck,
 } from "@phosphor-icons/react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/spectrumui/ui/input";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
 
 function money(n) {

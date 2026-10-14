@@ -9,8 +9,8 @@ import {
   ArrowLeft,
   CircleNotch,
 } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/spectrumui/ui/button";
+import { Input } from "@/components/spectrumui/ui/input";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
 
 function RuleBlock({ r, filter }) {

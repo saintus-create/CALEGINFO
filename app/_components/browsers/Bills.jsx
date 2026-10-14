@@ -6,12 +6,12 @@ import {
   CircleNotch,
   Users,
 } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/spectrumui/ui/button";
+import { Input } from "@/components/spectrumui/ui/input";
+import { Badge } from "@/components/spectrumui/ui/badge";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/spectrumui/ui/select";
+import { Switch } from "@/components/spectrumui/ui/switch";
+import { Label } from "@/components/spectrumui/ui/label";
 import { loadExtras, extras, extraMeta } from "@/lib/engine";
 
 const GROUP_STYLE = {
