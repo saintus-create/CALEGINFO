@@ -74,7 +74,6 @@ export function servedModels(): ServedModel[] {
     { id: DEFAULT_MODEL_ID, name: DEFAULT_MODEL_NAME, available: Boolean(process.env.SARVAM_API_KEY) },
   ];
   for (const alt of alternateModels()) {
-    const builtIn = alt.id === BUILT_IN_UNFILTERED.id && !process.env.ALTERNATE_MODELS_JSON;
     out.push({
       id: alt.id,
       name: alt.name || alt.id,
