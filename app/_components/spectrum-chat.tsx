@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/app/_components/theme-toggle";
 import { SuggestionBanner } from "@/components/spectrumui/blocks/ai-assistants/suggestion-banner";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
 import { ErrorState } from "@/components/spectrumui/blocks/ai-assistants/error-state";
+import { SpectrumBlockWorkbench } from "@/app/_components/spectrum-block-workbench";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
 
 type Role = "user" | "assistant";
@@ -123,6 +124,8 @@ export function SpectrumChat() {
   const [models, setModels] = useState<Array<{ id: string; name: string; available?: boolean }>>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [failedPrompt, setFailedPrompt] = useState<{ text: string; modelId?: string } | null>(null);
+  const [showBlockWorkbench, setShowBlockWorkbench] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -143,6 +146,7 @@ export function SpectrumChat() {
       if (!q || busy) return;
       setNotice(null);
       setFailedPrompt(null);
+      if (modelId) setSelectedModel(modelId);
       setBusy(true);
 
       const userId = `u${Date.now()}`;
@@ -246,6 +250,7 @@ export function SpectrumChat() {
             </a>
           ))}
         </nav>
+        <button type="button" onClick={() => setShowBlockWorkbench(true)} className="rounded-lg px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">Workspace</button>
         <ThemeToggle />
       </header>
       <MobileDockNav />
@@ -278,13 +283,13 @@ export function SpectrumChat() {
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-5 py-8 sm:px-8">
             {turns.map((t) =>
               t.role === "user" ? (
-                <div key={t.id} className="flex justify-end">
+                <div key={t.id} id={t.id} className="flex justify-end">
                   <div className="max-w-[85%] rounded-[18px] bg-muted px-4 py-2.5 text-[15px] leading-6">
                     {t.content}
                   </div>
                 </div>
               ) : (
-                <div key={t.id} className="flex flex-col gap-3">
+                <div key={t.id} id={t.id} className="flex flex-col gap-3">
                   {t.streaming && !t.content ? (
                     <ThinkingDots label="Researching California law" />
                   ) : (
@@ -351,6 +356,22 @@ export function SpectrumChat() {
             />
           </div>
         </div>
+      )}
+      {showBlockWorkbench && (
+        <SpectrumBlockWorkbench
+          onClose={() => setShowBlockWorkbench(false)}
+          onRunPrompt={(prompt) => { setShowBlockWorkbench(false); void send(prompt, selectedModel || models.find((m) => m.available !== false)?.id); }}
+          question={[...turns].reverse().find((t) => t.role === "user")?.content ?? ""}
+          answer={[...turns].reverse().find((t) => t.role === "assistant" && !t.streaming)?.content ?? ""}
+          citations={[...turns].reverse().find((t) => t.role === "assistant" && !t.streaming)?.citations ?? []}
+          models={models.map((m) => ({ id: m.id, name: m.name, disabled: m.available === false }))}
+          selectedModel={selectedModel || models.find((m) => m.available !== false)?.id || models[0]?.id || ""}
+          onModelChange={setSelectedModel}
+          busy={busy}
+          questions={turns.filter((t) => t.role === "user").map((t) => ({ id: t.id, title: t.content, group: "This session" }))}
+          onSelectQuestion={(id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" }); setShowBlockWorkbench(false); }}
+          onVoiceText={(text) => { if (text.trim()) void send(text, selectedModel); }}
+        />
       )}
       {notice && empty && (
         <div className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 px-3">
