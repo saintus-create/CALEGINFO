@@ -1,0 +1,59 @@
+{
+  "repo_notes": [
+    {
+      "content": "This is CALEGINFO / LegInfo: a California legal-research product. A Next.js 16 app (App Router, Turbopack, React 19, Tailwind 4) that serves a compressed legal corpus and answers questions over it with a retrieval-augmented assistant. There are three areas that matter most and they should not be conflated: (1) the corpus under public/corpus plus the loader in agent/lib/corpus.ts and lib/engine.js, (2) the research agent under agent/ with its tools, planner, retrieval and system prompt, exposed through app/api/chat/route.ts, and (3) the UI, which is deliberately built from installed component sources rather than hand-written markup.",
+      "author": "Repo notes"
+    },
+    {
+      "content": "Important: the UI is composed from vendored component sources that must not be rewritten or tidied. components/spectrumui/ is the unmodified Spectrum UI registry (installed via scripts/install-from-github.mjs); components/assistant-ui/ and components/examples/base.tsx are the assistant-ui chat surface, and ten of those files are byte-identical to their upstream source. components/ui/ is the shadcn set. If documentation suggests refactoring or reformatting any file under components/spectrumui/ or components/assistant-ui/, that is wrong - fidelity to the published source is a hard requirement of this project."
+    },
+    {
+      "content": "The corpus is the product's substance: public/corpus/manifest.json indexes 30 California Codes (162,324 sections), 5,062 bills, 1,501 Rules of Court, 1,670 Judicial Council forms, 505 agencies, and case annotations, plus a 4,672-entry Words and Phrases digest at public/corpus/library/wp-digest.jsonl.gz. Each dataset is a gzipped JSONL streamed on demand through DecompressionStream, never downloaded whole. agent/lib/corpus.ts, agent/lib/retrieval.ts and agent/lib/search.ts are the loaders and matchers; agent/tools/ holds search_statutes, search_bills, search_rules, search_cases, search_forms, lookup_section and search_library. Tools must be registered in the TOOLS map in app/api/chat/route.ts or they are never reachable."
+    },
+    {
+      "content": "The research agent runs two concurrent sub-agents (an authority agent for statutes, bills, rules and forms; a meaning agent for cases and Words and Phrases) defined in agent/lib/agents.ts, merged into one record, with a deterministic planner kept as the fallback when they fail. constants/system-prompt.ts names the tools to the model with bracketed citation markers ([s1], [b2], [r1], [c3], [w1]). There is a provider-failure path in app/api/chat/route.ts that reports infrastructure failure honestly rather than claiming the answer could not be verified."
+    },
+    {
+      "content": "The browse pages under app/(browse)/ - codes, bills, rules, forms, directory, method - render the corpus. Several were rebuilt on Spectrum UI's DataTable. The landing page app/page.tsx renders the assistant-ui chat. Note that app/_components/browsers/ contains a mix: some files are the app's own usage code and some are superseded. Deployment is a Dockerfile plus blaxel.toml and entrypoint.sh, and the app also deploys to Vercel as two projects named ca.gov and leginfo.",
+      "author": "Repo notes"
+    }
+  ],
+  "pages": [
+    {
+      "title": "Architecture Overview",
+      "purpose": "The high-level shape of CALEGINFO: the Next.js App Router app, the corpus it serves, the research agent that answers over it, and how a request flows from the chat UI through app/api/chat/route.ts into the agent and back. Document how these three areas relate and where the boundaries are."
+    },
+    {
+      "title": "The Legal Corpus",
+      "purpose": "Document public/corpus and its manifest, the datasets (codes, bills, rules, forms, directory, case annotations, the Words and Phrases digest), the gzipped JSONL format, and the on-demand DecompressionStream loading strategy. Cover agent/lib/corpus.ts, lib/engine.js and how a dataset is fetched and parsed."
+    },
+    {
+      "title": "Research Agent and Tools",
+      "purpose": "Document agent/: the tool implementations under agent/tools/ (search_statutes, search_bills, search_rules, search_cases, search_forms, lookup_section, search_library), the retrieval and search helpers in agent/lib/, the two concurrent sub-agents in agent/lib/agents.ts, the deterministic fallback planner, and the requirement that tools be registered in the TOOLS map in app/api/chat/route.ts."
+    },
+    {
+      "title": "Chat API and Answer Pipeline",
+      "purpose": "Document app/api/chat/route.ts end to end: tool registration, the research block, the citation gate, the repair passes, the provider-failure honesty path, and how constants/system-prompt.ts instructs the model. Explain the citation markers ([s1], [b2], [r1], [c3], [w1]) and how sources become citable."
+    },
+    {
+      "title": "UI Component Sources",
+      "purpose": "Document where every UI component comes from: components/spectrumui/ (the unmodified Spectrum UI registry and the install scripts), components/assistant-ui/ and components/examples/base.tsx (the assistant-ui chat surface), and components/ui/ (shadcn). Emphasise the project rule that vendored sources are not to be reformatted, renamed or rewritten, and explain how new components are installed."
+    },
+    {
+      "title": "The Chat Surface",
+      "purpose": "Document the assistant-ui chat: components/examples/base.tsx and its dependencies (thread-list, model-selector, reasoning, quote, message-timing, markdown-text, dot-matrix, tool-fallback, directive-text, attachment, composer-trigger-popover), the runtime providers in components/runtime/, and the config in lib/base/ (config-provider, defaults, theme) that supplies the app's copy and brand."
+    },
+    {
+      "title": "Browse Pages",
+      "purpose": "Document app/(browse)/ and app/_components/browsers/: the codes, bills, rules, forms, directory and method pages, the shared shell, the route table, and how each page loads its dataset and renders it. Note which pages use Spectrum UI's DataTable."
+    },
+    {
+      "title": "Deployment",
+      "purpose": "Document how the app is built and shipped: the Dockerfile, entrypoint.sh and blaxel.toml, the Next.js build configuration, and the Vercel projects (ca.gov and leginfo). Include the build-time requirements such as the pnpm lockfile and any dependency that must be present for the build to type-check."
+    },
+    {
+      "title": "Accuracy Harness",
+      "purpose": "Document the accuracy measurement approach for the assistant: the harness of questions with corpus-derived ground truth, what it measures, and the known failure modes it was built to catch (context-window overflows from oversized passages, and keyword mismatches between everyday terms and statutory phrasing)."
+    }
+  ]
+}
