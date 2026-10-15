@@ -6,13 +6,9 @@ import {
   UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
-import { MetalEmblem } from "@/app/_components/metal-seal";
-import { CaMark } from "@/app/_components/ca-mark";
-import { LawMarkdownText } from "@/components/assistant-ui/law-markdown";
 import { DotMatrix } from "@/components/assistant-ui/dot-matrix";
 import { MessageTiming } from "@/components/assistant-ui/message-timing";
 import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
-import { LawToolCall } from "@/components/assistant-ui/law-tool-call";
 import {
   ToolGroupContent,
   ToolGroupRoot,
@@ -85,17 +81,13 @@ import {
   SlashIcon,
   SquareIcon,
   WrenchIcon,
-  BookOpenIcon,
-  LandmarkIcon,
-  ScaleIcon,
-  Building2Icon,
 } from "lucide-react";
 import {
   LexicalComposerInput,
   type DirectiveChipProps,
 } from "@assistant-ui/react-lexical";
 import Image from "next/image";
-import { useEffect, useState, type FC } from "react";
+import { useState, type FC } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ModelSelector } from "@/components/assistant-ui/model-selector";
 import { docsModelOptions } from "@/components/docs/assistant/docs-model-options";
@@ -106,38 +98,15 @@ const Logo: FC = () => {
 
   return (
     <div className="flex items-center gap-2 px-2 text-sm font-medium">
-      <CaMark className="text-primary size-5" />
-      <span className="text-foreground tracking-tight">{assistant.appName}</span>
+      <Image
+        src={icon}
+        alt="logo"
+        className="size-5 dark:hue-rotate-180 dark:invert"
+      />
+      <span className="text-primary">{assistant.appName}</span>
     </div>
   );
 };
-
-const LIBRARY_ICONS = [
-  { label: "Codes", href: "/codes", Icon: BookOpenIcon },
-  { label: "Bills", href: "/bills", Icon: LandmarkIcon },
-  { label: "Rules of Court", href: "/rules", Icon: ScaleIcon },
-  { label: "Forms", href: "/forms", Icon: FileTextIcon },
-  { label: "Directory", href: "/directory", Icon: Building2Icon },
-];
-
-const LibraryRail: FC = () => (
-  <nav
-    aria-label="Library"
-    className="relative z-10 hidden h-full w-14 shrink-0 flex-col items-center gap-1 py-3 md:flex"
-  >
-    {LIBRARY_ICONS.map(({ label, href, Icon }) => (
-      <a
-        key={href}
-        href={href}
-        title={label}
-        aria-label={label}
-        className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex size-9 items-center justify-center rounded-md transition-colors"
-      >
-        <Icon className="size-4" />
-      </a>
-    ))}
-  </nav>
-);
 
 const Sidebar: FC<{ collapsed?: boolean }> = ({ collapsed }) => {
   const { assistant } = useBaseConfig();
@@ -155,10 +124,14 @@ const Sidebar: FC<{ collapsed?: boolean }> = ({ collapsed }) => {
           collapsed ? "px-3.5" : "px-6",
         )}
       >
-        <CaMark className="text-primary size-5 shrink-0" />
+        <Image
+          src={icon}
+          alt="logo"
+          className="size-5 shrink-0 dark:hue-rotate-180 dark:invert"
+        />
         <span
           className={cn(
-            "text-foreground ml-2 text-sm font-medium tracking-tight whitespace-nowrap transition-opacity duration-200",
+            "text-primary ml-2 text-sm font-medium whitespace-nowrap transition-opacity duration-200",
             collapsed && "opacity-0",
           )}
         >
@@ -211,83 +184,17 @@ const MobileSidebar: FC = () => {
   );
 };
 
-const LawModelToggle: FC = () => {
-  const [alternate, setAlternate] = useState<{
-    id: string;
-    name: string;
-    available: boolean;
-  } | null>(null);
-  const [on, setOn] = useState(false);
+const models = docsModelOptions();
 
-  useEffect(() => {
-    const saved = localStorage.getItem("law-model-id");
-    fetch("/api/models")
-      .then((r) => r.json())
-      .then(
-        (d: {
-          models?: Array<{ id: string; name: string; available?: boolean }>;
-        }) => {
-          const models = Array.isArray(d?.models) ? d.models : [];
-          // first entry is the standard model; one configured alternate becomes the toggle
-          const alt = models.length > 1 ? models[1] : null;
-          setAlternate(
-            alt
-              ? { id: alt.id, name: alt.name, available: !!alt.available }
-              : null,
-          );
-          setOn(!!alt && saved === alt.id);
-        },
-      )
-      .catch(() => {});
-  }, []);
-
-  if (!alternate) return null;
-
-  const select = (useAlternate: boolean) => {
-    const id = useAlternate ? alternate.id : DEFAULT_MODEL_ID;
-    setOn(useAlternate);
-    localStorage.setItem("law-model-id", id);
-    window.dispatchEvent(new Event("law-model-change"));
-  };
-
+const ModelPicker: FC = () => {
   return (
-    <div
-      data-slot="law-model-toggle"
-      className="flex items-center rounded-full border border-border bg-muted/50 p-1 backdrop-blur-xl"
-      title={
-        alternate.available
-          ? `Answer mode: Standard or Unfiltered`
-          : "Unfiltered needs an OpenRouter key: add OPENROUTER_API_KEY in Vercel \u2192 Redeploy"
-      }
-    >
-      <button
-        type="button"
-        onClick={() => select(false)}
-        className={cn(
-          "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
-          !on
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground",
-        )}
-      >
-        Standard
-      </button>
-      <button
-        type="button"
-        onClick={() => select(true)}
-        disabled={!alternate.available}
-        className={cn(
-          "rounded-full px-6 py-2.5 text-[15px] font-medium transition-colors",
-          on
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground",
-          !alternate.available &&
-            "cursor-not-allowed opacity-40 hover:text-muted-foreground",
-        )}
-      >
-        Unfiltered
-      </button>
-    </div>
+    <ModelSelector
+      models={models}
+      defaultValue={DEFAULT_MODEL_ID}
+      variant="ghost"
+      size="sm"
+      className="h-7 rounded-full"
+    />
   );
 };
 
@@ -299,7 +206,7 @@ const ThreadTitle: FC = () => {
   );
 
   return (
-    <span className="min-w-0 flex-1 truncate text-sm font-medium md:flex-none">
+    <span className="min-w-0 truncate text-sm font-medium">
       {title ?? assistant.labels.newChat}
     </span>
   );
@@ -309,22 +216,19 @@ const Header: FC<{
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
 }> = ({ sidebarCollapsed, onToggleSidebar }) => {
-  const isEmpty = useAuiState(isNewChatView);
   return (
-    <header className="relative flex h-12 shrink-0 items-center gap-2 px-4">
-      {isEmpty ? null : <MobileSidebar />}
-      {isEmpty ? null : (
-        <TooltipIconButton
-          variant="ghost"
-          size="icon"
-          tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-          side="bottom"
-          onClick={onToggleSidebar}
-          className="hidden size-8 md:flex"
-        >
-          <PanelLeftIcon className="size-4" />
-        </TooltipIconButton>
-      )}
+    <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+      <MobileSidebar />
+      <TooltipIconButton
+        variant="ghost"
+        size="icon"
+        tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+        side="bottom"
+        onClick={onToggleSidebar}
+        className="hidden size-8 md:flex"
+      >
+        <PanelLeftIcon className="size-4" />
+      </TooltipIconButton>
       <ThreadTitle />
       <TooltipIconButton
         variant="ghost"
@@ -351,11 +255,11 @@ const Thread: FC = () => {
 
   return (
     <ThreadPrimitive.Root
-      className="aui-root aui-thread-root @container flex h-full flex-col"
+      className="aui-root aui-thread-root bg-background @container flex h-full flex-col"
       style={{
-        ["--thread-max-width" as string]: "42rem",
+        ["--thread-max-width" as string]: "44rem",
         ["--composer-bg" as string]:
-          "var(--color-muted)",
+          "color-mix(in oklab, var(--color-muted) 30%, var(--color-background))",
         ["--composer-radius" as string]: "1.5rem",
         ["--composer-padding" as string]: "8px",
       }}
@@ -364,10 +268,14 @@ const Thread: FC = () => {
         turnAnchor="top"
         data-slot="aui_thread-viewport"
         className={cn(
-          "relative flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto scroll-smooth px-3 pt-3 pb-[env(safe-area-inset-bottom)] sm:px-4 sm:pt-4",
+          "relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth px-4 pt-4",
           isEmpty && "justify-center",
         )}
       >
+        <AuiIf condition={isNewChatView}>
+          <ThreadWelcome />
+        </AuiIf>
+
         <div
           data-slot="aui_message-group"
           className="mb-14 flex flex-col gap-y-6 empty:hidden"
@@ -383,22 +291,19 @@ const Thread: FC = () => {
 
         <ThreadPrimitive.ViewportFooter
           className={cn(
-            "aui-thread-viewport-footer mx-auto flex w-full max-w-(--thread-max-width) flex-col gap-4 overflow-visible pb-4 md:pb-6",
-            !isEmpty &&
-              "bg-background/70 sticky bottom-0 mt-auto rounded-t-(--composer-radius) backdrop-blur-md",
+            "aui-thread-viewport-footer bg-background mx-auto flex w-full max-w-(--thread-max-width) flex-col gap-4 overflow-visible pb-4 md:pb-6",
+            !isEmpty && "sticky bottom-0 mt-auto rounded-t-(--composer-radius)",
           )}
         >
           <ThreadScrollToBottom />
-          {isEmpty ? (
-            <div className="flex justify-center pb-6">
-              <div className="shrink-0" style={{ width: "min(78vw, 34rem)", aspectRatio: "930 / 523" }}>
-                <MetalEmblem className="h-full w-full" />
-              </div>
+          <Composer />
+          <AuiIf condition={isNewChatView}>
+            <div className="aui-thread-welcome-suggestions-shell min-h-19">
+              <AuiIf condition={(s) => s.composer.isEmpty}>
+                <ThreadSuggestions />
+              </AuiIf>
             </div>
-          ) : null}
-          <div className="relative">
-            <Composer />
-          </div>
+          </AuiIf>
         </ThreadPrimitive.ViewportFooter>
       </ThreadPrimitive.Viewport>
 
@@ -434,54 +339,6 @@ const ThreadWelcome: FC = () => {
           {assistant.welcome.body}
         </p>
       )}
-      <div className="mt-8 grid w-full max-w-2xl grid-cols-2 gap-2.5 sm:grid-cols-5">
-        {[
-          {
-            href: "/codes",
-            icon: BookOpenIcon,
-            title: "Codes",
-            desc: "The complete California Codes, readable in place",
-          },
-          {
-            href: "/bills",
-            icon: LandmarkIcon,
-            title: "Bills",
-            desc: "This session's legislation, chaptered to vetoed",
-          },
-          {
-            href: "/rules",
-            icon: ScaleIcon,
-            title: "Rules of Court",
-            desc: "Procedural rules for every California court",
-          },
-          {
-            href: "/forms",
-            icon: FileTextIcon,
-            title: "Forms",
-            desc: "Every statewide Judicial Council form, searchable",
-          },
-          {
-            href: "/directory",
-            icon: Building2Icon,
-            title: "Directory",
-            desc: "Agencies, offices, and official sources",
-          },
-        ].map((card) => (
-          <a
-            key={card.href}
-            href={card.href}
-            className="group border-border/70 bg-card/50 hover:border-primary/40 hover:bg-card flex flex-col items-start gap-1.5 rounded-xl border p-3.5 text-left transition-colors"
-          >
-            <card.icon className="text-primary size-4.5" />
-            <span className="text-foreground text-sm font-semibold">
-              {card.title}
-            </span>
-            <span className="text-muted-foreground text-xs leading-snug">
-              {card.desc}
-            </span>
-          </a>
-        ))}
-      </div>
     </div>
   );
 };
@@ -501,7 +358,7 @@ const suggestionIconMap: Record<
 };
 
 const suggestionChipClass =
-  "aui-thread-welcome-suggestion border-border bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground h-auto gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-normal whitespace-nowrap transition-colors [&_svg]:size-4";
+  "aui-thread-welcome-suggestion border-primary/35 bg-primary/5 text-foreground hover:bg-primary/15 hover:border-primary/60 h-auto gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-normal whitespace-nowrap transition-colors [&_svg]:size-4 [&_svg]:text-primary";
 
 const ThreadSuggestions: FC = () => {
   const { assistant } = useBaseConfig();
@@ -521,8 +378,8 @@ const ThreadSuggestions: FC = () => {
 
   return (
     <div className="aui-thread-welcome-suggestions flex w-full flex-col gap-2 px-4">
-      <div className="w-full">
-        <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
+      <div className="w-full scrollbar-none overflow-x-auto">
+        <div className="mx-auto flex w-max items-center gap-2">
           {assistant.suggestionGroups.map((group) => {
             const Icon = suggestionIconMap[group.icon] ?? LightbulbIcon;
             return (
@@ -616,7 +473,7 @@ const Composer: FC = () => {
         <ComposerPrimitive.AttachmentDropzone asChild>
           <div
             data-slot="aui_composer-shell"
-            className="data-[dragging=true]:border-dashed flex w-full flex-col gap-2 rounded-[14px] border border-border/80 bg-card/95 p-2 shadow-sm transition-colors focus-within:border-border focus-within:ring-[1px] focus-within:ring-foreground/5 dark:bg-muted/45 dark:focus-within:ring-white/5"
+            className="border-primary/25 data-[dragging=true]:border-ring focus-within:border-primary/60 dark:border-primary/25 dark:focus-within:border-primary/70 flex w-full flex-col gap-2 rounded-(--composer-radius) border bg-(--composer-bg) p-(--composer-padding) shadow-[0_4px_16px_-8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] transition-[border-color,box-shadow] focus-within:shadow-[0_0_0_1px_var(--color-primary),0_8px_28px_-12px_var(--color-primary)] data-[dragging=true]:border-dashed data-[dragging=true]:bg-[color-mix(in_oklab,var(--color-primary)_12%,var(--color-background))] dark:shadow-none"
           >
             <ComposerQuotePreview />
             <ComposerAttachments />
@@ -646,6 +503,7 @@ const ComposerAction: FC = () => {
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
       <div className="flex items-center gap-1">
         <ComposerAddAttachment />
+        <ModelPicker />
       </div>
       <div className="flex items-center gap-1.5">
         <AuiIf condition={(s) => s.thread.capabilities.dictation}>
@@ -732,7 +590,7 @@ const AssistantWorkingIndicator: FC = () => {
         className="text-muted-foreground inline-flex items-center gap-2 align-middle"
       >
         <DotMatrix state="connecting" aria-hidden />
-        <span className="shimmer-text text-sm font-medium">Connecting</span>
+        <span className="text-sm">Connecting</span>
       </span>
     );
   }
@@ -777,7 +635,7 @@ const AssistantMessage: FC = () => {
                 return <div data-slot="aui_chain-of-thought">{children}</div>;
               case "group-tool":
                 return (
-                  <ToolGroupRoot variant="ghost" active={part.status.type === "running"}>
+                  <ToolGroupRoot variant="ghost">
                     <ToolGroupTrigger
                       count={part.indices.length}
                       active={part.status.type === "running"}
@@ -797,11 +655,11 @@ const AssistantMessage: FC = () => {
                 );
               }
               case "text":
-                return <LawMarkdownText />;
+                return <MarkdownText />;
               case "reasoning":
                 return <Reasoning {...part} />;
               case "tool-call":
-                return part.toolUI ?? <LawToolCall {...part} />;
+                return part.toolUI ?? <ToolFallback {...part} />;
               case "indicator":
                 return <AssistantWorkingIndicator />;
               case "data":
@@ -885,7 +743,7 @@ const UserMessage: FC = () => {
       <UserMessageAttachments />
 
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-        <div className="aui-user-message-content peer rounded-[18px] border border-border/40 bg-muted/70 px-3.5 py-2 text-[15px] leading-6 shadow-sm wrap-break-word empty:hidden">
+        <div className="aui-user-message-content peer bg-muted text-foreground rounded-xl px-4 py-2 wrap-break-word empty:hidden">
           <MessagePrimitive.Quote>
             {(quote) => <QuoteBlock {...quote} />}
           </MessagePrimitive.Quote>
@@ -927,7 +785,7 @@ const EditComposer: FC = () => {
       className="mx-auto flex w-full max-w-(--thread-max-width) flex-col px-2"
     >
       <ComposerPrimitive.Unstable_TriggerPopoverRoot>
-        <ComposerPrimitive.Root className="aui-edit-composer-root ml-auto flex w-full max-w-[85%] flex-col rounded-(--composer-radius) bg-(--composer-bg) shadow-[0_4px_16px_-8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none">
+        <ComposerPrimitive.Root className="aui-edit-composer-root border-border/60 dark:border-muted-foreground/15 ml-auto flex w-full max-w-[85%] flex-col rounded-(--composer-radius) border bg-(--composer-bg) shadow-[0_4px_16px_-8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none">
           <LexicalComposerInput
             directiveChip={DirectiveChip}
             autoFocus
@@ -985,27 +843,21 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
   );
 };
 
-const EmptyAwareSidebar: FC<{ collapsed?: boolean }> = ({ collapsed }) => {
-  const isEmpty = useAuiState(isNewChatView);
-  return isEmpty ? null : <Sidebar collapsed={collapsed} />;
-};
-
 export const Base: FC = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden">
-      <LibraryRail />
-      <div className="relative z-10 hidden md:block">
-        <EmptyAwareSidebar collapsed={sidebarCollapsed} />
+    <div className="bg-[color-mix(in_oklab,var(--color-primary)_4%,var(--color-muted))] flex h-full w-full">
+      <div className="hidden md:block">
+        <Sidebar collapsed={sidebarCollapsed} />
       </div>
-      <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0 sm:p-2 md:pl-0">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-none sm:rounded-lg">
+      <div className="flex flex-1 flex-col overflow-hidden p-2 md:pl-0">
+        <div className="bg-background flex flex-1 flex-col overflow-hidden rounded-lg">
           <Header
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
-          <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
+          <main className="flex-1 overflow-hidden">
             <Thread />
           </main>
         </div>
