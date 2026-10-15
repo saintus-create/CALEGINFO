@@ -17,6 +17,7 @@ export interface ApprovalCardProps {
   meta?: string;
   approveLabel?: string;
   rejectLabel?: string;
+  approvedMessage?: string;
   decision?: ApprovalDecision | null;
   onDecide?: (decision: ApprovalDecision) => void;
   className?: string;
@@ -28,6 +29,7 @@ export function ApprovalCard({
   meta = 'drafted by agent · draft_carrier_notice',
   approveLabel = 'Approve & send',
   rejectLabel = 'Dismiss',
+  approvedMessage = 'Approved — notice queued',
   decision: decisionProp,
   onDecide,
   className,
@@ -66,7 +68,7 @@ export function ApprovalCard({
             )}
           </span>
           <p className="mt-2.5 text-[13.5px] font-medium text-neutral-900 dark:text-neutral-50">
-            {decision === 'approved' ? 'Approved — notice queued' : 'Dismissed'}
+            {decision === 'approved' ? approvedMessage : 'Dismissed'}
           </p>
           <p className="mt-1 font-mono text-[10.5px] text-neutral-400 dark:text-neutral-600">
             {meta}
