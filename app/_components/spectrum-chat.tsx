@@ -338,7 +338,7 @@ export function SpectrumChat() {
                 disabled: m.available === false,
               }))}
               defaultModelId={models[0]?.id}
-              onSend={(value: string) => send(value)}
+              onSend={(value: string, modelId?: string) => send(value, modelId)}
               isGenerating={busy}
             />
           </div>
