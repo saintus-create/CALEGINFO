@@ -21,14 +21,10 @@ import billDetail from "@/agent/tools/bill_detail";
 import { alternateModels, alternateApiKey, DEFAULT_MODEL_ID, isBuiltInUnfiltered } from "@/agent/lib/models";
 import research from "@/agent/tools/research";
 import { prosecutionContract, prosecutionHeadingGaps } from "@/agent/lib/prosecution-analysis";
-import { SARVAM_KEY } from "@/lib/engine";
 
-// Prefer the deployment env var, then fall back to the key the browser path
-// already uses in lib/engine.js. Without the fallback every request 503s on a
-// deployment that never had SARVAM_API_KEY set.
-const KEY = process.env.SARVAM_API_KEY || SARVAM_KEY;
-if (!process.env.SARVAM_API_KEY)
-  console.warn("[api/chat] SARVAM_API_KEY is not set; using the built-in engine key");
+// Provider credentials belong in server-side environment variables only.
+// Never fall back to a credential embedded in source or shipped to browsers.
+const KEY = process.env.SARVAM_API_KEY || "";
 
 const sarvam = createOpenAICompatible({
   name: "sarvam",
