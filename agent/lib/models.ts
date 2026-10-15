@@ -71,16 +71,16 @@ export interface ServedModel {
 /** Models configured on this server (used by /api/models). */
 export function servedModels(): ServedModel[] {
   const out: ServedModel[] = [
-    { id: DEFAULT_MODEL_ID, name: DEFAULT_MODEL_NAME, available: true },
+    { id: DEFAULT_MODEL_ID, name: DEFAULT_MODEL_NAME, available: Boolean(process.env.SARVAM_API_KEY) },
   ];
   for (const alt of alternateModels()) {
     const builtIn = alt.id === BUILT_IN_UNFILTERED.id && !process.env.ALTERNATE_MODELS_JSON;
     out.push({
       id: alt.id,
       name: alt.name || alt.id,
-      // the built-in Unfiltered always works: it upgrades to OpenRouter when the
-      // key exists and otherwise runs in direct mode on the standard model
-      available: builtIn || !!alternateApiKey(alt),
+      // A model is available only when its actual provider credential exists.
+      // Never advertise a no-key fallback that the chat route cannot execute.
+      available: !!alternateApiKey(alt),
     });
   }
   return out;
