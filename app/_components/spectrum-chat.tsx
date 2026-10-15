@@ -12,6 +12,7 @@ import { StarMark } from "@/app/_components/star-mark";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
 import { SuggestionBanner } from "@/components/spectrumui/blocks/ai-assistants/suggestion-banner";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
+import { ErrorState } from "@/components/spectrumui/blocks/ai-assistants/error-state";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
 
 type Role = "user" | "assistant";
@@ -121,6 +122,7 @@ export function SpectrumChat() {
   const [busy, setBusy] = useState(false);
   const [models, setModels] = useState<Array<{ id: string; name: string; available?: boolean }>>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [failedPrompt, setFailedPrompt] = useState<{ text: string; modelId?: string } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -140,6 +142,7 @@ export function SpectrumChat() {
       const q = text.trim();
       if (!q || busy) return;
       setNotice(null);
+      setFailedPrompt(null);
       setBusy(true);
 
       const userId = `u${Date.now()}`;
@@ -171,6 +174,7 @@ export function SpectrumChat() {
         if (!res.ok || !res.body) {
           const msg = await res.text().catch(() => "");
           setNotice(msg || `Request failed (${res.status})`);
+          setFailedPrompt({ text: q, modelId });
           setTurns((prev) => prev.filter((t) => t.id !== botId));
           return;
         }
@@ -212,6 +216,7 @@ export function SpectrumChat() {
         );
       } catch {
         setNotice("Could not reach the research service.");
+        setFailedPrompt({ text: q, modelId });
         setTurns((prev) => prev.filter((t) => t.id !== botId));
       } finally {
         setBusy(false);
@@ -318,9 +323,12 @@ export function SpectrumChat() {
             )}
 
             {notice && (
-              <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground">
-                {notice}
-              </div>
+              <ErrorState
+                variant="Inline"
+                title={notice}
+                retryLabel="Retry"
+                onRetry={() => failedPrompt && send(failedPrompt.text, failedPrompt.modelId)}
+              />
             )}
           </div>
         )}
@@ -345,8 +353,14 @@ export function SpectrumChat() {
         </div>
       )}
       {notice && empty && (
-        <div role="alert" className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-border bg-background px-4 py-3 text-sm shadow-lg">
-          {notice}
+        <div className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 px-3">
+          <ErrorState
+            variant="Inline"
+            title={notice}
+            retryLabel="Retry"
+            onRetry={() => failedPrompt && send(failedPrompt.text, failedPrompt.modelId)}
+            className="max-w-full"
+          />
         </div>
       )}
     </div>
