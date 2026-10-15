@@ -24,6 +24,25 @@ function extractCodeHints(queries: string[]): string[] {
     if (text.includes(phrase)) hints.add(abbr);
   }
 
+  // Translate ordinary-language legal questions into the codes that actually govern them.
+  // Without this map, "DUI penalty" never searches the Vehicle Code, and eviction
+  // questions can rank unrelated civil sections simply because they share words.
+  const topicHints: Array<[RegExp, string[]]> = [
+    [/\b(?:dui|dwi|drunk driv|driving under the influence|blood alcohol|breathaly[sz]er|hit and run|speeding|traffic ticket|driver.?s license suspension)\b/i, ["VEH", "PEN"]],
+    [/\b(?:evict|eviction|unlawful detainer|landlord|tenant|rental unit|rent increase|lease termination|security deposit|notice to quit)\b/i, ["CIV", "CCP"]],
+    [/\b(?:car accident|auto accident|personal injury|injury lawsuit|time to sue|statute of limitations|limitations period)\b/i, ["CCP", "CIV"]],
+    [/\b(?:domestic violence|restraining order|protective order|abuse prevention)\b/i, ["FAM", "CCP", "PEN"]],
+    [/\b(?:wage|overtime|unpaid pay|meal break|rest break|wrongful termination|employment discrimination|workplace retaliation)\b/i, ["LAB", "GOV", "CIV"]],
+    [/\b(?:burglary|assault|battery|theft|larceny|robbery|murder|manslaughter|criminal charge|sentencing|probation)\b/i, ["PEN"]],
+    [/\b(?:child custody|visitation|divorce|spousal support|child support|parentage)\b/i, ["FAM"]],
+    [/\b(?:will|inheritance|probate|estate administration|trust dispute)\b/i, ["PROB"]],
+    [/\b(?:medical malpractice|insurance claim|bad faith insurance)\b/i, ["CIV", "CCP", "INS"]],
+    [/\b(?:small claims|civil lawsuit|file a complaint|sue someone|serve a lawsuit)\b/i, ["CCP", "CIV"]],
+  ];
+  for (const [pattern, abbrs] of topicHints) {
+    if (pattern.test(text)) for (const abbr of abbrs) hints.add(abbr);
+  }
+
   for (const q of queries) {
     for (const token of q.match(/\b[A-Z]{2,5}\b/g) || []) {
       if (Object.prototype.hasOwnProperty.call(CODE_NAMES, token)) hints.add(token);
