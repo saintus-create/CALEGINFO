@@ -11,6 +11,9 @@ export default function Page() {
   return (
     <main className="flex h-dvh items-center justify-center overflow-hidden">
       <AIChatCard
+        title="California law, answered."
+        subtitle="The complete California Codes, 2025-26 bills, Rules of Court, and case law — cited inline."
+        greeting=""
         prompts={PROMPTS}
         placeholder="Ask anything about California law…"
       />
