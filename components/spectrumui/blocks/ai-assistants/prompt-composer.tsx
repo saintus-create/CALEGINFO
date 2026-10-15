@@ -65,7 +65,7 @@ export function PromptComposer({
         submit();
       }}
       className={cn(
-        'w-full max-w-[560px] rounded-2xl border border-black/[0.08] bg-white shadow-xs transition-[border-color,box-shadow] duration-150 focus-within:border-black/[0.18] focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.03)] dark:border-white/[0.09] dark:bg-[#0B0B0D] dark:focus-within:border-white/[0.24] dark:focus-within:shadow-[0_0_0_3px_rgba(255,255,255,0.04)]',
+        'w-full max-w-[560px] rounded-2xl bg-neutral-50 shadow-none transition-[background-color,box-shadow] duration-150 focus-within:bg-white focus-within:shadow-[0_0_0_1px_rgba(0,0,0,0.10),0_6px_24px_rgba(0,0,0,0.04)] dark:bg-white/[0.045] dark:focus-within:bg-neutral-950 dark:focus-within:shadow-[0_0_0_1px_rgba(255,255,255,0.16),0_6px_24px_rgba(0,0,0,0.12)]',
         className,
       )}
     >
