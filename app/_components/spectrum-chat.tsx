@@ -136,7 +136,7 @@ export function SpectrumChat() {
   }, [turns]);
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, modelId?: string) => {
       const q = text.trim();
       if (!q || busy) return;
       setNotice(null);
@@ -163,6 +163,7 @@ export function SpectrumChat() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
+            model: modelId,
             messages: [...history, { id: userId, role: "user", parts: [{ type: "text", text: q }] }],
           }),
         });
@@ -261,7 +262,7 @@ export function SpectrumChat() {
                 disabled: m.available === false,
               }))}
               defaultModelId={models[0]?.id}
-              onSend={(value: string) => send(value)}
+              onSend={(value: string, modelId?: string) => send(value, modelId)}
               isGenerating={busy}
             />
           </div>
