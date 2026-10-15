@@ -20,7 +20,6 @@ import billTextSearch from "@/agent/tools/bill_text_search";
 import billDetail from "@/agent/tools/bill_detail";
 import { alternateModels, alternateApiKey, DEFAULT_MODEL_ID, isBuiltInUnfiltered } from "@/agent/lib/models";
 import research from "@/agent/tools/research";
-import { prosecutionContract, prosecutionHeadingGaps } from "@/agent/lib/prosecution-analysis";
 
 // Provider credentials belong in server-side environment variables only.
 // Never fall back to a credential embedded in source or shipped to browsers.
@@ -541,7 +540,7 @@ The server will validate your completed answer before sending it to the user. An
 REPAIR REQUIRED:
 Your previous synthesis failed the evidence gate for this reason:
 ${validation.reason}
-Produce a replacement answer, not commentary about the failure. Every paragraph — including any opening or framing sentence — must carry a valid bracketed record marker. If a sentence cannot be supported by any marker in the record, delete it rather than leaving it uncited. Do not use general knowledge to fill gaps. If an evidence gap remains open, explicitly say so. If this is a criminal-law question, include every required prosecution-grade section and explicitly separate probable cause from trial sufficiency.
+Produce a replacement answer, not commentary about the failure. Every paragraph — including any opening or framing sentence — must carry a valid bracketed record marker. If a sentence cannot be supported by any marker in the record, delete it rather than leaving it uncited. Do not use general knowledge to fill gaps. If an evidence gap remains open, explicitly say so. For criminal-law questions, address the elements, evidence, procedural standard, strongest prosecution arguments, strongest defenses, and evidentiary gaps in a balanced analysis.
 `);
     answer = "";
     for await (const part of result.textStream) answer += part;
