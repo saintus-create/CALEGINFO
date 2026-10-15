@@ -15,6 +15,7 @@ export default function Page() {
         subtitle="The complete California Codes, 2025-26 bills, Rules of Court, and case law — cited inline."
         greeting=""
         prompt="Ask anything about California law, or press send to start."
+        prompt="Ask anything about California law, or press send to start."
         prompts={PROMPTS}
         placeholder="Ask anything about California law…"
       />
