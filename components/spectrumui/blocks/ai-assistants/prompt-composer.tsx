@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowUp, Check, ChevronDown, Paperclip, Square, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Attachment, ModelOption } from './types';
@@ -46,6 +46,15 @@ export function PromptComposer({
   const [modelId, setModelId] = useState(defaultModelId ?? models[0]?.id);
   const [pickerOpen, setPickerOpen] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (models.some((model) => model.id === modelId && !model.disabled)) return;
+    const preferred =
+      (defaultModelId && models.find((model) => model.id === defaultModelId && !model.disabled)?.id) ??
+      models.find((model) => !model.disabled)?.id ??
+      models[0]?.id;
+    if (preferred && preferred !== modelId) setModelId(preferred);
+  }, [models, modelId, defaultModelId]);
 
   const activeModel = models.find((model) => model.id === modelId);
   const canSend = value.trim().length > 0 && !isGenerating;
