@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/app/_components/theme-toggle";
 import { SuggestionBanner } from "@/components/spectrumui/blocks/ai-assistants/suggestion-banner";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
+import { useReadAloud } from "@/lib/voice/use-read-aloud";
 
 type Role = "user" | "assistant";
 
@@ -122,6 +123,9 @@ export function SpectrumChat() {
   const [models, setModels] = useState<Array<{ id: string; name: string; available?: boolean }>>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  // Voice output for answers, driven by the Sarvam voice routes and falling
+  // back to the browser's own speech engine.
+  const readAloud = useReadAloud({ onNotice: setNotice });
 
   useEffect(() => {
     fetch("/api/models")
@@ -140,6 +144,7 @@ export function SpectrumChat() {
       const q = text.trim();
       if (!q || busy) return;
       setNotice(null);
+      readAloud.stop();
       setBusy(true);
 
       const userId = `u${Date.now()}`;
@@ -216,7 +221,7 @@ export function SpectrumChat() {
         setBusy(false);
       }
     },
-    [busy, turns],
+    [busy, turns, readAloud.stop],
   );
 
   const empty = turns.length === 0;
@@ -263,6 +268,7 @@ export function SpectrumChat() {
               defaultModelId={models[0]?.id}
               onSend={(value: string) => send(value)}
               isGenerating={busy}
+              dictation={{ language: "en-US", onNotice: setNotice, onError: setNotice }}
             />
           </div>
         ) : (
@@ -293,6 +299,12 @@ export function SpectrumChat() {
                           content={t.content}
                           onCopy={() => {
                             navigator.clipboard?.writeText(t.content);
+                          }}
+                          speech={{
+                            speaking: readAloud.speakingId === t.id,
+                            loading:
+                              readAloud.speakingId === t.id && readAloud.state === "loading",
+                            onToggle: () => readAloud.toggle(t.content, t.id),
                           }}
                         />
                       )}
@@ -335,6 +347,7 @@ export function SpectrumChat() {
               defaultModelId={models[0]?.id}
               onSend={(value: string) => send(value)}
               isGenerating={busy}
+              dictation={{ language: "en-US", onNotice: setNotice, onError: setNotice }}
             />
           </div>
         </div>
