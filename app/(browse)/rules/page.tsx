@@ -7,7 +7,7 @@ export default function RulesPage() {
   return (
     <BrowseShell active="/rules">
       <div className="h-full overflow-y-auto">
-        <Rules jumpRule={null} />
+        <Rules />
       </div>
     </BrowseShell>
   );
