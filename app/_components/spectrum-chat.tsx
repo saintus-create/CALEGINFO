@@ -227,6 +227,7 @@ export function SpectrumChat() {
       <header className="flex h-16 shrink-0 items-center gap-3 px-5 sm:px-8">
         <a href="/" aria-label="California Legislation" className="flex shrink-0 items-center">
           <StarMark className="size-5" />
+          <span className="ml-2.5 text-[13px] font-medium tracking-[-0.02em]">California Law</span>
         </a>
         <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
           {LIBRARY_TABS.map(({ label, href, icon: Glyph }) => (
