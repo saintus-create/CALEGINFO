@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AgentPlan } from '@/components/spectrumui/blocks/ai-assistants/agent-plan';
 import { AgentSteps } from '@/components/spectrumui/blocks/ai-assistants/agent-steps';
 import { ApprovalCard } from '@/components/spectrumui/blocks/ai-assistants/approval-card';
@@ -22,6 +22,22 @@ import { UsageMeter } from '@/components/spectrumui/blocks/ai-assistants/usage-m
 import { VoiceInput } from '@/components/spectrumui/blocks/ai-assistants/voice-input';
 import { WebSearch } from '@/components/spectrumui/blocks/ai-assistants/web-search';
 import type { Citation, ModelOption, ToolCall } from '@/components/spectrumui/blocks/ai-assistants/types';
+
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+};
+type SpeechWindow = Window & {
+  SpeechRecognition?: new () => SpeechRecognitionLike;
+  webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+};
 
 type Props = {
   onClose: () => void;
@@ -61,6 +77,39 @@ export function SpectrumBlockWorkbench({
 }: Props) {
   const [memory, setMemory] = useState<Array<{ id: string; fact: string }>>([]);
   const [voiceState, setVoiceState] = useState<'idle' | 'recording' | 'processing'>('idle');
+  const [voiceMessage, setVoiceMessage] = useState('');
+  const recognition = useRef<SpeechRecognitionLike | null>(null);
+
+  function startVoice() {
+    const speechWindow = window as SpeechWindow;
+    const Constructor = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!Constructor) {
+      setVoiceMessage('Voice input is not supported by this browser.');
+      return;
+    }
+    setVoiceMessage('');
+    const instance = new Constructor();
+    instance.lang = 'en-US';
+    instance.interimResults = false;
+    instance.maxAlternatives = 1;
+    instance.onresult = (event) => {
+      const transcript = Array.from(event.results).map((result) => result[0]?.transcript ?? '').join(' ').trim();
+      if (transcript) onVoiceText(transcript);
+    };
+    instance.onerror = () => {
+      setVoiceMessage('Voice recognition stopped. You can type your question instead.');
+      setVoiceState('idle');
+    };
+    instance.onend = () => setVoiceState('idle');
+    recognition.current = instance;
+    try {
+      instance.start();
+      setVoiceState('recording');
+    } catch {
+      setVoiceMessage('The browser could not start voice recognition.');
+      setVoiceState('idle');
+    }
+  }
   const [approved, setApproved] = useState(false);
   const [diffDecision, setDiffDecision] = useState('');
   const prompt = question || 'California legal research';
@@ -121,15 +170,19 @@ export function SpectrumBlockWorkbench({
             <ModelSelector models={models} value={selectedModel} onChange={onModelChange} variant="List" />
             <VoiceInput
               state={voiceState}
-              onStart={() => setVoiceState('recording')}
+              onStart={startVoice}
               onConfirm={() => {
                 setVoiceState('processing');
-                onVoiceText('');
-                setVoiceState('idle');
+                recognition.current?.stop();
               }}
-              onCancel={() => setVoiceState('idle')}
+              onCancel={() => {
+                recognition.current?.abort();
+                setVoiceState('idle');
+                setVoiceMessage('');
+              }}
             />
-            <p className="text-xs text-muted-foreground">Voice control preview only. Browser speech transcription is not connected yet.</p>
+            {voiceMessage && <p role="status" className="text-xs text-muted-foreground">{voiceMessage}</p>}
+            <p className="text-xs text-muted-foreground">Voice input uses the browser's speech-recognition support when available.</p>
           </section>
 
           <section className="space-y-3">
@@ -182,6 +235,7 @@ export function SpectrumBlockWorkbench({
 
           <section className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Drafting and review blocks</h3>
+            <p className="text-xs text-muted-foreground">The diff below is a component example, not a change proposed to your answer.</p>
             <InlineEdit
               before="A legal conclusion should "
               selection="state the rule without qualification"
@@ -210,6 +264,7 @@ export function SpectrumBlockWorkbench({
               meta="Action: send a follow-up prompt"
               approveLabel="Send follow-up"
               rejectLabel="Not now"
+              approvedMessage="Follow-up approved"
               decision={approved ? 'approved' : null}
               onDecide={(decision) => {
                 if (decision === 'approved') {
