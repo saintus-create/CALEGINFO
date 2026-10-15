@@ -1,5 +1,9 @@
-import SpectrumChat from "@/app/_components/spectrum-chat";
+import { SpectrumChat } from "@/app/_components/spectrum-chat";
 
 export default function Page() {
-  return <SpectrumChat />;
+  return (
+    <main className="h-dvh overflow-hidden">
+      <SpectrumChat />
+    </main>
+  );
 }

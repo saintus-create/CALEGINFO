@@ -12,8 +12,6 @@ import { StarMark } from "@/app/_components/star-mark";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
 import { SuggestionBanner } from "@/components/spectrumui/blocks/ai-assistants/suggestion-banner";
 import { ThinkingDots } from "@/components/spectrumui/blocks/ai-assistants/thinking-dots";
-import { ErrorState } from "@/components/spectrumui/blocks/ai-assistants/error-state";
-import { SpectrumBlockWorkbench } from "@/app/_components/spectrum-block-workbench";
 import type { Citation, SuggestedPrompt } from "@/components/spectrumui/blocks/ai-assistants/types";
 
 type Role = "user" | "assistant";
@@ -123,9 +121,6 @@ export function SpectrumChat() {
   const [busy, setBusy] = useState(false);
   const [models, setModels] = useState<Array<{ id: string; name: string; available?: boolean }>>([]);
   const [notice, setNotice] = useState<string | null>(null);
-  const [failedPrompt, setFailedPrompt] = useState<{ text: string; modelId?: string } | null>(null);
-  const [showBlockWorkbench, setShowBlockWorkbench] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -141,12 +136,10 @@ export function SpectrumChat() {
   }, [turns]);
 
   const send = useCallback(
-    async (text: string, modelId?: string) => {
+    async (text: string) => {
       const q = text.trim();
       if (!q || busy) return;
       setNotice(null);
-      setFailedPrompt(null);
-      if (modelId) setSelectedModel(modelId);
       setBusy(true);
 
       const userId = `u${Date.now()}`;
@@ -170,7 +163,6 @@ export function SpectrumChat() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            model: modelId,
             messages: [...history, { id: userId, role: "user", parts: [{ type: "text", text: q }] }],
           }),
         });
@@ -178,7 +170,6 @@ export function SpectrumChat() {
         if (!res.ok || !res.body) {
           const msg = await res.text().catch(() => "");
           setNotice(msg || `Request failed (${res.status})`);
-          setFailedPrompt({ text: q, modelId });
           setTurns((prev) => prev.filter((t) => t.id !== botId));
           return;
         }
@@ -220,7 +211,6 @@ export function SpectrumChat() {
         );
       } catch {
         setNotice("Could not reach the research service.");
-        setFailedPrompt({ text: q, modelId });
         setTurns((prev) => prev.filter((t) => t.id !== botId));
       } finally {
         setBusy(false);
@@ -233,10 +223,9 @@ export function SpectrumChat() {
 
   return (
     <div className="flex h-dvh w-full flex-col bg-background text-foreground">
-      <header className="flex h-16 shrink-0 items-center gap-3 px-5 sm:px-8">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-5 sm:px-7">
         <a href="/" aria-label="California Legislation" className="flex shrink-0 items-center">
           <StarMark className="size-5" />
-          <span className="ml-2.5 text-[13px] font-medium tracking-[-0.02em]">California Law</span>
         </a>
         <nav className="ml-auto hidden items-center gap-1 text-[13px] sm:flex">
           {LIBRARY_TABS.map(({ label, href, icon: Glyph }) => (
@@ -250,46 +239,43 @@ export function SpectrumChat() {
             </a>
           ))}
         </nav>
-        <button type="button" onClick={() => setShowBlockWorkbench(true)} className="rounded-lg px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">Workspace</button>
         <ThemeToggle />
       </header>
       <MobileDockNav />
 
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {empty ? (
-          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col justify-center gap-9 px-5 py-12 sm:px-8 sm:py-16">
+          <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6">
             <ChatEmptyState
               title="Ask anything about California law"
               subtitle="Every answer is cited to the statute, rule or case it comes from."
               prompts={SUGGESTIONS}
               onSelectPrompt={(item) => send(item.prompt ?? item.label)}
               variant="Centered"
-              className="max-w-none"
             />
             <PromptComposer
-              placeholder="Ask a legal question…"
-              className="max-w-none"
+              placeholder="Ask anything about California law…"
               models={models.map((m) => ({
                 id: m.id,
                 name: m.name,
                 disabled: m.available === false,
               }))}
               defaultModelId={models[0]?.id}
-              onSend={(value: string, modelId?: string) => send(value, modelId)}
+              onSend={(value: string) => send(value)}
               isGenerating={busy}
             />
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-5 py-8 sm:px-8">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-7 px-4 py-8 sm:px-6">
             {turns.map((t) =>
               t.role === "user" ? (
-                <div key={t.id} id={t.id} className="flex justify-end">
+                <div key={t.id} className="flex justify-end">
                   <div className="max-w-[85%] rounded-[18px] bg-muted px-4 py-2.5 text-[15px] leading-6">
                     {t.content}
                   </div>
                 </div>
               ) : (
-                <div key={t.id} id={t.id} className="flex flex-col gap-3">
+                <div key={t.id} className="flex flex-col gap-3">
                   {t.streaming && !t.content ? (
                     <ThinkingDots label="Researching California law" />
                   ) : (
@@ -328,60 +314,34 @@ export function SpectrumChat() {
             )}
 
             {notice && (
-              <ErrorState
-                variant="Inline"
-                title={notice}
-                retryLabel="Retry"
-                onRetry={() => failedPrompt && send(failedPrompt.text, failedPrompt.modelId)}
-              />
+              <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground">
+                {notice}
+              </div>
             )}
           </div>
         )}
       </main>
 
       {!empty && (
-        <div className="shrink-0 bg-background/95 px-5 py-4 sm:px-8">
-          <div className="mx-auto w-full max-w-4xl">
+        <div className="shrink-0 border-t border-border/60 bg-background px-4 py-3">
+          <div className="mx-auto w-full max-w-3xl">
             <PromptComposer
-              placeholder="Ask a follow-up…"
-              className="max-w-none"
+              placeholder="Ask anything about California law…"
               models={models.map((m) => ({
                 id: m.id,
                 name: m.name,
                 disabled: m.available === false,
               }))}
               defaultModelId={models[0]?.id}
-              onSend={(value: string, modelId?: string) => send(value, modelId)}
+              onSend={(value: string) => send(value)}
               isGenerating={busy}
             />
           </div>
         </div>
       )}
-      {showBlockWorkbench && (
-        <SpectrumBlockWorkbench
-          onClose={() => setShowBlockWorkbench(false)}
-          onRunPrompt={(prompt) => { setShowBlockWorkbench(false); void send(prompt, selectedModel || models.find((m) => m.available !== false)?.id); }}
-          question={[...turns].reverse().find((t) => t.role === "user")?.content ?? ""}
-          answer={[...turns].reverse().find((t) => t.role === "assistant" && !t.streaming)?.content ?? ""}
-          citations={[...turns].reverse().find((t) => t.role === "assistant" && !t.streaming)?.citations ?? []}
-          models={models.map((m) => ({ id: m.id, name: m.name, disabled: m.available === false }))}
-          selectedModel={selectedModel || models.find((m) => m.available !== false)?.id || models[0]?.id || ""}
-          onModelChange={setSelectedModel}
-          busy={busy}
-          questions={turns.filter((t) => t.role === "user").map((t) => ({ id: t.id, title: t.content, group: "This session" }))}
-          onSelectQuestion={(id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" }); setShowBlockWorkbench(false); }}
-          onVoiceText={(text) => { if (text.trim()) void send(text, selectedModel); }}
-        />
-      )}
       {notice && empty && (
-        <div className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 px-3">
-          <ErrorState
-            variant="Inline"
-            title={notice}
-            retryLabel="Retry"
-            onRetry={() => failedPrompt && send(failedPrompt.text, failedPrompt.modelId)}
-            className="max-w-full"
-          />
+        <div role="alert" className="fixed bottom-4 left-1/2 z-10 w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-border bg-background px-4 py-3 text-sm shadow-lg">
+          {notice}
         </div>
       )}
     </div>

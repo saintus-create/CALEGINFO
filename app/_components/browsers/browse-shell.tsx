@@ -7,8 +7,6 @@ import { LIBRARY_TABS } from "@/app/_components/library-routes";
 import { MobileDockNav } from "@/app/_components/mobile-dock-nav";
 import { StarMark } from "@/app/_components/star-mark";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
-import { buttonVariants } from "@/components/spectrumui/ui/button";
-import { Separator } from "@/components/spectrumui/ui/separator";
 
 export function BrowseShell({ active, children }: { active: string; children: ReactNode }) {
   return (
@@ -25,8 +23,10 @@ export function BrowseShell({ active, children }: { active: string; children: Re
               <Link
                 aria-current={selected ? "page" : undefined}
                 className={cn(
-                  buttonVariants({ variant: selected ? "secondary" : "ghost", size: "sm" }),
-                  "gap-2",
+                  "flex h-8 items-center gap-2 rounded-md px-2.5 text-sm transition-colors",
+                  selected
+                    ? "bg-muted font-medium text-foreground"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                 )}
                 href={t.href}
                 key={t.href}
@@ -39,8 +39,7 @@ export function BrowseShell({ active, children }: { active: string; children: Re
             );
           })}
         </nav>
-        <Separator orientation="vertical" className="ml-auto h-6" />
-        <ThemeToggle />
+        <ThemeToggle className="ml-auto" />
       </header>
       <div className="min-h-0 flex-1">{children}</div>
       <MobileDockNav active={active} />

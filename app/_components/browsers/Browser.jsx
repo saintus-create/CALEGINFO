@@ -9,12 +9,9 @@ import {
   ShieldCheck,
   Gavel,
 } from "@phosphor-icons/react";
-import { Button } from "@/components/spectrumui/ui/button";
-import { Input } from "@/components/spectrumui/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/spectrumui/ui/select";
-import { BeamSearch } from "@/components/spectrumui/beam-search";
-import { Alert, AlertDescription } from "@/components/spectrumui/ui/alert";
-import { Card, CardContent } from "@/components/spectrumui/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { loadCorpus, loadExtras, corpusReady, extras, codes, byAbbr, buildUnits, searchSections, famCasesFor, corpusStats } from "@/lib/engine";
 
 // re-render when the extras (case annotations) finish loading in the background
@@ -171,39 +168,18 @@ export default function Browser({ activeCode, jumpSection, onCodeChange }) {
       </div>
       {!activeCode ? (
         <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground"><Database className="h-3.5 w-3.5" /> Primary law library</div>
+          <div className="eyebrow"><Database className="h-3.5 w-3.5" /> Primary law library</div>
           <h1 className="text-2xl font-bold mb-2 mt-3">Browse Codes</h1>
           <p className="text-muted-foreground text-sm">
             The complete California Codes — every section, readable in place, with curated case notes on the
             Family Code. Pick a code to start, or search across every code at once.
           </p>
-          <form onSubmit={runGlobalSearch} className="mt-6">
-            <BeamSearch
-              value={globalQuery}
-              onChange={setGlobalQuery}
-              onSubmit={() => runGlobalSearch({ preventDefault() {} })}
-              placeholder="Search across all California Codes…"
-            />
+                    <form onSubmit={runGlobalSearch} className="mt-6 flex gap-2">
+            <div className="relative flex-1"><MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder="Search across all California Codes…" className="pl-9 h-11" /></div>
+            <Button type="submit" variant="default" className="h-11" disabled={globalBusy}>{globalBusy ? "Searching…" : "Search"}</Button>
           </form>
-          {globalResults.length > 0 && (
-            <Card className="mt-4 overflow-hidden py-0 gap-0">
-              <CardContent className="p-0">
-                {globalResults.map((x, i) => (
-                  <button key={i} onClick={() => { onCodeChange(x.abbr); setGlobalQuery(""); setGlobalResults([]); }} className="w-full text-left p-3 transition-colors hover:bg-muted/40 border-b border-border last:border-b-0">
-                    <div className="text-sm font-medium">{x.r.citation || `${x.abbr} § ${x.r.section}`}</div>
-                    <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{x.r.text}</div>
-                    <div className="mt-2 text-xs text-muted-foreground">{byAbbr[x.abbr]?.name}</div>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-          <Alert className="mt-6">
-            <ShieldCheck weight="fill" className="text-emerald-600" />
-            <AlertDescription>
-              This is a dated research snapshot. Use the official California Legislative Information site for the current operative text.
-            </AlertDescription>
-          </Alert>
+          {globalResults.length > 0 && <div className="mt-4 rounded-xl border divide-y overflow-hidden">{globalResults.map((x, i) => <button key={i} onClick={() => { onCodeChange(x.abbr); setGlobalQuery(""); setGlobalResults([]); }} className="w-full text-left p-3 hover:bg-muted/40 transition-colors"><div className="text-sm font-semibold">{x.r.citation || `${x.abbr} § ${x.r.section}`}</div><div className="text-xs text-muted-foreground mt-1 line-clamp-2">{x.r.text}</div><div className="text-[11px] text-muted-foreground mt-2">{byAbbr[x.abbr]?.name}</div></button>)}</div>}
+          <div className="mt-6 rounded-xl border bg-muted/20 p-4 text-sm flex items-start gap-3"><ShieldCheck weight="fill" className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" /><span className="text-muted-foreground">This is a dated research snapshot. Use the official California Legislative Information site for the current operative text.</span></div>
         </div>
       ) : !byAbbr[activeCode] ? (
         <div className="p-6 text-sm text-muted-foreground">Loading code…</div>
