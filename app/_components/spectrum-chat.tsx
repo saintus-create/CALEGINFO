@@ -224,7 +224,7 @@ export function SpectrumChat() {
 
   return (
     <div className="flex h-dvh w-full flex-col bg-background text-foreground">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-5 sm:px-7">
+      <header className="flex h-16 shrink-0 items-center gap-3 px-5 sm:px-8">
         <a href="/" aria-label="California Legislation" className="flex shrink-0 items-center">
           <StarMark className="size-5" />
         </a>
@@ -246,16 +246,18 @@ export function SpectrumChat() {
 
       <main ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {empty ? (
-          <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6">
+          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col justify-center gap-9 px-5 py-12 sm:px-8 sm:py-16">
             <ChatEmptyState
               title="Ask anything about California law"
               subtitle="Every answer is cited to the statute, rule or case it comes from."
               prompts={SUGGESTIONS}
               onSelectPrompt={(item) => send(item.prompt ?? item.label)}
               variant="Centered"
+              className="max-w-none"
             />
             <PromptComposer
-              placeholder="Ask anything about California law…"
+              placeholder="Ask a legal question…"
+              className="max-w-none"
               models={models.map((m) => ({
                 id: m.id,
                 name: m.name,
@@ -267,7 +269,7 @@ export function SpectrumChat() {
             />
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-7 px-4 py-8 sm:px-6">
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-5 py-8 sm:px-8">
             {turns.map((t) =>
               t.role === "user" ? (
                 <div key={t.id} className="flex justify-end">
@@ -324,10 +326,11 @@ export function SpectrumChat() {
       </main>
 
       {!empty && (
-        <div className="shrink-0 border-t border-border/60 bg-background px-4 py-3">
-          <div className="mx-auto w-full max-w-3xl">
+        <div className="shrink-0 bg-background/95 px-5 py-4 sm:px-8">
+          <div className="mx-auto w-full max-w-4xl">
             <PromptComposer
-              placeholder="Ask anything about California law…"
+              placeholder="Ask a follow-up…"
+              className="max-w-none"
               models={models.map((m) => ({
                 id: m.id,
                 name: m.name,
