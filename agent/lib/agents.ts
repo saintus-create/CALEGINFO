@@ -1,7 +1,6 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, stepCountIs, tool } from "ai";
 
-import { SARVAM_KEY } from "@/lib/engine";
 import { DEFAULT_MODEL_ID } from "./models";
 import searchBills from "../tools/search_bills";
 import searchCases from "../tools/search_cases";
@@ -24,7 +23,7 @@ import searchStatutes from "../tools/search_statutes";
  * same record, and the same gate still validates the final answer.
  */
 
-const KEY = process.env.SARVAM_API_KEY || SARVAM_KEY;
+const KEY = process.env.SARVAM_API_KEY || "";
 
 const sarvam = createOpenAICompatible({
   name: "sarvam",
